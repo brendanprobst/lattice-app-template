@@ -1,18 +1,19 @@
 {
-  "name": "lattice",
+  "name": "lattice-app-template",
   "version": "1.0.0",
   "private": true,
-  "description": "Domain-driven design API template (Node.js, Express, manual DI)",
+  "description": "Lattice — web app monorepo starter (DDD API, Turborepo; Next.js and infra planned)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/example/api-ddd-template"
+    "url": "git+https://github.com/your-username/lattice-app-template.git"
   },
+  "packageManager": "npm@10.8.2",
   "workspaces": [
     "api"
   ],
   "scripts": {
     "build": "turbo run build",
-    "start": "turbo run build && npm run start -w @repo/api",
+    "start": "turbo run build && npm run start -w @lattice/api",
     "dev": "turbo run dev",
     "test": "jest --colors",
     "test:watch": "jest --watch --colors",
