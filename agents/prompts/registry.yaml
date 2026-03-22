@@ -1,0 +1,38 @@
+# Agent registry — prompts under prompts/; Cursor rules under .cursor/rules/
+agents:
+  - id: ddd-expert
+    path: prompts/ddd-expert.md
+    cursorRule: .cursor/rules/ddd-expert.mdc
+    scope: path-scoped
+    globs:
+      - api/domain/**
+      - api/application/**
+      - docs/adr/**
+
+  - id: test-expert
+    path: prompts/test-expert.md
+    cursorRule: .cursor/rules/test-expert.mdc
+    scope: path-scoped
+    globs:
+      - test/**
+
+  - id: infra-expert
+    path: prompts/infra-expert.md
+    cursorRule: .cursor/rules/infra-expert.mdc
+    scope: path-scoped
+    globs:
+      - api/infrastructure/**
+      - api/config/**
+      - seed.json
+
+  - id: debugger-expert
+    path: prompts/debugger-expert.md
+    cursorRule: .cursor/rules/debugger-expert.mdc
+    scope: attach-via-rules
+    attach: "@ Rules → Debugger expert"
+
+  - id: code-janitor
+    path: prompts/code-janitor.md
+    cursorRule: .cursor/rules/code-janitor.mdc
+    scope: attach-via-rules
+    attach: "@ Rules → Code janitor"

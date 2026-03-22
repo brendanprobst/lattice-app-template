@@ -1,0 +1,24 @@
+# Node modules
+**/node_modules/
+**/package-lock.json 
+**/.env
+**/.env.*
+!.env.example
+.env
+# TypeScript build output
+**/dist/
+
+# Jest coverage
+coverage/
+*.lcov
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,14 @@
+---
+description: Test expert — Jest & integration tests (auto when editing test files)
+globs:
+  - "test/**"
+alwaysApply: false
+---
+
+# Test expert (this repo)
+
+- Root Jest config in `package.json`; tests under `test/`; `@/` maps to `api/`.
+- Integration: use `createTestApp()` from `test/setup.ts` for a **fresh** `Container` + seed per isolation need (`beforeEach` when mutating state).
+- Assert **API contract**: status codes, `error.code` / `error.message` for failures, JSON shapes for successes.
+- Unit tests for `Result`, `ResponseHandler`, `HttpErrorMapper` live in `test/utils/` — keep them fast and deterministic.
+- Do not weaken assertions to green tests; fix implementation or test data instead.
