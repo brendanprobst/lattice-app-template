@@ -7,7 +7,7 @@ todos:
     status: pending
   - id: relocate-api
     content: Move api/ to apps/api and fix Jest @/ mapping, tsconfig paths, and agent docs
-    status: pending
+    status: completed
   - id: next-app
     content: Scaffold apps/web with create-next-app patterns; avoid port clash with API
     status: pending

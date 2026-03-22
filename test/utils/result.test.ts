@@ -1,6 +1,6 @@
-import { Result } from '../../api/domain/errors/Result';
-import { ResultError } from '../../api/domain/errors/ResultError';
-import { ErrorCatalog } from '../../api/domain/errors/ErrorCatalog';
+import { Result } from '../../apps/api/domain/errors/Result';
+import { ResultError } from '../../apps/api/domain/errors/ResultError';
+import { ErrorCatalog } from '../../apps/api/domain/errors/ErrorCatalog';
 
 describe('Result', () => {
   describe('success', () => {

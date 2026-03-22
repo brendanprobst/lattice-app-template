@@ -6,7 +6,7 @@
 
 ## Context
 
-- Repo: DDD API template (`api/` Express app, Jest at root).
+- Repo: Lattice (`apps/api/` Express app, Jest at root).
 - Read `AGENTS.md` in the directories you touch.
 
 ## Constraints

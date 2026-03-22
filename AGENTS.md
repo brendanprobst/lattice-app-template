@@ -2,11 +2,11 @@
 
 ## Purpose
 
-**Lattice** is a **web app template** monorepo: **npm workspaces** + **Turborepo** (`turbo run build`, `turbo run dev`, etc.). A **Next.js** frontend under `apps/web/` is planned; the **backend** is a DDD Express app (**`@lattice/api`** under `api/`) with manual `Container` wiring, domain `Result` + `ErrorCatalog`, and root-level Jest tests (`@/` → `api/`).
+**Lattice** is a **web app template** monorepo: **npm workspaces** + **Turborepo** (`turbo run build`, `turbo run dev`, etc.). A **Next.js** frontend under `apps/web/` is planned; the **backend** is a DDD Express app (**`@lattice/api`** under `apps/api/`) with manual `Container` wiring, domain `Result` + `ErrorCatalog`, and root-level Jest tests (`@/` → `apps/api/`).
 
 ## Where to look first
 
-- **`api/`** — Application entry (`app.ts`), routes, controllers, domain, use cases, infrastructure.
+- **`apps/api/`** — Application entry (`app.ts`), routes, controllers, domain, use cases, infrastructure.
 - **`test/`** — Integration and unit tests; use `createTestApp()` from `test/setup.ts` for isolated apps.
 - **`docs/`** — Architecture decision records (ADRs).
 
@@ -16,7 +16,7 @@ Each major directory contains **`AGENTS.md`**. Use that name so humans and autom
 
 ## Conventions
 
-- Add repository interfaces in `api/domain/repositories/`, implementations in `api/infrastructure/repositories/`.
+- Add repository interfaces in `apps/api/domain/repositories/`, implementations in `apps/api/infrastructure/repositories/`.
 - Register new ports on `Container` with explicit getters.
 - Register domain errors in `ErrorCatalog` and map HTTP status in `HttpErrorMapper`.
 

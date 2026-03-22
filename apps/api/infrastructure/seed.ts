@@ -10,6 +10,9 @@ import { InMemoryThingRepository } from './repositories/InMemoryThingRepository'
 export function loadSeedData(thingRepository: InMemoryThingRepository): void {
   try {
     const possiblePaths = [
+      // Compiled output: .../apps/api/dist/infrastructure → repo root
+      path.join(__dirname, '../../../../seed.json'),
+      // Legacy: .../api/dist/infrastructure → repo root
       path.join(__dirname, '../../../seed.json'),
       path.join(__dirname, '../../seed.json'),
       path.join(process.cwd(), 'seed.json'),

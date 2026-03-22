@@ -1,4 +1,4 @@
-# `api/domain/` — Domain layer
+# `apps/api/domain/` — Domain layer
 
 ## Purpose
 
@@ -20,4 +20,4 @@ Follow **`Thing`** end-to-end when adding a new aggregate: entity → `I*Reposit
 
 ## Cursor
 
-The **DDD expert** rule (`.cursor/rules/ddd-expert.mdc`) applies when editing under `api/domain/`, `api/application/`, or `docs/adr/`.
+The **DDD expert** rule (`.cursor/rules/ddd-expert.mdc`) applies when editing under `apps/api/domain/`, `apps/api/application/`, or `docs/adr/`.

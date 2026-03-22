@@ -1,4 +1,4 @@
-# `api/utils/` — Cross-cutting utilities
+# `apps/api/utils/` — Cross-cutting utilities
 
 ## Purpose
 

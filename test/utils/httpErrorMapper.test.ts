@@ -1,6 +1,6 @@
-import { HttpErrorMapper } from '../../api/utils/httpErrorMapper';
-import { ErrorCatalog } from '../../api/domain/errors/ErrorCatalog';
-import { ResultError } from '../../api/domain/errors/ResultError';
+import { HttpErrorMapper } from '../../apps/api/utils/httpErrorMapper';
+import { ErrorCatalog } from '../../apps/api/domain/errors/ErrorCatalog';
+import { ResultError } from '../../apps/api/domain/errors/ResultError';
 
 describe('HttpErrorMapper', () => {
   describe('getStatusCode', () => {

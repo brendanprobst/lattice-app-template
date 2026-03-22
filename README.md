@@ -13,7 +13,7 @@ Today the repo centers on the Node.js / Express API: domain, application, infras
 
 ### Installation
 
-The repo uses **npm workspaces** (`api/` is `@lattice/api`). Install from the repository root:
+The repo uses **npm workspaces** (`apps/api/` is `@lattice/api`). Install from the repository root:
 
 ```bash
 npm install
@@ -23,7 +23,7 @@ npm install
 
 ### Environment Variables
 
-Create a `.env` file in the `api/` directory (see `api/.env.example` if present):
+Create a `.env` file in the `apps/api/` directory (see `apps/api/.env.example` if present):
 
 ```env
 PORT=3000

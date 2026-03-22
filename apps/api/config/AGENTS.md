@@ -1,4 +1,4 @@
-# `api/config/` — Configuration
+# `apps/api/config/` — Configuration
 
 ## Purpose
 

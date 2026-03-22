@@ -8,6 +8,9 @@
 # TypeScript build output
 **/dist/
 
+# Turborepo
+**/.turbo/
+
 # Jest coverage
 coverage/
 *.lcov

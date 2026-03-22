@@ -37,7 +37,7 @@ Encapsulate each business operation in a use case class:
 
 ## DTOs (Data Transfer Objects)
 
-Use cases return DTOs defined in `api/application/dtos/`:
+Use cases return DTOs defined in `apps/api/application/dtos/`:
 
 - `ThingDto` - Represents a thing in API responses (example aggregate)
 

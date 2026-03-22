@@ -1,4 +1,4 @@
-# `api/application/` — Application layer
+# `apps/api/application/` — Application layer
 
 ## Purpose
 

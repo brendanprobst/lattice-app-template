@@ -1,4 +1,4 @@
-# `api/infrastructure/` — Infrastructure
+# `apps/api/infrastructure/` — Infrastructure
 
 ## Purpose
 
@@ -6,7 +6,7 @@
 
 ## Rules
 
-- Implement interfaces from `api/domain/repositories/`.
+- Implement interfaces from `apps/api/domain/repositories/`.
 - `Container` holds concrete singletons (or factories) and exposes getters used by controllers.
 
 ## Bootstrap
@@ -15,4 +15,4 @@ Optional seed data loading lives here (e.g. `seed.ts`). Production apps often re
 
 ## Cursor
 
-The **infra expert** rule (`.cursor/rules/infra-expert.mdc`) applies when editing under `api/infrastructure/`, `api/config/`, or root `seed.json`.
+The **infra expert** rule (`.cursor/rules/infra-expert.mdc`) applies when editing under `apps/api/infrastructure/`, `apps/api/config/`, or root `seed.json`.

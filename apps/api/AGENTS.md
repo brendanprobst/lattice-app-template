@@ -1,4 +1,4 @@
-# `api/` — HTTP application
+# `apps/api/` — HTTP application
 
 ## Contents
 

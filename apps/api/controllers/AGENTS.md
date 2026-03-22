@@ -1,4 +1,4 @@
-# `api/controllers/` — HTTP controllers
+# `apps/api/controllers/` — HTTP controllers
 
 ## Purpose
 

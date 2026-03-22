@@ -5,8 +5,8 @@ agents:
     cursorRule: .cursor/rules/ddd-expert.mdc
     scope: path-scoped
     globs:
-      - api/domain/**
-      - api/application/**
+      - apps/api/domain/**
+      - apps/api/application/**
       - docs/adr/**
 
   - id: test-expert
@@ -21,8 +21,8 @@ agents:
     cursorRule: .cursor/rules/infra-expert.mdc
     scope: path-scoped
     globs:
-      - api/infrastructure/**
-      - api/config/**
+      - apps/api/infrastructure/**
+      - apps/api/config/**
       - seed.json
 
   - id: debugger-expert

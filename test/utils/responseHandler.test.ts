@@ -1,9 +1,9 @@
 // No import of express Response; use a plain object to mock the Response-like interface in tests
-import { ResponseHandler } from '../../api/utils/responseHandler';
-import { Result } from '../../api/domain/errors/Result';
-import { ErrorCatalog } from '../../api/domain/errors/ErrorCatalog';
-import { ResultError } from '../../api/domain/errors/ResultError';
-import { Logger } from '../../api/utils/logger';
+import { ResponseHandler } from '../../apps/api/utils/responseHandler';
+import { Result } from '../../apps/api/domain/errors/Result';
+import { ErrorCatalog } from '../../apps/api/domain/errors/ErrorCatalog';
+import { ResultError } from '../../apps/api/domain/errors/ResultError';
+import { Logger } from '../../apps/api/utils/logger';
 
 /**
  * Mock Response interface - matches Express Response structure needed by ResponseHandler

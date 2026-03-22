@@ -1,4 +1,4 @@
-# `api/routes/` — Express routers
+# `apps/api/routes/` — Express routers
 
 ## Purpose
 

@@ -9,7 +9,7 @@
   },
   "packageManager": "npm@10.8.2",
   "workspaces": [
-    "api"
+    "apps/*"
   ],
   "scripts": {
     "build": "turbo run build",
@@ -21,7 +21,7 @@
     "test:verbose": "jest --verbose --colors",
     "type-check": "turbo run type-check",
     "install:all": "npm install",
-    "clean": "rm -rf api/dist api/node_modules/.cache",
+    "clean": "rm -rf apps/api/dist apps/api/node_modules/.cache",
     "lint": "turbo run type-check"
   },
   "devDependencies": {
@@ -45,12 +45,12 @@
       "**/?(*.)+(spec|test).ts"
     ],
     "collectCoverageFrom": [
-      "api/**/*.ts",
-      "!api/**/*.d.ts",
-      "!api/dist/**"
+      "apps/api/**/*.ts",
+      "!apps/api/**/*.d.ts",
+      "!apps/api/dist/**"
     ],
     "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/api/$1"
+      "^@/(.*)$": "<rootDir>/apps/api/$1"
     },
     "transform": {
       "^.+\\.ts$": ["ts-jest", {

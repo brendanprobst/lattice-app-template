@@ -10,7 +10,7 @@ Domain concepts represented as raw strings or numbers can enter invalid states a
 
 ## Decision
 
-When a primitive has invariants (format, range, allowed set), introduce a **value object** in `api/domain/value-objects/` with:
+When a primitive has invariants (format, range, allowed set), introduce a **value object** in `apps/api/domain/value-objects/` with:
 
 - A private constructor and factory methods
 - `fromString()` returning `Result<T>` for untrusted input where appropriate
