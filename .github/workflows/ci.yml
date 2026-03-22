@@ -25,11 +25,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Install root dependencies
-        run: npm install
-
-      - name: Install API dependencies
-        working-directory: ./api
+      - name: Install dependencies (workspaces)
         run: npm install
 
       - name: Run type checking
