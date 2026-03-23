@@ -10,10 +10,33 @@
       "persistent": true
     },
     "type-check": {
+      "dependsOn": ["build"],
       "outputs": []
     },
     "lint": {
       "outputs": []
+    },
+    "//#test": {
+      "dependsOn": ["@lattice/api#build", "@lattice/web#build"],
+      "inputs": [
+        "package.json",
+        "tsconfig.json",
+        "test/**/*.ts",
+        "apps/api/**/*.ts",
+        "!apps/api/dist/**"
+      ],
+      "outputs": []
+    },
+    "//#test:coverage": {
+      "dependsOn": ["@lattice/api#build", "@lattice/web#build"],
+      "inputs": [
+        "package.json",
+        "tsconfig.json",
+        "test/**/*.ts",
+        "apps/api/**/*.ts",
+        "!apps/api/dist/**"
+      ],
+      "outputs": ["coverage/**"]
     }
   }
 }

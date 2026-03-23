@@ -3,8 +3,8 @@ name: Monorepo Next Terraform
 overview: Evolve the current DDD API template into a Turborepo monorepo with a Next.js app and a minimal Terraform layout under `infra/`, while preserving the existing API package and test setup via workspace-aware path updates and CI that runs `turbo` pipelines. Includes a strategic section on monorepo capabilities vs separate skeleton repos and how to combine them.
 todos:
   - id: workspaces-turbo
-    content: Add npm workspaces + turbo.json + root scripts; scope package names (@repo/api, @repo/web)
-    status: pending
+    content: Add npm workspaces + turbo.json + root scripts; scope package names (@lattice/api, @lattice/web)
+    status: completed
   - id: relocate-api
     content: Move api/ to apps/api and fix Jest @api/ mapping, tsconfig paths, and agent docs
     status: completed
@@ -13,7 +13,7 @@ todos:
     status: completed
   - id: ci-turbo
     content: Replace dual npm install with workspace install; cache turbo; run turbo pipelines
-    status: pending
+    status: completed
   - id: terraform-skeleton
     content: Add infra/terraform minimal layout + optional CI fmt/validate
     status: completed

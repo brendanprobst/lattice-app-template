@@ -16,6 +16,10 @@
 
 Each major directory contains **`AGENTS.md`**. Use that name so humans and automation can rely on a single predictable filename when opening a folder for the first time. **`README.md`** is better for human-only onboarding in libraries; here **`AGENTS.md`** doubles as developer notes and agent context.
 
+## CI parity
+
+- **`npm run ci`** — `turbo run build lint type-check` plus root **`//#test:coverage`** (Jest + coverage). Matches the `test` job in `.github/workflows/ci.yml` (with Actions cache on `.turbo` and Next cache).
+
 ## Conventions
 
 - Add repository interfaces in `apps/api/domain/repositories/`, implementations in `apps/api/infrastructure/repositories/`.

@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -25,17 +28,22 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+      - name: Turbo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+            apps/web/.next/cache
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}-turbo-${{ hashFiles('package.json', 'turbo.json', 'apps/api/package.json', 'apps/web/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.node-version }}-turbo-
+            ${{ runner.os }}-turbo-
+
       - name: Install dependencies (workspaces)
         run: npm install
 
-      - name: Run type checking
-        run: npm run type-check
-
-      - name: Run test suite
-        run: npm test
-
-      - name: Run test coverage
-        run: npm run test:coverage
+      - name: CI (Turbo build, lint, type-check, Jest coverage)
+        run: npm run ci
 
   terraform:
     runs-on: ubuntu-latest
@@ -49,7 +57,8 @@ jobs:
           terraform_version: "1.9.0"
 
       - name: Terraform format (check)
-        run: npm run infra:fmt:check
+        run: terraform fmt -check -recursive infra/terraform
 
       - name: Terraform validate (dev stack)
-        run: npm run infra:validate
+        working-directory: infra/terraform/envs/dev
+        run: terraform init -backend=false -input=false && terraform validate

@@ -101,6 +101,14 @@ npm run type-check
 npm run build
 ```
 
+**Same pipeline as CI** (Turborepo: build, lint, type-check, Jest with coverage):
+
+```bash
+npm run ci
+```
+
+GitHub Actions restores **`.turbo`** and **`apps/web/.next/cache`** from `actions/cache` (keyed on workspace `package.json` files and `turbo.json`). For **remote cache**, set `TURBO_TOKEN` and `TURBO_TEAM` (see [Turborepo remote caching](https://turbo.build/repo/docs/core-concepts/remote-caching)).
+
 ## Notes
 
 - The template ships with in-memory repositories suitable for local development and tests; replace with real persistence adapters when you wire a database.
