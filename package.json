@@ -50,14 +50,11 @@
       "!apps/api/dist/**"
     ],
     "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/apps/api/$1"
+      "^@api/(.*)$": "<rootDir>/apps/api/$1"
     },
     "transform": {
       "^.+\\.ts$": ["ts-jest", {
-        "tsconfig": {
-          "esModuleInterop": true,
-          "allowSyntheticDefaultImports": true
-        }
+        "tsconfig": "<rootDir>/tsconfig.json"
       }]
     },
     "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"]

@@ -1,5 +1,9 @@
 # `test/` — Tests
 
+## Imports
+
+From tests, import the API with the **`@api/`** alias (maps to `apps/api/` via root `tsconfig.json` and Jest `moduleNameMapper`). Example: `import { X } from '@api/domain/...'`.
+
 ## Layout
 
 - **`setup.ts`** — `createTestApp()` with a fresh `Container` and seed/bootstrap as required.

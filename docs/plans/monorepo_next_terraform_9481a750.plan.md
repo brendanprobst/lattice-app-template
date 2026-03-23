@@ -6,7 +6,7 @@ todos:
     content: Add npm workspaces + turbo.json + root scripts; scope package names (@repo/api, @repo/web)
     status: pending
   - id: relocate-api
-    content: Move api/ to apps/api and fix Jest @/ mapping, tsconfig paths, and agent docs
+    content: Move api/ to apps/api and fix Jest @api/ mapping, tsconfig paths, and agent docs
     status: completed
   - id: next-app
     content: Scaffold apps/web with create-next-app patterns; avoid port clash with API
@@ -153,11 +153,9 @@ flowchart TB
 - Add `[turbo.json](turbo.json)` with pipelines for `build`, `lint`, `test`, `type-check` as needed; declare `**dependsOn: ["^build"]**` only if you introduce dependent packages later.
 - **Next.js app**: standard `next build` / `next dev`; optional `transpilePackages` if you later add shared packages.
 
-## API + Jest + `@/` paths
+## API + Jest + `@api/` paths
 
-Today Jest maps `**^@/(.*)$` → `<rootDir>/api/$1`** (`[package.json](package.json)` jest config). After moving to `apps/api`:
-
-- Update `moduleNameMapper` to point at `apps/api` (or switch to `paths` in a root `tsconfig` referenced by Jest).
+Root Jest maps `^@api/(.*)$` → `apps/api/$1`, with matching `paths` in root `tsconfig.json` for editor and `tsc --noEmit` on `test/`.
 - Update root scripts that use `cd api` to `**turbo run**` or `**npm run -w api**` style (exact naming depends on workspace package name, e.g. `@repo/api`).
 
 **Naming**: Prefer scoped names like `@repo/api` and `@repo/web` in each app’s `package.json` for clarity in a template.

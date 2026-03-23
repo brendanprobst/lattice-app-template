@@ -2,7 +2,7 @@
 
 ## Purpose
 
-**Lattice** is a **web app template** monorepo: **npm workspaces** + **Turborepo** (`turbo run build`, `turbo run dev`, etc.). A **Next.js** frontend under `apps/web/` is planned; the **backend** is a DDD Express app (**`@lattice/api`** under `apps/api/`) with manual `Container` wiring, domain `Result` + `ErrorCatalog`, and root-level Jest tests (`@/` → `apps/api/`).
+**Lattice** is a **web app template** monorepo: **npm workspaces** + **Turborepo** (`turbo run build`, `turbo run dev`, etc.). A **Next.js** frontend under `apps/web/` is planned; the **backend** is a DDD Express app (**`@lattice/api`** under `apps/api/`) with manual `Container` wiring, domain `Result` + `ErrorCatalog`, and root-level Jest tests (`@api/...` → `apps/api/...`).
 
 ## Where to look first
 

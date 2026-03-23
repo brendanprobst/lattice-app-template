@@ -1,4 +1,4 @@
-import { Logger } from '../../apps/api/utils/logger';
+import { Logger } from '@api/utils/logger';
 import chalk from 'chalk';
 
 describe('Logger', () => {
