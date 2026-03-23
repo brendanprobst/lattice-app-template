@@ -7,6 +7,7 @@
 ## Rules
 
 - Implement interfaces from `apps/api/domain/repositories/`.
+- External service calls must go through infrastructure adapters (for example, `adapters/supabase/SupabaseAdapter.ts`) so repositories remain persistence-focused and client libraries stay swappable.
 - `Container` holds concrete singletons (or factories) and exposes getters used by controllers.
 
 ## Bootstrap

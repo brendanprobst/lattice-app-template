@@ -24,6 +24,7 @@ Each major directory contains **`AGENTS.md`**. Use that name so humans and autom
 ## Conventions
 
 - Add repository interfaces in `apps/api/domain/repositories/`, implementations in `apps/api/infrastructure/repositories/`.
+- Route external services (Supabase, AWS SDKs, third-party APIs) through adapters in `apps/api/infrastructure/adapters/`; repositories should depend on adapters, not SDK/client details directly.
 - Register new ports on `Container` with explicit getters.
 - Register domain errors in `ErrorCatalog` and map HTTP status in `HttpErrorMapper`.
 

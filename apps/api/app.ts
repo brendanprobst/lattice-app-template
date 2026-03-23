@@ -8,7 +8,6 @@ import { swaggerSpec } from './config/swagger/index';
 import indexRouter from './routes/index';
 import { createThingRouter } from './routes/things';
 import { Container } from './infrastructure/container';
-import { loadSeedData } from './infrastructure/seed';
 
 /**
  * Creates an Express app instance with the given container
@@ -16,16 +15,6 @@ import { loadSeedData } from './infrastructure/seed';
  */
 export function createApp(container?: Container): Express {
   const appContainer = container || new Container();
-
-  if (!container) {
-    try {
-      loadSeedData(appContainer.getThingRepository());
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`Failed to initialize application: ${errorMessage}`);
-      throw error;
-    }
-  }
 
   const app = express();
 

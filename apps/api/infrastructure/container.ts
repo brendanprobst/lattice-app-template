@@ -1,4 +1,6 @@
-import { InMemoryThingRepository } from './repositories/InMemoryThingRepository';
+import { IThingRepository } from '../domain/repositories/IThingRepository';
+import { SupabaseAdapter } from './adapters/supabase/SupabaseAdapter';
+import { ThingRepository } from './repositories/ThingRepository';
 import { CreateThingUseCase } from '../application/use-cases/CreateThingUseCase';
 import { GetThingByIdUseCase } from '../application/use-cases/GetThingByIdUseCase';
 import { ListThingsUseCase } from '../application/use-cases/ListThingsUseCase';
@@ -9,10 +11,11 @@ import { DeleteThingUseCase } from '../application/use-cases/DeleteThingUseCase'
  * Service Container - Dependency injection container
  */
 export class Container {
-  private thingRepository: InMemoryThingRepository;
+  private thingRepository: IThingRepository;
 
   constructor() {
-    this.thingRepository = new InMemoryThingRepository();
+    const supabaseAdapter = new SupabaseAdapter();
+    this.thingRepository = new ThingRepository(supabaseAdapter);
   }
 
   getThingRepository() {
