@@ -8,26 +8,40 @@ The **API** (`@lattice/api`) is a DDD Express app with Jest at the repo root. Th
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
+- Node.js **20.19+** (see `package.json` `engines`; CI tests **20.x** and **22.x**)
 - npm
+
+### First clone or fork (happy path)
+
+Use this to mimic a fresh machine and catch drift before you rely on the template:
+
+```bash
+git clone <your-repo-url> my-app && cd my-app
+npm ci
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
+npm run ci
+npm run dev
+```
+
+- **`npm ci`** installs exactly what’s in the committed **`package-lock.json`** (stricter than `npm install`; use it in CI and when validating the template).
+- **`npm run ci`** runs the same Turborepo pipeline as GitHub Actions (build, lint, type-check, Jest + coverage). If this passes on a clean clone, your fork baseline is healthy.
+- **GitHub**: enable **Template repository** under repo Settings if you want one-click “Use this template” forks.
 
 ### Installation
 
-The repo uses **npm workspaces** (`apps/api` → `@lattice/api`, `apps/web` → `@lattice/web`). Install from the repository root:
+The repo uses **npm workspaces** (`apps/api` → `@lattice/api`, `apps/web` → `@lattice/web`). From the repository root:
 
 ```bash
-npm install
+npm ci
 ```
 
-(`npm run install:all` is kept as an alias for the same command.)
+For day-to-day iteration you can use `npm install` when you change dependencies; **`npm run install:all`** remains an alias for `npm install`.
 
 ### Environment Variables
 
-Create a `.env` file in the `apps/api/` directory (see `apps/api/.env.example` if present):
-
-```env
-PORT=3000
-```
+- **API** — copy `apps/api/.env.example` → `apps/api/.env` (e.g. `PORT=3000`).
+- **Web** — copy `apps/web/.env.example` → `apps/web/.env.local` (e.g. `NEXT_PUBLIC_API_URL` pointing at the API).
 
 ### Running the stack
 

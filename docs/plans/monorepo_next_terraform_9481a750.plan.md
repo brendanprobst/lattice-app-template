@@ -18,8 +18,8 @@ todos:
     content: Add infra/terraform minimal layout + optional CI fmt/validate
     status: completed
   - id: docs-release
-    content: Update README/AGENTS; tag v1 vs v2 strategy if breaking
-    status: pending
+    content: "README/AGENTS + fork quickstart; root package-lock + npm ci; no changelog (greenfield). Tags optional when you cut releases."
+    status: completed
   - id: skeleton-strategy
     content: Decide distribution model (single monorepo vs multi-repo + composite); optional generator or CI path filters — **resolved for now**: solo use → single golden-path monorepo; revisit if going public/org-wide
     status: completed

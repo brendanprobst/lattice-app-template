@@ -14,3 +14,7 @@ The **`app/`** directory is for Next.js routing and layout only; keep feature UI
 
 - `npm run dev` — Turbopack on port 3001
 - `npm run build` / `npm run start` — production (start uses 3001)
+
+## Environment
+
+- Copy **`.env.example`** to **`.env.local`** at the app root (`apps/web/`). **`NEXT_PUBLIC_API_URL`** is the browser-visible API base (default in example: `http://localhost:3000`). The sample UI reads it so misconfiguration is obvious early.

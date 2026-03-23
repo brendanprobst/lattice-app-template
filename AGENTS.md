@@ -19,6 +19,7 @@ Each major directory contains **`AGENTS.md`**. Use that name so humans and autom
 ## CI parity
 
 - **`npm run ci`** — `turbo run build lint type-check` plus root **`//#test:coverage`** (Jest + coverage). Matches the `test` job in `.github/workflows/ci.yml` (with Actions cache on `.turbo` and Next cache).
+- **Installs** — Commit the root **`package-lock.json`** and use **`npm ci`** in CI and clean clones so dependency trees match exactly.
 
 ## Conventions
 

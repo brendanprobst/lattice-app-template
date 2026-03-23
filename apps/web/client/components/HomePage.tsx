@@ -1,7 +1,10 @@
 import Image from "next/image";
 import styles from "@client/components/HomePage.module.css";
+import { getPublicApiBaseUrl } from "@client/lib/publicApiBaseUrl";
 
 export function HomePage() {
+  const apiBaseUrl = getPublicApiBaseUrl();
+
   return (
     <div className={styles.page}>
       <main className={styles.main}>
@@ -18,6 +21,10 @@ export function HomePage() {
             Get started by editing <code>app/page.tsx</code>.
           </li>
           <li>Save and see your changes instantly.</li>
+          <li>
+            API base URL (from <code>NEXT_PUBLIC_API_URL</code>):{" "}
+            <code>{apiBaseUrl}</code>
+          </li>
         </ol>
 
         <div className={styles.ctas}>

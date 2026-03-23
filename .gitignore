@@ -1,9 +1,12 @@
 # Node modules
 **/node_modules/
-**/package-lock.json 
+# Root package-lock.json is committed for reproducible installs (npm ci).
+# Workspace packages must not carry their own lockfiles.
+apps/**/package-lock.json
 **/.env
 **/.env.*
 !.env.example
+!**/.env.example
 .env
 # TypeScript build output
 **/dist/
