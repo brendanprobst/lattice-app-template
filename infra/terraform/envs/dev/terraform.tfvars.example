@@ -12,3 +12,4 @@ supabase_service_role_key   = "YOUR_SERVICE_ROLE_KEY"
 # supabase_jwt_secret       = "YOUR_JWT_SECRET" # optional
 
 manage_supabase_credentials_in_ssm = true
+things_table_name                  = "things"

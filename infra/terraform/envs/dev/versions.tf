@@ -6,6 +6,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.5"
+    }
   }
 
   # Remote state (uncomment and set bucket + DynamoDB lock table per project):

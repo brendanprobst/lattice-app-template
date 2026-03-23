@@ -10,6 +10,7 @@ apps/**/package-lock.json
 .env
 # TypeScript build output
 **/dist/
+**/dist-lambda/
 
 # Turborepo
 **/.turbo/
