@@ -10,7 +10,7 @@ todos:
     status: completed
   - id: next-app
     content: Scaffold apps/web with create-next-app patterns; avoid port clash with API
-    status: pending
+    status: completed
   - id: ci-turbo
     content: Replace dual npm install with workspace install; cache turbo; run turbo pipelines
     status: pending

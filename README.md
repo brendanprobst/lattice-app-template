@@ -2,7 +2,7 @@
 
 **Lattice** is a **web app template** — a monorepo starter where pieces connect cleanly: a **domain-driven design** Express API (**`@lattice/api`**), **Turborepo**, and room to grow (Next.js app, Terraform, shared packages). The name suggests a **lattice**: a structured grid linking API, UI, and infrastructure.
 
-Today the repo centers on the Node.js / Express API: domain, application, infrastructure, and HTTP layers with manual dependency injection, a `Result` / error-catalog pattern, and Jest tests.
+The **API** (`@lattice/api`) is a DDD Express app with Jest at the repo root. The **web** app (`@lattice/web`) is Next.js (App Router) under `apps/web/`; UI code lives under `apps/web/client/` and imports use the **`@client/`** alias. The API listens on **port 3000**; the web dev server uses **3001** to avoid clashes.
 
 ## Getting Started
 
@@ -13,7 +13,7 @@ Today the repo centers on the Node.js / Express API: domain, application, infras
 
 ### Installation
 
-The repo uses **npm workspaces** (`apps/api/` is `@lattice/api`). Install from the repository root:
+The repo uses **npm workspaces** (`apps/api` → `@lattice/api`, `apps/web` → `@lattice/web`). Install from the repository root:
 
 ```bash
 npm install
@@ -29,20 +29,27 @@ Create a `.env` file in the `apps/api/` directory (see `apps/api/.env.example` i
 PORT=3000
 ```
 
-### Running the Application
+### Running the stack
+
+**API and web together** (Turborepo):
 
 ```bash
 npm run dev
 ```
 
-Or build and run production:
+- API: `http://localhost:3000` (Swagger: `/api-docs`)
+- Web: `http://localhost:3001`
+
+**API only:** `npm run dev -w @lattice/api`  
+**Web only:** `npm run dev -w @lattice/web`
+
+Production build (API + web):
 
 ```bash
 npm run build
-npm start
 ```
 
-The API defaults to `http://localhost:3000`. Swagger UI: `http://localhost:3000/api-docs`.
+Start API after build (web start is separate): `npm start` runs the API; for the Next app use `npm run start -w @lattice/web`.
 
 ### Running Tests
 

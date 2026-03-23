@@ -2,11 +2,12 @@
 
 ## Purpose
 
-**Lattice** is a **web app template** monorepo: **npm workspaces** + **Turborepo** (`turbo run build`, `turbo run dev`, etc.). A **Next.js** frontend under `apps/web/` is planned; the **backend** is a DDD Express app (**`@lattice/api`** under `apps/api/`) with manual `Container` wiring, domain `Result` + `ErrorCatalog`, and root-level Jest tests (`@api/...` → `apps/api/...`).
+**Lattice** is a **web app template** monorepo: **npm workspaces** + **Turborepo** (`turbo run build`, `turbo run dev`, etc.). The **Next.js** app is **`@lattice/web`** under `apps/web/` (UI under `client/` with **`@client/`** imports; dev on **3001**). The **backend** is **`@lattice/api`** under `apps/api/` with manual `Container` wiring, domain `Result` + `ErrorCatalog`, and root-level Jest tests (**`@api/...`** → `apps/api/...`).
 
 ## Where to look first
 
 - **`apps/api/`** — Application entry (`app.ts`), routes, controllers, domain, use cases, infrastructure.
+- **`apps/web/`** — Next.js `app/` routes; feature code under `client/` (see `apps/web/AGENTS.md`).
 - **`test/`** — Integration and unit tests; use `createTestApp()` from `test/setup.ts` for isolated apps.
 - **`docs/`** — Architecture decision records (ADRs).
 
