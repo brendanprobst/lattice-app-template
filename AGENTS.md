@@ -10,6 +10,7 @@
 - **`apps/web/`** — Next.js `app/` routes; feature code under `client/` (see `apps/web/AGENTS.md`).
 - **`test/`** — Integration and unit tests; use `createTestApp()` from `test/setup.ts` for isolated apps.
 - **`docs/`** — Architecture decision records (ADRs).
+- **`infra/terraform/`** — AWS Terraform; Supabase URL/keys from **`terraform.tfvars`** → optional **SSM** (see [`infra/AGENTS.md`](infra/AGENTS.md)).
 
 ## Documentation files in subfolders
 

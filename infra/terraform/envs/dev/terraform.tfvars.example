@@ -1,0 +1,14 @@
+# Copy to terraform.tfvars (gitignored) and fill with real values.
+# Supabase: Project Settings → API (URL, anon, service_role); JWT secret under JWT Settings if needed.
+
+project_name  = "my-lattice-app"
+environment   = "dev"
+aws_region    = "us-east-1"
+# extra_tags = { Owner = "you@example.com" }
+
+supabase_url                = "https://YOUR_PROJECT_REF.supabase.co"
+supabase_anon_key           = "YOUR_ANON_KEY"
+supabase_service_role_key   = "YOUR_SERVICE_ROLE_KEY"
+# supabase_jwt_secret       = "YOUR_JWT_SECRET" # optional
+
+manage_supabase_credentials_in_ssm = true

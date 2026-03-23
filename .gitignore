@@ -25,3 +25,16 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+
+# Terraform (keep .terraform.lock.hcl committed)
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform.tfstate.lock.info
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json

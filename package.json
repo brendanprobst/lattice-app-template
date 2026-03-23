@@ -22,7 +22,10 @@
     "type-check": "turbo run type-check",
     "install:all": "npm install",
     "clean": "rm -rf apps/api/dist apps/api/node_modules/.cache apps/web/.next apps/web/node_modules/.cache",
-    "lint": "turbo run lint type-check"
+    "lint": "turbo run lint type-check",
+    "infra:fmt": "terraform fmt -recursive infra/terraform",
+    "infra:fmt:check": "terraform fmt -check -recursive infra/terraform",
+    "infra:validate": "cd infra/terraform/envs/dev && terraform init -backend=false -input=false && terraform validate"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

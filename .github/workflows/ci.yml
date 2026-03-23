@@ -36,3 +36,20 @@ jobs:
 
       - name: Run test coverage
         run: npm run test:coverage
+
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Terraform format (check)
+        run: npm run infra:fmt:check
+
+      - name: Terraform validate (dev stack)
+        run: npm run infra:validate

@@ -1,0 +1,54 @@
+variable "aws_region" {
+  description = "AWS region for resources and SSM."
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "project_name" {
+  description = "Project name used in tags and SSM path."
+  type        = string
+}
+
+variable "environment" {
+  description = "Environment name (e.g. dev)."
+  type        = string
+  default     = "dev"
+}
+
+variable "extra_tags" {
+  description = "Additional tags merged into defaults."
+  type        = map(string)
+  default     = {}
+}
+
+# --- Supabase (set in terraform.tfvars; never commit real tfvars) ---
+
+variable "supabase_url" {
+  description = "Supabase project URL."
+  type        = string
+}
+
+variable "supabase_anon_key" {
+  description = "Supabase anon (public) key."
+  type        = string
+  sensitive   = true
+}
+
+variable "supabase_service_role_key" {
+  description = "Supabase service_role key (server-only)."
+  type        = string
+  sensitive   = true
+}
+
+variable "supabase_jwt_secret" {
+  description = "Optional Supabase JWT secret from project API settings."
+  type        = string
+  sensitive   = true
+  default     = null
+}
+
+variable "manage_supabase_credentials_in_ssm" {
+  description = "When true, write Supabase values from tfvars into SSM Parameter Store."
+  type        = bool
+  default     = true
+}

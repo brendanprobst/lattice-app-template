@@ -83,6 +83,17 @@ Application use cases return structured errors mapped to HTTP status codes via `
 }
 ```
 
+## Infrastructure (Terraform + Supabase)
+
+AWS IaC lives under **`infra/terraform/`**. Put **Supabase URL and API keys** in **`infra/terraform/envs/dev/terraform.tfvars`** (copy from `terraform.tfvars.example`; file is gitignored). With **`manage_supabase_credentials_in_ssm = true`**, Terraform writes them to **SSM Parameter Store** under `/{project}-{env}/supabase/*` for Lambdas, ECS, or CI.
+
+```bash
+npm run infra:fmt
+npm run infra:validate
+```
+
+See [`infra/terraform/README.md`](infra/terraform/README.md) for `terraform init` / `apply` and remote state.
+
 ## Development
 
 ```bash

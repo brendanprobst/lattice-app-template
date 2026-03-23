@@ -16,7 +16,7 @@ todos:
     status: pending
   - id: terraform-skeleton
     content: Add infra/terraform minimal layout + optional CI fmt/validate
-    status: pending
+    status: completed
   - id: docs-release
     content: Update README/AGENTS; tag v1 vs v2 strategy if breaking
     status: pending
