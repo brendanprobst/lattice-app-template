@@ -13,3 +13,18 @@ supabase_service_role_key   = "YOUR_SERVICE_ROLE_KEY"
 
 manage_supabase_credentials_in_ssm = true
 things_table_name                  = "things"
+
+# Phase 3 cost controls
+api_lambda_reserved_concurrency   = 5
+api_gateway_throttling_rate_limit = 10
+api_gateway_throttling_burst_limit = 20
+
+enable_budget_alerts         = true
+monthly_cost_budget_limit_usd = 10
+budget_alert_email_addresses = ["you@example.com"]
+
+# Optional scheduled pause/resume to minimize idle cost
+enable_api_schedule_controls  = false
+api_pause_schedule_expression = "cron(0 2 * * ? *)"
+api_resume_schedule_expression = "cron(0 13 * * ? *)"
+api_schedule_timezone         = "UTC"

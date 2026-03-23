@@ -77,8 +77,68 @@ variable "api_lambda_memory_mb" {
   default     = 512
 }
 
+variable "api_lambda_reserved_concurrency" {
+  description = "Max concurrent API Lambda executions (cost and blast-radius cap)."
+  type        = number
+  default     = 5
+}
+
+variable "api_gateway_throttling_rate_limit" {
+  description = "Steady-state request rate limit for API Gateway default stage."
+  type        = number
+  default     = 10
+}
+
+variable "api_gateway_throttling_burst_limit" {
+  description = "Burst request limit for API Gateway default stage."
+  type        = number
+  default     = 20
+}
+
 variable "things_table_name" {
   description = "Supabase table name used by the API repository."
   type        = string
   default     = "things"
+}
+
+variable "enable_budget_alerts" {
+  description = "When true, create AWS Budget alerts for monthly spend."
+  type        = bool
+  default     = true
+}
+
+variable "monthly_cost_budget_limit_usd" {
+  description = "Monthly cost budget ceiling in USD for this environment."
+  type        = number
+  default     = 10
+}
+
+variable "budget_alert_email_addresses" {
+  description = "Email recipients for budget alerts (requires subscription confirmation in AWS)."
+  type        = list(string)
+  default     = []
+}
+
+variable "enable_api_schedule_controls" {
+  description = "When true, create scheduled API pause/resume controls via EventBridge Scheduler."
+  type        = bool
+  default     = false
+}
+
+variable "api_pause_schedule_expression" {
+  description = "Scheduler cron/rate expression for API pause (set reserved concurrency to 0)."
+  type        = string
+  default     = "cron(0 2 * * ? *)"
+}
+
+variable "api_resume_schedule_expression" {
+  description = "Scheduler cron/rate expression for API resume (remove reserved concurrency cap override)."
+  type        = string
+  default     = "cron(0 13 * * ? *)"
+}
+
+variable "api_schedule_timezone" {
+  description = "Timezone used by EventBridge Scheduler expressions."
+  type        = string
+  default     = "UTC"
 }

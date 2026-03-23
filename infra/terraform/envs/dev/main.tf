@@ -18,6 +18,8 @@ locals {
     service_role_key = "${local.ssm_path_prefix}/supabase/service_role_key"
     jwt_secret       = null
   }
+
+  budget_notification_thresholds = [50, 80, 100]
 }
 
 data "aws_caller_identity" "current" {}
@@ -80,7 +82,8 @@ resource "aws_lambda_function" "api" {
   timeout       = var.api_lambda_timeout_seconds
   filename      = data.archive_file.api_lambda_zip.output_path
 
-  source_code_hash = data.archive_file.api_lambda_zip.output_base64sha256
+  source_code_hash               = data.archive_file.api_lambda_zip.output_base64sha256
+  reserved_concurrent_executions = var.api_lambda_reserved_concurrency
 
   environment {
     variables = {
@@ -123,6 +126,11 @@ resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.api_http.id
   name        = "$default"
   auto_deploy = true
+
+  default_route_settings {
+    throttling_rate_limit  = var.api_gateway_throttling_rate_limit
+    throttling_burst_limit = var.api_gateway_throttling_burst_limit
+  }
 }
 
 resource "aws_lambda_permission" "allow_api_gateway" {
@@ -222,4 +230,111 @@ resource "aws_s3_bucket_policy" "web" {
       }
     ]
   })
+}
+
+resource "aws_budgets_budget" "monthly_cost" {
+  count = var.enable_budget_alerts ? 1 : 0
+
+  name         = "${local.name_prefix}-monthly-cost"
+  budget_type  = "COST"
+  limit_amount = tostring(var.monthly_cost_budget_limit_usd)
+  limit_unit   = "USD"
+  time_unit    = "MONTHLY"
+
+  cost_filter {
+    name   = "TagKeyValue"
+    values = ["Project$${var.project_name}"]
+  }
+
+  dynamic "notification" {
+    for_each = length(var.budget_alert_email_addresses) > 0 ? local.budget_notification_thresholds : []
+    content {
+      comparison_operator        = "GREATER_THAN"
+      threshold                  = notification.value
+      threshold_type             = "PERCENTAGE"
+      notification_type          = "FORECASTED"
+      subscriber_email_addresses = var.budget_alert_email_addresses
+    }
+  }
+}
+
+resource "aws_iam_role" "scheduler_api_cost_control" {
+  count = var.enable_api_schedule_controls ? 1 : 0
+  name  = "${local.name_prefix}-scheduler-api-cost-control"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "scheduler.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "scheduler_api_cost_control" {
+  count = var.enable_api_schedule_controls ? 1 : 0
+  name  = "${local.name_prefix}-scheduler-api-cost-control"
+  role  = aws_iam_role.scheduler_api_cost_control[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "lambda:PutFunctionConcurrency",
+          "lambda:DeleteFunctionConcurrency"
+        ]
+        Resource = aws_lambda_function.api.arn
+      }
+    ]
+  })
+}
+
+resource "aws_scheduler_schedule" "api_pause" {
+  count = var.enable_api_schedule_controls ? 1 : 0
+  name  = "${local.name_prefix}-api-pause"
+
+  schedule_expression          = var.api_pause_schedule_expression
+  schedule_expression_timezone = var.api_schedule_timezone
+  state                        = "ENABLED"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  target {
+    arn      = "arn:aws:scheduler:::aws-sdk:lambda:putFunctionConcurrency"
+    role_arn = aws_iam_role.scheduler_api_cost_control[0].arn
+    input = jsonencode({
+      FunctionName                 = aws_lambda_function.api.function_name
+      ReservedConcurrentExecutions = 0
+    })
+  }
+}
+
+resource "aws_scheduler_schedule" "api_resume" {
+  count = var.enable_api_schedule_controls ? 1 : 0
+  name  = "${local.name_prefix}-api-resume"
+
+  schedule_expression          = var.api_resume_schedule_expression
+  schedule_expression_timezone = var.api_schedule_timezone
+  state                        = "ENABLED"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  target {
+    arn      = "arn:aws:scheduler:::aws-sdk:lambda:deleteFunctionConcurrency"
+    role_arn = aws_iam_role.scheduler_api_cost_control[0].arn
+    input = jsonencode({
+      FunctionName = aws_lambda_function.api.function_name
+    })
+  }
 }
