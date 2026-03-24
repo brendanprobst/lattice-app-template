@@ -1,10 +1,21 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import { HomePage } from '@client/components/HomePage';
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { HomePage } from "@client/pages/home";
 
-describe('HomePage', () => {
-  it('renders API base URL from NEXT_PUBLIC_API_URL', () => {
+describe("HomePage", () => {
+  it("renders Lattice hero and API URL from env", () => {
     render(<HomePage />);
-    expect(screen.getByText('http://127.0.0.1:3000')).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Lattice" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("http://127.0.0.1:3000")).toBeInTheDocument();
+  });
+
+  it("links to the UI gallery", () => {
+    render(<HomePage />);
+    expect(screen.getByRole("link", { name: /UI component gallery/i })).toHaveAttribute(
+      "href",
+      "/ui",
+    );
   });
 });

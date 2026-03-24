@@ -1,7 +1,12 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from "@playwright/test";
 
-test('home page shows API base URL from env', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByText('API base URL')).toBeVisible();
-  await expect(page.getByText('http://127.0.0.1:3000')).toBeVisible();
+test("home shows Lattice hero and navigation", async ({ page }) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Lattice" }),
+  ).toBeVisible();
+  await expect(page.getByText("NEXT_PUBLIC_API_URL")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /UI component gallery/i }),
+  ).toBeVisible();
 });
