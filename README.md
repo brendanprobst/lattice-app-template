@@ -6,6 +6,13 @@ The **API** (`@lattice/api`) is a DDD Express app with Jest at the repo root. Th
 
 ## Getting Started
 
+This template is designed for a **fork-first workflow**:
+
+1. Improve scaffold/docs in this template repo.
+2. Fork (or use as a GitHub Template) to create an app repo.
+3. Validate from a clean clone locally.
+4. Deploy and smoke test the **forked app repo**, not this template repo.
+
 ### Prerequisites
 
 - Node.js **20.19+** (see `package.json` `engines`; CI tests **20.x** and **22.x**)
@@ -27,6 +34,77 @@ npm run dev
 - **`npm ci`** installs exactly what’s in the committed **`package-lock.json`** (stricter than `npm install`; use it in CI and when validating the template).
 - **`npm run ci`** runs the same Turborepo pipeline as GitHub Actions (build, lint, type-check, Jest + coverage). If this passes on a clean clone, your fork baseline is healthy.
 - **GitHub**: enable **Template repository** under repo Settings if you want one-click “Use this template” forks.
+
+### Recommended onboarding workflow (template owner)
+
+Use this when preparing a release of the scaffold:
+
+1. Make scaffold/doc changes in this template repository.
+2. Run local quality checks:
+   - `npm ci`
+   - `npm run ci`
+   - `npm run infra:validate`
+3. Create a fresh fork/app repository from this template.
+4. In a new directory, do a clean clone of the fork and rerun:
+   - `npm ci`
+   - copy env files
+   - `npm run ci`
+   - `npm run dev`
+5. Run deployment and smoke test in the **forked repo** only.
+
+### Deployment policy (important)
+
+- Treat this repository as the **template source**, not as a deployed environment.
+- Perform test/prod deployments from forked app repositories created from this template.
+- Keep cloud credentials, Supabase credentials, and environment-specific infra state out of the template repo.
+
+### Configuration upgrade order (checklist)
+
+Use this sequence when taking a fresh fork from local dev to deployable smoke-test state.
+
+1. **Tooling/runtime versions**
+   - Confirm Node.js version matches `package.json` engines (`20.19+`).
+   - Install Terraform and AWS CLI on your machine.
+
+2. **Install and baseline checks**
+   - Run `npm ci` at repo root.
+   - Run `npm run ci` to verify build/lint/type-check/tests.
+
+3. **Local app env files**
+   - API: copy `apps/api/.env.example` -> `apps/api/.env`
+   - Web: copy `apps/web/.env.example` -> `apps/web/.env.local`
+   - Local-only values should stay in these files (never commit real secrets).
+
+4. **External service setup (outside repo)**
+   - Create Supabase project and required table(s) for API persistence.
+   - Prepare AWS account/credentials for Terraform apply.
+   - (Optional but recommended) enable AWS cost allocation tag `Project-<Your-Project-Name>` for budget filtering.
+
+5. **Terraform environment config**
+   - Copy `infra/terraform/envs/dev/terraform.tfvars.example` -> `infra/terraform/envs/dev/terraform.tfvars` (gitignored).
+   - Fill all required values:
+     - `project_name`, `environment`, `aws_region`
+     - `supabase_url`, `supabase_anon_key`, `supabase_service_role_key`
+   - Set optional cost controls:
+     - `monthly_cost_budget_limit_usd`
+     - `budget_alert_email_addresses`
+     - `enable_api_schedule_controls` and schedule expressions
+
+6. **Build deployment artifacts**
+   - API Lambda bundle: `npm run api:build:lambda`
+   - Static web export: `npm run web:build:static`
+
+7. **Infra validation and apply**
+   - `npm run infra:validate`
+   - `cd infra/terraform/envs/dev && terraform init && terraform plan && terraform apply`
+   - Capture outputs: API URL, web bucket name, CloudFront domain.
+
+8. **Publish static web assets**
+   - Sync `apps/web/out` to the S3 bucket output from Terraform.
+
+9. **Smoke test**
+   - Run CRUD against API URL (`POST/GET/PUT/DELETE /things`) and verify expected responses.
+   - Use the deployment smoke guide for full command flow: `docs/plans/smoke_test_deployment_guide.plan.md`.
 
 ### Installation
 
@@ -125,7 +203,8 @@ GitHub Actions restores **`.turbo`** and **`apps/web/.next/cache`** from `action
 
 ## Notes
 
-- The template ships with in-memory repositories suitable for local development and tests; replace with real persistence adapters when you wire a database.
+- API persistence uses a repository + adapter boundary and is configured for Supabase-backed runtime behavior.
+- Test suites use mocked adapters so local test runs stay deterministic and fast.
 
 ## New remote (fresh Git history)
 
