@@ -23,6 +23,7 @@ ADRs capture important architectural decisions, explaining:
 ### Full stack, hosting, and deployment
 
 - [ADR-006: Full-Stack Layout and AWS Deployment Strategy](./006-full-stack-and-deployment.md)
+- [ADR-007: CI Validation and Manual Deployment Promotion](./007-ci-and-environment-promotion.md)
 
 ## Why these decisions matter
 
