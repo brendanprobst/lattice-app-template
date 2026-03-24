@@ -16,7 +16,7 @@ The **`Thing`** aggregate (entity + `IThingRepository` + use cases) is the templ
 
 ## Template slice
 
-Follow **`Thing`** end-to-end when adding a new aggregate: entity → `I*Repository` → in-memory adapter → use cases → DTOs → `Container` → controller → routes → Swagger → tests (`test/things.test.ts`).
+Follow **`Thing`** end-to-end when adding a new aggregate: entity → `I*Repository` → in-memory adapter → use cases → DTOs → `Container` → controller → routes → Swagger → tests (`test/api/things.test.ts`).
 
 ## Cursor
 

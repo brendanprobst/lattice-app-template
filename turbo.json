@@ -21,7 +21,7 @@
       "inputs": [
         "package.json",
         "tsconfig.json",
-        "test/**/*.ts",
+        "test/api/**/*.ts",
         "apps/api/**/*.ts",
         "!apps/api/dist/**"
       ],
@@ -32,11 +32,11 @@
       "inputs": [
         "package.json",
         "tsconfig.json",
-        "test/**/*.ts",
+        "test/api/**/*.ts",
         "apps/api/**/*.ts",
         "!apps/api/dist/**"
       ],
-      "outputs": ["coverage/**"]
+      "outputs": ["test/coverage/**"]
     }
   }
 }

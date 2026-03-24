@@ -1,5 +1,5 @@
-import { Thing } from '../../apps/api/domain/entities/Thing';
-import { ThingRepository } from '../../apps/api/infrastructure/repositories/ThingRepository';
+import { Thing } from '@api/domain/entities/Thing';
+import { ThingRepository } from '@api/infrastructure/repositories/ThingRepository';
 import { MockedThingDataAdapter } from '../support/fakes/MockedThingDataAdapter';
 
 describe('ThingRepository', () => {
@@ -61,4 +61,3 @@ describe('ThingRepository', () => {
     expect(deleted).toBe(false);
   });
 });
-

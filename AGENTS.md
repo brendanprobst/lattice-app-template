@@ -8,7 +8,7 @@
 
 - **`apps/api/`** — Application entry (`app.ts`), routes, controllers, domain, use cases, infrastructure.
 - **`apps/web/`** — Next.js `app/` routes; feature code under `client/` (see `apps/web/AGENTS.md`).
-- **`test/`** — Integration and unit tests; use `createTestApp()` from `test/setup.ts` for isolated apps.
+- **`test/`** — Automated tests; API Jest suite under **`test/api/`** (`createTestApp()` in `test/api/setup.ts`).
 - **`docs/`** — Architecture decision records (ADRs).
 - **`infra/terraform/`** — AWS Terraform; Supabase URL/keys from **`terraform.tfvars`** → optional **SSM** (see [`infra/AGENTS.md`](infra/AGENTS.md)).
 

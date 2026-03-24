@@ -23,7 +23,7 @@
     "install:all": "npm install",
     "api:build:lambda": "npm run build:lambda -w @lattice/api",
     "web:build:static": "npm run build:static -w @lattice/web",
-    "clean": "rm -rf apps/api/dist apps/api/node_modules/.cache apps/web/.next apps/web/node_modules/.cache",
+    "clean": "rm -rf apps/api/dist apps/api/node_modules/.cache apps/web/.next apps/web/node_modules/.cache test/coverage",
     "lint": "turbo run lint type-check",
     "ci": "turbo run build lint type-check \"//#test:coverage\"",
     "infra:fmt": "terraform fmt -recursive infra/terraform",
@@ -44,7 +44,7 @@
     "preset": "ts-jest",
     "testEnvironment": "node",
     "roots": [
-      "<rootDir>/test"
+      "<rootDir>/test/api"
     ],
     "testMatch": [
       "**/__tests__/**/*.ts",
@@ -63,6 +63,7 @@
         "tsconfig": "<rootDir>/tsconfig.json"
       }]
     },
-    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"]
+    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
+    "coverageDirectory": "<rootDir>/test/coverage"
   }
 }

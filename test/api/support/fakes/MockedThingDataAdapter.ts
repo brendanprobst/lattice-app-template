@@ -1,4 +1,4 @@
-import { ThingDataAdapter, ThingDataAdapterOptions, ThingRecord } from '../../../apps/api/infrastructure/adapters/ThingDataAdapter';
+import { ThingDataAdapter, ThingDataAdapterOptions, ThingRecord } from '@api/infrastructure/adapters/ThingDataAdapter';
 
 export class MockedThingDataAdapter implements ThingDataAdapter {
   private readonly store = new Map<string, ThingRecord>();
@@ -65,4 +65,3 @@ export class MockedThingDataAdapter implements ThingDataAdapter {
     return decodeURIComponent(match[1]);
   }
 }
-

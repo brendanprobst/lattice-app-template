@@ -15,8 +15,8 @@ apps/**/package-lock.json
 # Turborepo
 **/.turbo/
 
-# Jest coverage
-coverage/
+# Jest coverage (root tests; see package.json jest.coverageDirectory)
+test/coverage/
 *.lcov
 
 # IDE

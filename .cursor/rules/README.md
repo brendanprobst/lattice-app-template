@@ -5,7 +5,7 @@ These `.mdc` files define **expert personas** for this repo.
 | Rule file | When it applies |
 |-----------|------------------|
 | `ddd-expert.mdc` | Automatically when you work under `apps/api/domain/`, `apps/api/application/`, or `docs/adr/`. |
-| `test-expert.mdc` | Automatically when you work under `test/`. |
+| `test-expert.mdc` | Automatically when you work under `test/api/`. |
 | `infra-expert.mdc` | Automatically when you work under `apps/api/infrastructure/`, `apps/api/config/`, or root `seed.json`. |
 | `debugger-expert.mdc` | **Not** path-scoped — attach manually (see below). |
 | `code-janitor.mdc` | **Not** path-scoped — attach manually (see below). |
@@ -16,4 +16,4 @@ In **Chat** or **Composer**, type **`@`** → **Rules** (wording may be **Cursor
 
 Fallback: **`@`** → **Files** → `.cursor/rules/debugger-expert.mdc` or `code-janitor.mdc` to pull the rule text into context.
 
-Scoped rules still apply from file paths; `@` adds the global expert when you need it (e.g. debugging outside `test/`, or a janitor pass on the whole tree).
+Scoped rules still apply from file paths; `@` adds the global expert when you need it (e.g. debugging outside `test/api/`, or a janitor pass on the whole tree).
