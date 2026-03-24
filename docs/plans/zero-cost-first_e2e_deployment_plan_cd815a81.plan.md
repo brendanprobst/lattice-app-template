@@ -67,8 +67,6 @@ flowchart LR
   lambdaApi -->|CRUD| supabaseDb
 ```
 
-
-
 ## Implementation phases
 
 ### Phase 1: Supabase-first API path
@@ -149,6 +147,11 @@ Likely file layout:
 - Costs can be controlled with max instances and pause/resume, but always-on mode introduces a baseline charge.
 - If your first objective is "as close to free as possible out of the box," serverless-first is the safer default.
 
+## Related documentation
+
+- [ADR-006: Full-stack and deployment](../adr/006-full-stack-and-deployment.md) — durable record of deployment and stack decisions.
+- [Smoke test deployment guide](./smoke_test_deployment_guide.plan.md) — step-by-step deploy and smoke runbook.
+
 References:
 
 - [AWS App Runner pricing](https://aws.amazon.com/apprunner/pricing/)
@@ -161,4 +164,3 @@ References:
 - Default non-prod setup returns to near-zero idle spend via auto-pause/teardown behavior.
 - Budget alerts and caps are enabled by default.
 - DB-first path is the canonical template behavior; no-db path is separate and explicit.
-

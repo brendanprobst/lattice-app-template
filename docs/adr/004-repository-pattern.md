@@ -1,64 +1,41 @@
-# ADR-004: Repository Pattern with In-Memory Implementation
+# ADR-004: Repository Pattern and Persistence
 
 ## Status
 
-Accepted
+Accepted (updated for Supabase-backed default)
 
 ## Context
 
-We need to abstract data access to keep the domain layer pure and enable easy testing. Currently using in-memory storage, but may need a database later.
-Repository pattern provides a clean way to abstract data access and enable easy testing. It also allows for easy migration to a real database.
+We need to abstract data access so the domain layer stays pure and tests do not require a live database. The template also needs a **realistic default** for forks: most apps persist to a database, not memory.
 
 ## Decision
 
-Use repository interfaces in the domain layer with implementations in the infrastructure layer:
+Use repository **interfaces** in the domain layer with **implementations** in infrastructure:
 
-- `IThingRepository` interface (example aggregate)
-- `InMemoryThingRepository` implementation
+- **`IThingRepository`** (example aggregate port) lives in the domain layer.
+- **`ThingRepository`** in infrastructure implements the port and talks to persistence through a **`ThingDataAdapter`** port (e.g. **`SupabaseAdapter`** for PostgREST).
+- **Tests** use **in-memory or mocked adapters** (e.g. `MockedThingDataAdapter`) so Jest stays fast and deterministic without network I/O.
 
-Domain layer depends on interfaces, not implementations.
+Domain depends only on **`IThingRepository`**, not on Supabase or HTTP.
 
 ## Consequences
 
 ### Positive
 
-- Domain layer has no database dependencies
-- Easy to test (can mock repositories)
-- Simple migration path to real database (swap implementation)
-- In-memory implementation enables fast tests
+- Domain has no database or HTTP dependencies.
+- Swapping storage (another DB, mock, or test double) is a **composition-root** change plus a new adapter implementation.
+- Fast unit/integration tests without Supabase.
 
 ### Negative
 
-- Additional abstraction layer
-- More files to maintain
+- Extra abstraction (repository + adapter) versus a single “repository that calls fetch directly” without a port.
+- More files to navigate for newcomers.
 
 ## Alternatives Considered
 
-- **Direct Database Access**: Rejected - couples domain to infrastructure
-- **ORM in Domain Layer**: Rejected - violates clean architecture principles
+- **Direct database access from controllers**: Rejected — couples HTTP layer to storage.
+- **ORM models in the domain layer**: Rejected — violates clean architecture; keep domain entities free of ORM decorators.
 
-## Database Migration Path
+## Relationship to ADR-006
 
-While the in-memory implementation is sufficient for local development and tests, the architecture supports swapping in a database-backed repository later.
-
-### Design Decisions Supporting Migration
-
-1. **Repository Interfaces**: Domain layer depends only on interfaces such as `IThingRepository`, not implementations. This allows swapping implementations without touching domain or application layers.
-
-2. **Seed Data Structure**: The `seed.json` file can hold a `things` array of simple records (id, name, createdAt) analogous to table rows.
-
-3. **Entity Serialization**: The `Thing` entity exposes `toPrimitives()` for API DTOs; loading from persistence can mirror that shape.
-
-4. **Container Pattern**: The dependency injection container (`Container` class) centralizes repository instantiation. Migrating to a database requires only updating the container to use database repository implementations instead of in-memory ones.
-
-### Migration Path
-
-When ready for production, the migration is straightforward:
-
-1. Create database repository implementations that implement the same interfaces
-2. Update the `Container` class to instantiate database repositories instead of in-memory ones
-3. Create a migration script to load `seed.json` data into the database
-4. No changes needed to domain layer, application layer, or controllers
-
-The architecture ensures zero breaking changes to business logic during the migration.
-
+Deployment uses **Supabase** with credentials in **SSM** and the API on **Lambda**; see [ADR-006](./006-full-stack-and-deployment.md) for where this fits in the full stack.

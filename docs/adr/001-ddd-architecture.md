@@ -31,7 +31,7 @@ Use Domain-Driven Design (DDD) with clean architecture layers:
 - More files and abstraction layers
 - Steeper learning curve for new developers
 
-....
-## Alterna÷tives Considered
-- **Simple MVC**: Rejected - business logic would leak into controllers
-- **Service Layer Pattern**: Rejected - DDD provides better domain modeling
+## Alternatives Considered
+
+- **Simple MVC**: Rejected — business logic would leak into controllers.
+- **Service Layer Pattern**: Rejected — DDD provides clearer domain modeling for evolving rules.
