@@ -18,3 +18,7 @@ The **`app/`** directory is for Next.js routing and layout only; keep feature UI
 ## Environment
 
 - Copy **`.env.example`** to **`.env.local`** at the app root (`apps/web/`). **`NEXT_PUBLIC_API_URL`** is the browser-visible API base (default in example: `http://localhost:3000`). The sample UI reads it so misconfiguration is obvious early.
+
+## Tests
+
+Automated web tests live under repo-root **`test/web/`** (Vitest + Playwright), not in this package. Run **`npm run test:web:unit`** and **`npm run test:web:e2e`** from the monorepo root.

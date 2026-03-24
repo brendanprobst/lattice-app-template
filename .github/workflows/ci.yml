@@ -43,8 +43,28 @@ jobs:
       - name: Install dependencies (workspaces)
         run: npm ci
 
-      - name: CI (Turbo build, lint, type-check, Jest coverage)
+      - name: CI (Turbo build, lint, type-check, Jest coverage, web unit)
         run: npm run ci
+
+  web-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - name: Install dependencies (workspaces)
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Playwright E2E (test/web/e2e)
+        run: npm run test:web:e2e
 
   terraform:
     runs-on: ubuntu-latest

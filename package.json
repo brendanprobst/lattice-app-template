@@ -19,26 +19,41 @@
     "test:watch": "jest --watch --colors",
     "test:coverage": "jest --coverage --colors",
     "test:verbose": "jest --verbose --colors",
+    "test:web:unit": "vitest run --config test/web/vitest.config.ts",
+    "test:web:unit:watch": "vitest --config test/web/vitest.config.ts",
+    "test:web:e2e": "playwright test --config test/web/playwright.config.ts",
+    "test:web:e2e:ui": "playwright test --config test/web/playwright.config.ts --ui",
     "type-check": "turbo run type-check",
     "install:all": "npm install",
     "api:build:lambda": "npm run build:lambda -w @lattice/api",
     "web:build:static": "npm run build:static -w @lattice/web",
     "clean": "rm -rf apps/api/dist apps/api/node_modules/.cache apps/web/.next apps/web/node_modules/.cache test/coverage",
     "lint": "turbo run lint type-check",
-    "ci": "turbo run build lint type-check \"//#test:coverage\"",
+    "ci": "turbo run build lint type-check \"//#test:coverage\" \"//#test:web:unit\"",
     "infra:fmt": "terraform fmt -recursive infra/terraform",
     "infra:fmt:check": "terraform fmt -check -recursive infra/terraform",
     "infra:validate": "cd infra/terraform/envs/dev && terraform init -backend=false -input=false && terraform validate"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^29.5.12",
     "@types/node": "^25.3.5",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@types/supertest": "^6.0.2",
+    "@vitejs/plugin-react": "^4.7.0",
     "jest": "^29.7.0",
+    "jsdom": "^26.1.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.2",
     "turbo": "^2.4.4",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   },
   "jest": {
     "preset": "ts-jest",
@@ -59,11 +74,21 @@
       "^@api/(.*)$": "<rootDir>/apps/api/$1"
     },
     "transform": {
-      "^.+\\.ts$": ["ts-jest", {
-        "tsconfig": "<rootDir>/tsconfig.json"
-      }]
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": "<rootDir>/tsconfig.json"
+        }
+      ]
     },
-    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ],
     "coverageDirectory": "<rootDir>/test/coverage"
   }
 }

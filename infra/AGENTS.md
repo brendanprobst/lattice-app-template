@@ -16,4 +16,6 @@
 - `npm run infra:fmt` — `terraform fmt -recursive`
 - `npm run infra:validate` — `init -backend=false` + `validate` for `envs/dev`
 
+CI runs **`terraform fmt -check`** and **`validate`** as the standard low-overhead baseline. For stricter static analysis later, **tflint** is a common add-on (not wired in this template by default).
+
 See [`terraform/README.md`](terraform/README.md) for layout and first-time apply.

@@ -2,7 +2,7 @@
 
 **Lattice** is a **web app template** — a monorepo starter where pieces connect cleanly: a **domain-driven design** Express API (**`@lattice/api`**), **Turborepo**, and room to grow (Next.js app, Terraform, shared packages). The name suggests a **lattice**: a structured grid linking API, UI, and infrastructure.
 
-The **API** (`@lattice/api`) is a DDD Express app with Jest at the repo root. The **web** app (`@lattice/web`) is Next.js (App Router) under `apps/web/`; UI code lives under `apps/web/client/` and imports use the **`@client/`** alias. The API listens on **port 3000**; the web dev server uses **3001** to avoid clashes.
+The **API** (`@lattice/api`) is a DDD Express app with Jest tests under **`test/api/`**. The **web** app (`@lattice/web`) is Next.js (App Router) under `apps/web/`; UI code lives under `apps/web/client/` with the **`@client/`** alias; Vitest and Playwright specs live under **`test/web/`**. The API listens on **port 3000**; the web dev server uses **3001** to avoid clashes.
 
 ## Getting Started
 
@@ -32,7 +32,7 @@ npm run dev
 ```
 
 - **`npm ci`** installs exactly what’s in the committed **`package-lock.json`** (stricter than `npm install`; use it in CI and when validating the template).
-- **`npm run ci`** runs the same Turborepo pipeline as GitHub Actions (build, lint, type-check, Jest + coverage). If this passes on a clean clone, your fork baseline is healthy.
+- **`npm run ci`** runs the same Turborepo pipeline as GitHub Actions (build, lint, type-check, Jest + coverage, Vitest for `test/web/unit`). If this passes on a clean clone, your fork baseline is healthy. **Playwright** E2E runs in CI’s **`web-e2e`** job; locally run **`npm run test:web:e2e`** (after **`npx playwright install`** once).
 - **GitHub**: enable **Template repository** under repo Settings if you want one-click “Use this template” forks.
 
 ### Recommended onboarding workflow (template owner)
@@ -193,7 +193,7 @@ npm run type-check
 npm run build
 ```
 
-**Same pipeline as CI** (Turborepo: build, lint, type-check, Jest with coverage):
+**Same pipeline as CI** (Turborepo: build, lint, type-check, Jest with coverage, Vitest web unit):
 
 ```bash
 npm run ci

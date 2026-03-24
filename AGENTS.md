@@ -2,13 +2,13 @@
 
 ## Purpose
 
-**Lattice** is a **web app template** monorepo: **npm workspaces** + **Turborepo** (`turbo run build`, `turbo run dev`, etc.). The **Next.js** app is **`@lattice/web`** under `apps/web/` (UI under `client/` with **`@client/`** imports; dev on **3001**). The **backend** is **`@lattice/api`** under `apps/api/` with manual `Container` wiring, domain `Result` + `ErrorCatalog`, and root-level Jest tests (**`@api/...`** → `apps/api/...`).
+**Lattice** is a **web app template** monorepo: **npm workspaces** + **Turborepo** (`turbo run build`, `turbo run dev`, etc.). The **Next.js** app is **`@lattice/web`** under `apps/web/` (UI under `client/` with **`@client/`** imports; dev on **3001**). The **backend** is **`@lattice/api`** under `apps/api/` with manual `Container` wiring, domain `Result` + `ErrorCatalog`, and Jest API tests under **`test/api/`** (**`@api/...`** → `apps/api/...`). Web unit/E2E tests live under **`test/web/`** (Vitest + Playwright).
 
 ## Where to look first
 
 - **`apps/api/`** — Application entry (`app.ts`), routes, controllers, domain, use cases, infrastructure.
 - **`apps/web/`** — Next.js `app/` routes; feature code under `client/` (see `apps/web/AGENTS.md`).
-- **`test/`** — Automated tests; API Jest suite under **`test/api/`** (`createTestApp()` in `test/api/setup.ts`).
+- **`test/`** — Automated tests: **`test/api/`** (Jest), **`test/web/`** (Vitest + Playwright). See [`test/AGENTS.md`](test/AGENTS.md).
 - **`docs/`** — Architecture decision records (ADRs).
 - **`infra/terraform/`** — AWS Terraform; Supabase URL/keys from **`terraform.tfvars`** → optional **SSM** (see [`infra/AGENTS.md`](infra/AGENTS.md)).
 
@@ -18,7 +18,7 @@ Each major directory contains **`AGENTS.md`**. Use that name so humans and autom
 
 ## CI parity
 
-- **`npm run ci`** — `turbo run build lint type-check` plus root **`//#test:coverage`** (Jest + coverage). Matches the `test` job in `.github/workflows/ci.yml` (with Actions cache on `.turbo` and Next cache).
+- **`npm run ci`** — `turbo run build lint type-check` plus **`//#test:coverage`** (Jest + coverage) and **`//#test:web:unit`** (Vitest). Matches the `test` job in `.github/workflows/ci.yml`. Playwright E2E runs in the separate **`web-e2e`** job.
 - **Installs** — Commit the root **`package-lock.json`** and use **`npm ci`** in CI and clean clones so dependency trees match exactly.
 
 ## Conventions

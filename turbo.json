@@ -37,6 +37,30 @@
         "!apps/api/dist/**"
       ],
       "outputs": ["test/coverage/**"]
+    },
+    "//#test:web:unit": {
+      "dependsOn": ["@lattice/web#build"],
+      "inputs": [
+        "package.json",
+        "test/web/**/*.ts",
+        "test/web/**/*.tsx",
+        "apps/web/client/**/*.ts",
+        "apps/web/client/**/*.tsx",
+        "apps/web/app/**/*.tsx"
+      ],
+      "outputs": []
+    },
+    "//#test:web:e2e": {
+      "cache": false,
+      "dependsOn": [],
+      "inputs": [
+        "package.json",
+        "test/web/**",
+        "apps/web/**",
+        "!apps/web/node_modules/**",
+        "!apps/web/.next/**"
+      ],
+      "outputs": []
     }
   }
 }

@@ -14,7 +14,9 @@ agents:
     cursorRule: .cursor/rules/test-expert.mdc
     scope: path-scoped
     globs:
-      - test/**
+      - test/api/**
+      - test/web/**
+      - test/AGENTS.md
 
   - id: infra-expert
     path: prompts/infra-expert.md
