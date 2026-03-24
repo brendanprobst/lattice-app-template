@@ -2,7 +2,7 @@
 
 **Lattice** is a **web app template** — a monorepo starter where pieces connect cleanly: a **domain-driven design** Express API (**`@lattice/api`**), **Turborepo**, and room to grow (Next.js app, Terraform, shared packages). The name suggests a **lattice**: a structured grid linking API, UI, and infrastructure.
 
-The **API** (`@lattice/api`) is a DDD Express app with Jest tests under **`test/api/`**. The **web** app (`@lattice/web`) is Next.js (App Router) under `apps/web/`; UI code lives under `apps/web/client/` with the **`@client/`** alias; Vitest and Playwright specs live under **`test/web/`**. The API listens on **port 3000**; the web dev server uses **3001** to avoid clashes.
+The **API** (`@lattice/api`) is a DDD Express app with Jest tests under **`test/api/`**. The **web** app (`@lattice/web`) is Next.js (App Router) under `apps/web/`; UI under `apps/web/client/` with the **`@client/`** alias; **Tailwind**, **shadcn/ui**, and **lucide-react** (see **`apps/web/docs/ui-and-styling.md`**); Vitest and Playwright under **`test/web/`**. The API listens on **port 3000**; the web dev server uses **3001** to avoid clashes.
 
 ## Getting Started
 

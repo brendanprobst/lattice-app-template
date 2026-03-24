@@ -2,7 +2,7 @@
 
 ## Purpose
 
-**Lattice** is a **web app template** monorepo: **npm workspaces** + **Turborepo** (`turbo run build`, `turbo run dev`, etc.). The **Next.js** app is **`@lattice/web`** under `apps/web/` (UI under `client/` with **`@client/`** imports; dev on **3001**). The **backend** is **`@lattice/api`** under `apps/api/` with manual `Container` wiring, domain `Result` + `ErrorCatalog`, and Jest API tests under **`test/api/`** (**`@api/...`** → `apps/api/...`). Web unit/E2E tests live under **`test/web/`** (Vitest + Playwright).
+**Lattice** is a **web app template** monorepo: **npm workspaces** + **Turborepo** (`turbo run build`, `turbo run dev`, etc.). The **Next.js** app is **`@lattice/web`** under `apps/web/` (UI under `client/` with **`@client/`** imports; **Tailwind + shadcn/ui + lucide** — see **`apps/web/docs/ui-and-styling.md`**; dev on **3001**). The **backend** is **`@lattice/api`** under `apps/api/` with manual `Container` wiring, domain `Result` + `ErrorCatalog`, and Jest API tests under **`test/api/`** (**`@api/...`** → `apps/api/...`). Web unit/E2E tests live under **`test/web/`** (Vitest + Playwright).
 
 ## Where to look first
 

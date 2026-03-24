@@ -13,5 +13,5 @@ alwaysApply: false
 - Integration: use `createTestApp()` from `test/api/setup.ts` for a **fresh** `Container` + seed per isolation need (`beforeEach` when mutating state).
 - Assert **API contract**: status codes, `error.code` / `error.message` for failures, JSON shapes for successes.
 - Unit tests for `Result`, `ResponseHandler`, `HttpErrorMapper` live in `test/api/utils/` — keep them fast and deterministic.
-- **`test/web/unit/`** — Vitest + RTL + jsdom; **`@client/*`** → `apps/web/client`. **`test/web/e2e/`** — Playwright only (real Next dev server).
+- **`test/web/unit/`** — Vitest + RTL + jsdom; **`@client/*`** → `apps/web/client`. **`test/web/e2e/`** — Playwright only (real Next dev server). Keep **`home.spec.ts`** and **`ui-gallery.spec.ts`** aligned with **`/`** and **`/ui`**.
 - Do not weaken assertions to green tests; fix implementation or test data instead.

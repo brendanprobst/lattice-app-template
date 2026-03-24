@@ -11,6 +11,7 @@
 
 - **Runner:** Playwright (Chromium in CI).
 - **Config:** [`playwright.config.ts`](playwright.config.ts) — starts `npm run dev -w @lattice/web` on **3001**, sets `NEXT_PUBLIC_API_URL` for stable assertions.
+- **Specs:** `home.spec.ts` (Lattice home), `ui-gallery.spec.ts` (`/ui` component gallery landmarks).
 - **Run:** `npm run test:web:e2e` (install browsers once: `npx playwright install`).
 
 ## CI
