@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.get('/', function(_req: Request, res: Response, _next: NextFunction) {
   res.json({
-    message: 'DDD API Template',
+    message: 'Lattice API',
     version: '1.0.0'
   });
 });

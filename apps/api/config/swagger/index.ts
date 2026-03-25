@@ -5,11 +5,11 @@ const options: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'DDD API Template',
+      title: 'Lattice API',
       version: '1.0.0',
-      description: 'API documentation for the DDD API template',
+      description: 'API documentation for the Lattice API',
       contact: {
-        name: 'API Support',
+        name: 'Lattice Support',
       },
     },
     servers: [
