@@ -34,6 +34,7 @@ npm run dev
 - **`npm ci`** installs exactly what’s in the committed **`package-lock.json`** (stricter than `npm install`; use it in CI and when validating the template).
 - **`npm run ci`** runs the same Turborepo pipeline as GitHub Actions (build, lint, type-check, Jest + coverage, Vitest for `test/web/unit`). If this passes on a clean clone, your fork baseline is healthy. **Playwright** E2E runs in CI’s **`web-e2e`** job; locally run **`npm run test:web:e2e`** (after **`npx playwright install`** once).
 - **GitHub**: enable **Template repository** under repo Settings if you want one-click “Use this template” forks.
+- **API + Swagger:** `npm run dev` starts the API on **port 3000** and the web app on **3001**. Open **`http://localhost:3000/api-docs`** for Swagger. If you have not copied **`apps/api/.env`** yet, the API still runs using **in-memory** `Thing` storage (see [`apps/api/AGENTS.md`](apps/api/AGENTS.md)); add Supabase keys in **`.env`** when you want real persistence.
 
 ### Recommended onboarding workflow (template owner)
 
