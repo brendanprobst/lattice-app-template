@@ -20,7 +20,7 @@ import { swaggerRoute } from './route.decorator';
  *               properties:
  *                 message:
  *                   type: string
- *                   example: DDD API Template
+ *                   example: Lattice API
  *                 version:
  *                   type: string
  *                   example: 1.0.0
@@ -39,7 +39,7 @@ export const getApiInfoDoc = swaggerRoute({
           schema: {
             type: 'object',
             properties: {
-              message: { type: 'string', example: 'DDD API Template' },
+              message: { type: 'string', example: 'Lattice API' },
               version: { type: 'string', example: '1.0.0' },
             },
           },

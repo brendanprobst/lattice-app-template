@@ -15,7 +15,7 @@ describe('GET /', () => {
 
     expect(response.body).toHaveProperty('message');
     expect(response.body).toHaveProperty('version');
-    expect(response.body.message).toBe('DDD API Template');
+    expect(response.body.message).toBe('Lattice API');
     expect(response.body.version).toBe('1.0.0');
   });
 

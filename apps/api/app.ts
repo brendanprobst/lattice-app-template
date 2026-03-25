@@ -25,7 +25,7 @@ export function createApp(container?: Container): Express {
 
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'DDD API Template Documentation',
+    customSiteTitle: 'Lattice API · Documentation',
   }));
 
   app.use('/', indexRouter);
