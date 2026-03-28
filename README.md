@@ -61,7 +61,7 @@ Use this when preparing a release of the scaffold:
 
 ### Configuration upgrade order (checklist)
 
-Use this sequence when taking a fresh fork from local dev to deployable smoke-test state.
+Use this sequence when taking a fresh fork from local dev to deployable smoke-test state. The **full first-hour runbook** (ordered sections, **web-first smoke**, Supabase DDL, JWT-aware API checks, **checkpoint / what’s left**) is **[`docs/plans/smoke_test_deployment_guide.plan.md`](docs/plans/smoke_test_deployment_guide.plan.md)** — treat that file as canonical for deploy verification.
 
 1. **Tooling/runtime versions**
    - Confirm Node.js version matches `package.json` engines (`20.19+`).
@@ -93,7 +93,7 @@ Use this sequence when taking a fresh fork from local dev to deployable smoke-te
 
 6. **Build deployment artifacts**
    - API Lambda bundle: `npm run api:build:lambda`
-   - Static web export: `npm run web:build:static`
+   - Static web export: `npm run web:build:static` **after** setting **`NEXT_PUBLIC_API_URL`** (and Supabase **`NEXT_PUBLIC_*`**) in the shell or `.env.production.local` to the **deployed** values (static export bakes them into `apps/web/out`).
 
 7. **Infra validation and apply**
    - `npm run infra:validate`
@@ -104,8 +104,9 @@ Use this sequence when taking a fresh fork from local dev to deployable smoke-te
    - Sync `apps/web/out` to the S3 bucket output from Terraform.
 
 9. **Smoke test**
-   - Run CRUD against API URL (`POST/GET/PUT/DELETE /things`) and verify expected responses.
-   - Use the deployment smoke guide for full command flow: `docs/plans/smoke_test_deployment_guide.plan.md`.
+   - **Primary:** open the deployed web app, **log in**, exercise **Profile** and **Things** (create / edit / delete). That validates Auth, CORS, JWT verification, and API persistence together.
+   - **Optional:** authenticated `curl` against `/things` with a **Bearer** token (see the smoke guide).
+   - Full steps and the **checkpoint** of follow-up work: [`docs/plans/smoke_test_deployment_guide.plan.md`](docs/plans/smoke_test_deployment_guide.plan.md).
 
 ### Installation
 

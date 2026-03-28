@@ -61,4 +61,4 @@ This app uses **`output: "export"`** in Next config. Use **client-safe** pattern
 | `NEXT_PUBLIC_API_URL` | Browser-facing API base (shown on the home page for visibility). |
 | `NEXT_PUBLIC_TEMPLATE_REPO_URL` | GitHub (or other) URL for “View on GitHub” / README links; defaults to a placeholder if unset. |
 
-See `.env.example` in `apps/web/` when present.
+See **`.env.example`** in `apps/web/` (copy to **`.env.local`** for local dev).

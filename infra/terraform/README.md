@@ -46,7 +46,7 @@ Root `npm run infra:fmt` and `npm run infra:validate` (no AWS credentials requir
 - **Budget alerts**: `aws_budgets_budget` with threshold notifications (50/80/100% by default) to `budget_alert_email_addresses`.
 - **Scheduled pause/resume** (optional): EventBridge Scheduler can pause the API by setting Lambda concurrency to `0`, then resume by removing the override.
 
-After apply, upload web assets:
+After apply, upload web assets (build `apps/web/out` **first** with production **`NEXT_PUBLIC_API_URL`** and Supabase **`NEXT_PUBLIC_*`** so the static bundle calls the right API and Auth project — see **[`docs/plans/smoke_test_deployment_guide.plan.md`](../../docs/plans/smoke_test_deployment_guide.plan.md)**):
 
 ```bash
 aws s3 sync /path/to/repo/apps/web/out s3://<web_bucket_name> --delete

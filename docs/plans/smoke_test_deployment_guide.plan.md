@@ -1,25 +1,159 @@
 ---
 name: Smoke test and deployment guide
-overview: Reusable checklist to deploy the Lattice serverless stack (API on Lambda + static web on S3/CloudFront), run a safe public CRUD smoke test without leaking secrets, and tear down or pause when done. Includes a code-janitor-style security review of smoke-test and runtime surfaces.
+overview: First-hour fork → deploy runbook for Lattice (Lambda API + static web). Web app is the primary smoke example; API CRUD requires a Bearer JWT. Includes security notes, correct Supabase DDL, and a checkpoint of doc vs later work.
 todos:
   - id: implement-smoke-script
-    content: Add scripts/smoke/public-api-crud.mjs (or .ts) that reads API_BASE_URL only and performs CRUD; no secret logging
+    content: Add scripts/smoke (API_BASE_URL + BEARER_TOKEN) for CRUD/assertions; no secret logging
     status: pending
   - id: optional-deploy-workflow
-    content: Optional GitHub Actions workflow with OIDC or repo secrets; mask outputs; no echo of keys
+    content: Optional GitHub Actions deploy + smoke with OIDC; mask outputs; no echo of keys
     status: pending
 isProject: false
 ---
 
 # Smoke test deployment guide (reusable)
 
-This document is the **canonical runbook** for a first end-to-end deploy and smoke test. Keep it in-repo so every fork can repeat the same steps safely.
+This document is the **canonical runbook** for the first end-to-end deploy and smoke test after you fork the template. **Treat the web app as the example:** confirm login, profile, and Things in the browser against deployed URLs before you invest in scripted API checks.
+
+Keep it in-repo so every fork repeats the same steps safely.
+
+---
+
+## Checkpoint — reference this when we say “what’s left”
+
+Use this section to track **this documentation pass** vs **follow-up work** (no code changes required here unless noted).
+
+### Addressed in the doc checkpoint (you are here)
+
+- **`apps/web/.env.example`** — tracked example env for `NEXT_PUBLIC_*` variables (fork “happy path” matches README).
+- **This guide** — aligned with **JWT-protected** `/things` and `/profile`, **numeric `things.id`**, and **web-first** smoke.
+- **First-hour checklist** — consolidated below (was scattered across README bullets).
+- **README / infra pointers** — smoke step and build-time env callouts updated to point here.
+
+### Still to do later (not part of this doc checkpoint)
+
+| Item | Notes |
+|------|--------|
+| **`scripts/smoke/`** automated runner | `API_BASE_URL` + short-lived `BEARER_TOKEN`; assert status + shape only. |
+| Optional **deploy + smoke** GitHub workflow | OIDC / masked secrets; see § *CI vs manual smoke*. |
+| **Playwright** beyond auth redirect | Full stack needs API + real or stubbed Supabase locally. |
+| **Swagger** hardening for public stacks | Disable or protect `/api-docs` when you care about enumeration. |
+| **`morgan`** mode in Lambda | Consider `combined` or structured logging vs `dev` verbosity. |
+| **Commit `infra/terraform/envs/dev/.terraform.lock.hcl`** | After `terraform init`, for provider parity (see `infra/terraform/README.md`). |
+| **`package.json` → `repository.url`** | Update after fork (template placeholder). |
+
+---
+
+## First hour — fork → deploy → verify (~ordered checklist)
+
+Goal: from a clean clone of **your fork**, reach a **known-good deployed smoke** without improvising env wiring.
+
+**Time budget:** about an hour if AWS, Supabase, and Terraform are already familiar; otherwise treat this as a single sitting checklist, not a stopwatch.
+
+### A. Machine and repo (≈10 min)
+
+1. **Node.js** — `20.19+` (matches `package.json` `engines` and CI).
+2. **Clone your fork** (not the upstream template, if you treat that as read-only source).
+3. **`npm ci`** at repo root (uses committed `package-lock.json`).
+4. **`npm run ci`** — same pipeline as GitHub Actions `test` job (build, lint, type-check, API Jest + coverage, web Vitest). Fix failures before deploying.
+
+### B. Configure apps (local reference only; real secrets stay gitignored) (≈10 min)
+
+1. **API** — `cp apps/api/.env.example apps/api/.env`  
+   Fill Supabase **service role**, URL, **`SUPABASE_JWT_ISSUER`** / **`SUPABASE_JWT_AUDIENCE`** (and optional **`SUPABASE_JWT_SECRET`** for HS256 tests). Set **`CORS_ORIGINS`** to every browser origin that will call the API (comma-separated, no wildcards in the template default).
+
+2. **Web** — `cp apps/web/.env.example apps/web/.env.local`  
+   Set **`NEXT_PUBLIC_SUPABASE_URL`**, **`NEXT_PUBLIC_SUPABASE_ANON_KEY`**, **`NEXT_PUBLIC_API_URL`**.  
+   **Local dev:** API base is usually `http://localhost:3000` (web on `3001`).
+
+3. **Supabase dashboard (Auth)**  
+   Under **Authentication → URL configuration**, add redirect URLs for **local** (`http://localhost:3001`, `http://127.0.0.1:3001`) and, after you know it, your **CloudFront HTTPS origin**. Without this, OAuth / email redirects fail mysteriously.
+
+### C. Supabase database (≈5 min)
+
+The API maps rows to **`ThingRecord`**: numeric **`id`**, **`name`**, **`created_at`**. The template **creates Things with an app-generated integer `id`** (see `CreateThingUseCase`), not a database serial — the column must accept explicit inserts.
+
+Run in **SQL Editor**:
+
+```sql
+create table if not exists public.things (
+  id bigint primary key,
+  name text not null,
+  created_at timestamptz not null
+);
+```
+
+**RLS:** The API uses the **service role** against PostgREST. For a minimal dev/smoke stack you may leave RLS off or add policies consistent with service-role access. Tighten before real production data.
+
+### D. Terraform and build (≈15–25 min)
+
+> **You perform `terraform apply` and AWS uploads yourself** — this guide does not automate deploy in CI today.
+
+1. `cp infra/terraform/envs/dev/terraform.tfvars.example infra/terraform/envs/dev/terraform.tfvars` and fill required variables (see `infra/terraform/README.md`).
+2. **`npm run api:build:lambda`** — Lambda bundle path must exist before apply (per tfvars).
+3. **Web static export — critical:** set **`NEXT_PUBLIC_API_URL`** (and Supabase **`NEXT_PUBLIC_*`**) to the **deployed** API and project values **before**:
+
+   ```bash
+   npm run web:build:static
+   ```
+
+   Static export bakes public env into `apps/web/out`; localhost URLs in that build will hit the wrong host from end users’ browsers.
+
+4. `cd infra/terraform/envs/dev && terraform init && terraform plan && terraform apply`
+5. Capture outputs: `api_url`, `web_bucket_name`, `web_cloudfront_domain`.
+6. **`aws s3 sync`**: upload `apps/web/out` to the web bucket (`--delete` if you want a clean bucket).
+
+### E. Post-deploy wiring (≈5 min)
+
+1. **CORS** — Lambda/API env must list your **production static site origin** (e.g. `https://d1234567890.cloudfront.net` or your custom domain). Redeploy or update env if needed.
+2. **JWT env on Lambda** — Issuer/audience (or JWKS behavior) must match the **same** Supabase project as the web anon key.
+3. **Supabase Auth URLs** — Add the **HTTPS web URL** you actually open in the browser.
+
+### F. Smoke — web first (≈5–10 min) **← primary**
+
+1. Open **`https://<web_cloudfront_domain>/`** (or your domain).
+2. **Login** (email/password or configured social provider).
+3. **Profile** — loads `/profile` (or `/me` via API) with your JWT.
+4. **Things** — create, edit, delete; confirm list updates (uses TanStack Query + Bearer calls).
+
+If this passes, your fork’s **public path** is validated end-to-end.
+
+### G. Smoke — API with curl (optional, for operators)
+
+Protected routes return **401** without a valid **Supabase access token**.
+
+1. Obtain a **JWT** (e.g. sign in via the web app and copy the session access token from devtools **only for local debugging**, or use Supabase tooling — never commit tokens or paste them into tickets).
+2. Set env (minimal surface in shell history):
+
+   ```bash
+   export API_BASE_URL="$(cd infra/terraform/envs/dev && terraform output -raw api_url)"
+   export BEARER_TOKEN="<paste-short-lived-access-token>"
+   ```
+
+3. Example sequence:
+
+   ```bash
+   curl -sS -X POST "$API_BASE_URL/things" \
+     -H 'Content-Type: application/json' \
+     -H "Authorization: Bearer $BEARER_TOKEN" \
+     -d '{"name":"smoke-test"}'
+
+   curl -sS "$API_BASE_URL/things" -H "Authorization: Bearer $BEARER_TOKEN"
+   ```
+
+Parse **`id`** from JSON for `GET/PUT/DELETE` by id. **Do not log** full tokens or service-role keys.
+
+**Automated script (future):** `scripts/smoke/` should implement the same flow with **`API_BASE_URL` + `BEARER_TOKEN`**, assert status codes and shape, exit non-zero on failure.
+
+**Unauthenticated `/things`:** Expect **401** — that is correct for this template.
+
+---
 
 ## Architecture reminder
 
-- **API**: API Gateway (HTTP API) → **Lambda** → **Express** (`@vendia/serverless-express`) → **Supabase** (PostgREST) via **service role** (server-only, never in the browser).
-- **Web**: Next.js **static export** → **S3** + **CloudFront**.
-- **Secrets**: Supabase URL + service role key live in **SSM** (when `manage_supabase_credentials_in_ssm = true`); Lambda reads them at cold start using **parameter names** in env (not values in Terraform state for those names only—values still exist in SSM and in Terraform state if parameters are managed by Terraform).
+- **API**: API Gateway (HTTP API) → **Lambda** → **Express** (`@vendia/serverless-express`) → **Supabase** (PostgREST) via **service role** (server-only, never in the browser). **Browser → API** calls send **Bearer** JWTs; middleware verifies JWT.
+- **Web**: Next.js **static export** → **S3** + **CloudFront**; **Supabase Auth** in the browser with the **anon** key.
+- **Secrets**: Supabase URL + service role often live in **SSM** when `manage_supabase_credentials_in_ssm = true`; Lambda reads **parameter names** from env.
 
 ---
 
@@ -29,73 +163,48 @@ Aligned with `.cursor/rules/code-janitor.mdc`: no credentials in repo, minimal l
 
 ### What the smoke test should do (safe pattern)
 
-- Call only the **public API base URL** from Terraform output `api_url` (API Gateway), over **HTTPS**.
-- Use **unauthenticated** `POST/GET/PUT/DELETE` to `/things` as the template exposes today (no API key). That matches production exposure: anyone who knows the URL can hit the same routes until you add auth.
-- **Do not** pass Supabase keys, AWS keys, or SSM paths as query parameters or URL segments.
-- **Do not** `console.log` full `process.env` or error objects from fetch responses if the API ever returns raw upstream bodies (today domain errors are structured; unexpected errors return generic 500 JSON).
+- Prefer **web-first** checks (no token handling in shell).
+- For API-only checks: call **HTTPS** `api_url`; send **Bearer** user JWT for `/things` and `/profile`. **Do not** pass service role keys to the browser or into curl on shared machines without care.
+- **Do not** put secrets in query strings or path segments.
+- **Do not** `console.log` full `process.env` or raw upstream error bodies in CI.
 
-### What the smoke test must not log (CI or local)
+### What must not appear in logs or screenshots
 
-- `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL` if ever injected locally for non-Lambda runs.
-- AWS access keys, session tokens, or `terraform.tfvars` contents.
-- Full HTTP response dumps in CI unless scrubbed (prefer asserting status + shape only).
+- Service role key, AWS keys, `terraform.tfvars` contents, long-lived JWTs.
+- Prefer asserting **status + minimal JSON shape** over dumping bodies.
 
 ### Runtime surfaces to be aware of
 
-- **`/api-docs` (Swagger UI)** — Public API documentation on the same origin as your API. Accept for dev; for production consider disabling or protecting (not yet in template).
-- **Express error JSON** — Stack traces: `app.ts` only adds `stack` when `NODE_ENV === 'development'`. Lambda sets **`NODE_ENV=production`** in Terraform.
-- **`ResponseHandler.handleError`** — Logs message + stack to CloudWatch (expected for ops); client still gets generic 500 JSON. Do not echo server logs into smoke output.
-- **`morgan` `dev`** — Logs request lines to CloudWatch (paths/methods/status); avoid putting secrets in URLs.
-- **GitHub Actions** — Store `AWS_*` and any future tokens as **encrypted secrets**; never `echo` them; use `::add-mask::` for derived tokens if needed.
+- **`/api-docs` (Swagger UI)** — Public on the API origin unless you gate it. Fine for dev/sandbox; reconsider for internet-facing prod.
+- **Express error JSON** — `stack` only when `NODE_ENV === 'development'`. Lambda uses **`NODE_ENV=production`** in Terraform.
+- **`morgan` `dev`** — Request lines in CloudWatch; avoid putting secrets in URLs.
+- **GitHub Actions** — Use encrypted secrets; never `echo` credentials; mask derived tokens if needed.
 
 ### Budget and tagging
 
-- Monthly budget filter uses cost allocation tag **`Project`** (must match `project_name` in `terraform.tfvars` and **Cost allocation tags** enabled in AWS Billing for that tag). Complete this once per AWS account (external console step below).
+- Cost allocation tag **`Project`** must match `project_name` in tfvars if you rely on budget filters; activate the tag in AWS Billing.
 
 ---
 
-## External steps (you must do outside the repo)
+## External steps (outside the repo)
 
-### 1) AWS account
+### AWS account
 
-- Create or use an AWS account with billing alerts acceptable for your test.
-- Install and configure **AWS CLI** with credentials that can run Terraform (`IAM` user/role with appropriate policies, or use **AWS SSO** / **OIDC** in CI later).
-- **Enable cost allocation tag** for `Project` (if you use budget alerts):
-  - AWS Console → **Billing** → **Cost allocation tags** → activate tag key **`Project`**.
-- Confirm **Budgets** email subscribers (AWS sends confirmation emails).
+- Billing tolerance for the test; **AWS CLI** creds for Terraform.
+- **Cost allocation tag `Project`** if using budget alerts; confirm Budgets email subscribers.
 
-### 2) Supabase project
+### Terraform variables
 
-- Create a Supabase project.
-- In **SQL Editor**, create the `things` table expected by the API (columns match `ThingRecord` / repository):
+- `terraform.tfvars` gitignored; copy from `terraform.tfvars.example`.
 
-```sql
-create table if not exists public.things (
-  id text primary key,
-  name text not null,
-  created_at timestamptz not null
-);
-```
+### Build artifacts (not committed)
 
-- **Row Level Security**: the API uses the **service role** key against PostgREST. For a minimal template, you may leave RLS off for this table in dev or add policies that allow the `service_role` path your deployment uses. Lock down before any production workload.
-- Copy **Project URL**, **anon** key (optional for web later), and **service_role** key from **Project Settings → API**. Never commit the service role key.
-
-### 3) Terraform variables (local file, gitignored)
-
-- Copy `infra/terraform/envs/dev/terraform.tfvars.example` → `terraform.tfvars`.
-- Fill `project_name`, `environment`, `aws_region`, all `supabase_*` values, and `budget_alert_email_addresses` if using budgets.
-- Optional: set `enable_api_schedule_controls = true` and adjust pause/resume cron expressions for your timezone (`api_schedule_timezone`).
-
-### 4) Build artifacts (not committed)
-
-- Lambda zip inputs: run `npm run api:build:lambda` so `apps/api/dist-lambda/index.js` exists before `terraform apply` (path is wired via `api_lambda_bundle_path`).
-- Web static assets: run `npm run web:build:static` so `apps/web/out/` exists before S3 sync.
+- Lambda: `npm run api:build:lambda`
+- Web: `npm run web:build:static` **with production `NEXT_PUBLIC_*` already set**
 
 ---
 
-## Commands: deploy (from repo root)
-
-Replace `/path/to/repo` with your clone path.
+## Commands: deploy (from repo root) — reference
 
 ```bash
 cd /path/to/repo
@@ -109,7 +218,7 @@ terraform plan
 terraform apply
 ```
 
-Capture outputs:
+Outputs:
 
 ```bash
 terraform output -raw api_url
@@ -117,79 +226,44 @@ terraform output -raw web_bucket_name
 terraform output -raw web_cloudfront_domain
 ```
 
-Upload the static site (use bucket name from output):
+Upload static site:
 
 ```bash
 aws s3 sync /path/to/repo/apps/web/out "s3://$(cd /path/to/repo/infra/terraform/envs/dev && terraform output -raw web_bucket_name)" --delete
 ```
 
-**Web URL**: open `https://<web_cloudfront_domain>/` (CloudFront default certificate).
-
-**API URL**: use `terraform output -raw api_url` as the base (no trailing slash required for relative `/things` paths).
-
----
-
-## Commands: smoke test (recommended shape)
-
-> **Status**: Implement `scripts/smoke/public-api-crud.mjs` (or similar) as a follow-up todo; until then, use `curl` manually with the same rules.
-
-Environment:
-
-- `API_BASE_URL` — only variable required for smoke (public HTTPS API Gateway URL).
-
-Example manual sequence (no secrets in shell history beyond URL):
-
-```bash
-export API_BASE_URL="$(cd infra/terraform/envs/dev && terraform output -raw api_url)"
-
-curl -sS -X POST "$API_BASE_URL/things" -H 'Content-Type: application/json' -d '{"name":"smoke-test"}'
-# Parse id from JSON, then GET/PUT/DELETE using that id
-```
-
-Automated script should:
-
-1. `POST /things` with a unique name.
-2. `GET /things` and assert the new id appears.
-3. `GET /things/:id`.
-4. `PUT /things/:id` with a new name.
-5. `DELETE /things/:id`.
-6. `GET /things/:id` → expect 404.
-
-Exit non-zero on any failure. **Do not print** response bodies containing anything other than the expected Thing shape unless debugging locally.
-
 ---
 
 ## Commands: teardown or cost pause
 
-**Full teardown** (destroys infra; S3 bucket has `force_destroy = true` in dev stack—still verify no data you need):
+**Full teardown:**
 
 ```bash
 cd infra/terraform/envs/dev
 terraform destroy
 ```
 
-**Pause API only** (if `enable_api_schedule_controls = true`): schedules set Lambda reserved concurrency to `0` on pause and remove override on resume. Adjust or disable schedules in AWS Console or Terraform if needed.
+**Pause API only** (if `enable_api_schedule_controls = true`): EventBridge schedules adjust Lambda concurrency; verify in AWS Console.
 
 ---
 
 ## CI vs manual smoke
 
-- Today, **`.github/workflows/ci.yml`** does **not** deploy or call live AWS. That avoids accidental secret exposure and surprise spend.
-- When you add a **deploy + smoke** workflow:
-  - Use **OIDC** (`aws-actions/configure-aws-credentials`) or short-lived keys.
-  - Pass `API_BASE_URL` from a prior Terraform output step **as a job output**, not as a public repo variable if you consider the URL sensitive.
-  - Never pass Supabase or AWS secrets to the smoke job except via masked secrets for Terraform.
+- **`.github/workflows/ci.yml`** does **not** deploy or call live AWS (avoids accidental spend and secret exposure).
+- A future **deploy + smoke** workflow should use **OIDC** or short-lived keys, masked outputs, and optionally the future `scripts/smoke/` runner with a throwaway test user token.
 
 ---
 
 ## Related docs
 
-- [ADR-006: Full-stack and deployment](../adr/006-full-stack-and-deployment.md) — architecture decisions for monorepo, Lambda + Express, static web, Terraform.
-- [infra/terraform/README.md](../../infra/terraform/README.md) — Terraform layout, cost controls, S3 sync.
-- [docs/plans/zero-cost-first_e2e_deployment_plan_cd815a81.plan.md](./zero-cost-first_e2e_deployment_plan_cd815a81.plan.md) — broader initiative phases.
+- [README.md](../../README.md) — fork workflow, `npm run ci`, env files.
+- [ADR-006: Full-stack and deployment](../adr/006-full-stack-and-deployment.md)
+- [infra/terraform/README.md](../../infra/terraform/README.md)
+- [docs/plans/zero-cost-first_e2e_deployment_plan_cd815a81.plan.md](./zero-cost-first_e2e_deployment_plan_cd815a81.plan.md)
 
 ---
 
 ## Changelog for this guide
 
-- Initial version: security review + deploy + smoke + external checklist; Lambda `NODE_ENV=production` documented and enforced in Terraform.
+- **Doc checkpoint:** Web-first smoke; JWT + numeric `things` DDL; `apps/web/.env.example`; first-hour checklist; checkpoint vs deferred work; removed obsolete unauthenticated `/things` instructions.
+- Initial version: security review + deploy + teardown; Lambda `NODE_ENV=production` documented.
