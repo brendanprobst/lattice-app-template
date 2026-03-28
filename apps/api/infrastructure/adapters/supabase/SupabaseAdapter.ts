@@ -71,7 +71,13 @@ export class SupabaseAdapter implements ThingDataAdapter {
       return [] as T;
     }
 
-    return (await response.json()) as T;
+    const responseText = await response.text();
+    if (!responseText.trim()) {
+      // PostgREST can return 201 with empty body when Prefer: return=minimal is used.
+      return [] as T;
+    }
+
+    return JSON.parse(responseText) as T;
   }
 }
 

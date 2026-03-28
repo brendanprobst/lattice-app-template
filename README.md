@@ -122,6 +122,33 @@ For day-to-day iteration you can use `npm install` when you change dependencies;
 - **API** — copy `apps/api/.env.example` → `apps/api/.env` (e.g. `PORT=3000`).
 - **Web** — copy `apps/web/.env.example` → `apps/web/.env.local` (e.g. `NEXT_PUBLIC_API_URL` pointing at the API).
 
+### Supabase Auth setup (GO / NO-GO)
+
+Auth flow in this template uses a security-first split:
+
+- Supabase Auth for identity in the web app (`/login`)
+- Bearer token to API
+- API verifies JWT and protects `/profile` + `/things`
+
+**GO** when all items below are complete:
+
+1. Supabase project exists and Email/Password auth is enabled.
+2. At least one social provider is configured (Google recommended).
+3. `apps/web/.env.local` includes:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `NEXT_PUBLIC_API_URL`
+4. `apps/api/.env` includes:
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - JWT verification settings (`SUPABASE_JWT_ISSUER`, `SUPABASE_JWT_AUDIENCE`)
+   - Optional legacy/test fallback: `SUPABASE_JWT_SECRET` (if you are not using JWKS)
+5. Auth redirect URL includes local web origin (`http://localhost:3001`).
+6. API CORS allows your web origin (`CORS_ORIGINS` in `apps/api/.env`).
+
+If any item is missing, it is **NO-GO** for complete end-to-end login validation.
+You can still run unauthenticated pages, but protected routes will return `401`.
+
 ### Running the stack
 
 **API and web together** (Turborepo):

@@ -9,11 +9,12 @@
 | Folder        | Route | Notes |
 |---------------|-------|--------|
 | **`home/`**   | `/`   | Marketing / template landing. |
+| **`things/`** | `/things` | Example CRUD page; composes **`@client/features/things`** + **`@client/stores/thingsStore`**. |
 | **`ui-gallery/`** | `/ui` | Design-system smoke / QA (not product UI). |
 
 - **Do not** put shadcn primitives here — those stay in **`client/components/ui/`** (see [`../components/AGENTS.md`](../components/AGENTS.md)).
 - **Splitting:** As a page grows, add colocated modules under the same folder (e.g. `home/StepCards.tsx`, `home/constants.ts`) and keep **`HomePage.tsx`** as the thin composer.
-- **Future:** Add **`client/features/<feature>/`** for reusable feature UI shared across pages; pages compose features + `ui/` primitives.
+- **Features:** Reusable domain modules live under **`client/features/<entity>/`** (API helpers, query keys, hooks). **Zustand** holds entity **UI state** (pagination, selection); **TanStack Query** holds **server** state (see **`client/features/things/`**).
 
 ## Imports
 

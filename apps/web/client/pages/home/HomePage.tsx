@@ -125,6 +125,12 @@ export function HomePage() {
               UI component gallery
               <ArrowRight className="size-4" />
             </Link>
+            <Link
+              href="/login"
+              className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
+            >
+              Login demo
+            </Link>
             <a
               href={`${repoUrl}#readme`}
               target="_blank"

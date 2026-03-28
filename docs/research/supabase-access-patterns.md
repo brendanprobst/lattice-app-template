@@ -126,8 +126,8 @@ sequenceDiagram
 1. **User signs in** (Supabase Auth in the browser or via redirect) → client receives a **session** with an **access token** (JWT).
 2. **Calls to your API** include `Authorization: Bearer <access_token>` (or a cookie pattern that your API can resolve to the same JWT).
 3. **Express middleware** (outside the template today — you add it) verifies the JWT:
-   - Use Supabase’s **JWT secret** (symmetric, in `apps/api` env) with `jsonwebtoken` / `jose`, **or**
-   - Validate **issuer** / **audience** and signature per [Supabase JWT docs](https://supabase.com/docs/guides/auth/jwts).
+   - Prefer **JWKS verification** from Supabase (`/auth/v1/.well-known/jwks.json`) with issuer/audience validation, **or**
+   - Use Supabase’s **JWT secret** (symmetric) only as legacy/test fallback.
 4. **Attach identity to the request** (`req.user = { id: sub, email }`) and pass into controllers / use cases.
 5. **Repository** continues to use the **service role** only **after** the API has decided the operation is permitted — or you refactor the adapter to send the **user JWT** to PostgREST so **RLS** enforces row access (see *Caveat: service role vs user JWT* below).
 
@@ -180,6 +180,6 @@ Both are valid; they are **implementation choices** inside `infrastructure/**`, 
 4. **Documentation:** When you commit to Supabase in production, align **`apps/api/.env`**, **Terraform/SSM**, and **RLS** policies with the **same** trust model (who may call PostgREST with which key).
 5. **Auth layer (Supabase Auth + API):** Add **JWT verification middleware** on Express before domain routes; pass **verified `sub`** into use cases; keep **service role** only on the server; never trust client-supplied user IDs without a JWT.
 
-For formal architecture decisions, capture the chosen mix in a new **ADR** once you freeze the split between client Supabase and API-owned data, and **document your JWT verification and env vars** (`SUPABASE_JWT_SECRET` or JWKS URL) in `apps/api/` AGENTS or env docs.
+For formal architecture decisions, capture the chosen mix in a new **ADR** once you freeze the split between client Supabase and API-owned data, and **document your JWT verification and env vars** (JWKS + issuer/audience by default; optional `SUPABASE_JWT_SECRET` fallback) in `apps/api/` AGENTS or env docs.
 
 For an opinionated, reusable baseline you can apply across many side projects, use [Security-first default: Supabase Auth with API boundary](./supabase-auth-security-first.md) as the canonical starting point.

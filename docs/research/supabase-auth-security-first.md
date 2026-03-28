@@ -20,6 +20,9 @@ Use this as the baseline unless a project has clear reasons to adopt a more adva
 4. **Persistence secrets stay server-only.**
    - Service role key and JWT verification material live in API runtime env only.
    - Never expose privileged keys to browser code.
+5. **Prefer JWKS verification for Supabase tokens.**
+   - Default API verification should use Supabase JWKS (`/auth/v1/.well-known/jwks.json`) plus `iss`/`aud` checks.
+   - Keep `SUPABASE_JWT_SECRET` only as an optional legacy/test fallback.
 
 ## Why this is the reusable default for Lattice
 
@@ -83,6 +86,7 @@ Keep baseline simple for broad reuse. Add these only when a concrete project req
 
 - [ ] Protected API routes include auth middleware before controllers.
 - [ ] Middleware verifies JWT and attaches identity claims to request context.
+- [ ] Middleware verifies with JWKS by default (`SUPABASE_URL` + issuer/audience).
 - [ ] Use cases authorize actions based on verified identity.
 - [ ] Only API runtime stores privileged Supabase secrets.
 - [ ] Public docs state which routes are public vs protected.

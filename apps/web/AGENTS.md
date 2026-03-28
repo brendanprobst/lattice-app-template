@@ -6,7 +6,7 @@
 
 ## Imports
 
-Use the **`@client/`** alias for all application code under `client/` (e.g. `@client/pages/...`, `@client/components/ui/...`, `@client/lib/...`). `tsconfig.json` maps `@client/*` → `./client/*`.
+Use the **`@client/`** alias for all application code under `client/` (e.g. `@client/pages/...`, `@client/components/ui/...`, `@client/lib/...`, `@client/features/...`, `@client/stores/...`). `tsconfig.json` maps `@client/*` → `./client/*`.
 
 The **`app/`** directory is for Next.js routing and layout only — thin files that import from **`client/pages/...`**.
 

@@ -18,4 +18,12 @@ describe("HomePage", () => {
       "/ui",
     );
   });
+
+  it("links to the login flow demo", () => {
+    render(<HomePage />);
+    expect(screen.getByRole("link", { name: /login demo/i })).toHaveAttribute(
+      "href",
+      "/login",
+    );
+  });
 });

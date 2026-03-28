@@ -7,7 +7,13 @@ const options: swaggerJsdoc.Options = {
     info: {
       title: 'Lattice API',
       version: '1.0.0',
-      description: 'API documentation for the Lattice API',
+      description: `API documentation for the Lattice API.
+
+Authentication:
+- Protected routes use Bearer auth with a Supabase access token.
+- In Swagger UI, click **Authorize** and set value as: 'Bearer <access_token></access_token>'.
+- You can get 'access_toke' by signing in through the web app ('/login') and reading the Supabase session token in browser storage/devtools.
+`,
       contact: {
         name: 'Lattice Support',
       },
@@ -19,6 +25,14 @@ const options: swaggerJsdoc.Options = {
       },
     ],
     components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Supabase access token. Format: Bearer <access_token>',
+        },
+      },
       schemas: {
         Error: {
           type: 'object',
@@ -52,9 +66,9 @@ const options: swaggerJsdoc.Options = {
           type: 'object',
           properties: {
             id: {
-              type: 'string',
+              type: 'integer',
               description: 'Thing ID',
-              example: 'thing-550e8400-e29b-41d4-a716-446655440000',
+              example: 1001,
             },
             name: {
               type: 'string',
@@ -71,11 +85,17 @@ const options: swaggerJsdoc.Options = {
         },
       },
     },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
   } as SwaggerDefinition,
   apis: [
     './routes/*.ts',
     './routes/*.js',
     './config/swagger/decorators/things.decorators.ts',
+    './config/swagger/decorators/profile.decorators.ts',
     './config/swagger/decorators/index.decorators.ts',
     './app.ts',
     './app.js'
