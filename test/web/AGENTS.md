@@ -10,9 +10,15 @@
 ## E2E (`test/web/e2e/`)
 
 - **Runner:** Playwright (Chromium in CI).
-- **Config:** [`playwright.config.ts`](playwright.config.ts) — starts `npm run dev -w @lattice/web` on **3001**, sets `NEXT_PUBLIC_API_URL` for stable assertions.
-- **Specs:** `home.spec.ts` (Lattice home), `ui-gallery.spec.ts` (`/ui` component gallery landmarks).
+- **Config:** [`playwright.config.ts`](playwright.config.ts) starts **two** dev servers:
+  - **`@lattice/api`** on **3000** — in-memory Things + HS256 JWT (`test/web/e2e/support/e2eAuthConstants.ts`).
+  - **`@lattice/web`** on **3001** — `NEXT_PUBLIC_LATTICE_E2E=1` and a pre-minted `NEXT_PUBLIC_LATTICE_E2E_ACCESS_TOKEN` (synthetic session; no real Supabase).
+- **Specs**
+  - **`auth-guard.spec.ts`** — signs out, then asserts `/things` and `/profile` redirect to `/login` (same as manual “logged out” behavior).
+  - **`full-stack.spec.ts`** — profile claims + Things CRUD (matches manual smoke minus real Supabase login UI).
+  - **`home.spec.ts`**, **`ui-gallery.spec.ts`** — public routes.
 - **Run:** `npm run test:web:e2e` (install browsers once: `npx playwright install`).
+- **Port conflicts:** if `3000` / `3001` are already in use, stop other dev servers or set `CI=true` so Playwright does not reuse an existing process.
 
 ## CI
 

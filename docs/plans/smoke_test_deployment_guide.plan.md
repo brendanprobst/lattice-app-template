@@ -29,14 +29,14 @@ Use this section to track **this documentation pass** vs **follow-up work** (no 
 - **This guide** — aligned with **JWT-protected** `/things` and `/profile`, **numeric `things.id`**, and **web-first** smoke.
 - **First-hour checklist** — consolidated below (was scattered across README bullets).
 - **README / infra pointers** — smoke step and build-time env callouts updated to point here.
+- **CI E2E** — Playwright starts **API + web** with a **synthetic JWT** (no live Supabase); covers profile, Things CRUD, and auth redirects — see **`test/web/AGENTS.md`** (differs from deployed smoke only in env URLs and real login).
 
 ### Still to do later (not part of this doc checkpoint)
 
 | Item | Notes |
 |------|--------|
-| **`scripts/smoke/`** automated runner | `API_BASE_URL` + short-lived `BEARER_TOKEN`; assert status + shape only. |
+| **`scripts/smoke/`** (optional) | For deployed HTTPS smoke only: `API_BASE_URL` + `BEARER_TOKEN`. Local/CI already cover stack behavior with **Playwright** (`test/web/AGENTS.md`). |
 | Optional **deploy + smoke** GitHub workflow | OIDC / masked secrets; see § *CI vs manual smoke*. |
-| **Playwright** beyond auth redirect | Full stack needs API + real or stubbed Supabase locally. |
 | **Swagger** hardening for public stacks | Disable or protect `/api-docs` when you care about enumeration. |
 | **`morgan`** mode in Lambda | Consider `combined` or structured logging vs `dev` verbosity. |
 | **Commit `infra/terraform/envs/dev/.terraform.lock.hcl`** | After `terraform init`, for provider parity (see `infra/terraform/README.md`). |
