@@ -31,7 +31,7 @@ export function loadSeedData(thingRepository: InMemoryThingRepository): void {
     }
 
     const seedData = JSON.parse(fs.readFileSync(seedPath, 'utf-8')) as {
-      things?: Array<{ id: string; name: string; createdAt: string }>;
+      things?: Array<{ id: number; name: string; createdAt: string }>;
     };
 
     const things = seedData.things ?? [];

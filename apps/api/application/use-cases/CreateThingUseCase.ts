@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomInt } from 'crypto';
 import { Result } from '../../domain/errors/Result';
 import { ErrorCatalog } from '../../domain/errors/ErrorCatalog';
 import { Thing } from '../../domain/entities/Thing';
@@ -15,7 +15,7 @@ export class CreateThingUseCase {
     }
 
     try {
-      const thing = new Thing(`thing-${randomUUID()}`, trimmed, new Date());
+      const thing = new Thing(randomInt(1_000_000, 2_147_483_647), trimmed, new Date());
       await this.thingRepository.save(thing);
       return Result.success(thing.toPrimitives());
     } catch {

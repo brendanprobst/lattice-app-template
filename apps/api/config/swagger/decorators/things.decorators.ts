@@ -10,12 +10,18 @@ import { swaggerRoute } from './route.decorator';
  *   get:
  *     summary: List all things
  *     tags: [Things]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of things
+ *       401:
+ *         description: Missing or invalid bearer token
  *   post:
  *     summary: Create a thing
  *     tags: [Things]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -31,6 +37,8 @@ import { swaggerRoute } from './route.decorator';
  *         description: Created
  *       400:
  *         description: Invalid input
+ *       401:
+ *         description: Missing or invalid bearer token
  */
 export const listThingsDoc = swaggerRoute({
   path: '/things',
@@ -92,26 +100,32 @@ export const createThingDoc = swaggerRoute({
  *   get:
  *     summary: Get a thing by id
  *     tags: [Things]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *     responses:
  *       200:
  *         description: Thing
+ *       401:
+ *         description: Missing or invalid bearer token
  *       404:
  *         description: Not found
  *   put:
  *     summary: Update a thing
  *     tags: [Things]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *     requestBody:
  *       required: true
  *       content:
@@ -125,20 +139,26 @@ export const createThingDoc = swaggerRoute({
  *     responses:
  *       200:
  *         description: Updated
+ *       401:
+ *         description: Missing or invalid bearer token
  *       404:
  *         description: Not found
  *   delete:
  *     summary: Delete a thing
  *     tags: [Things]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *     responses:
  *       204:
  *         description: Deleted
+ *       401:
+ *         description: Missing or invalid bearer token
  *       404:
  *         description: Not found
  */
@@ -152,7 +172,7 @@ export const getThingByIdDoc = swaggerRoute({
       name: 'id',
       in: 'path',
       required: true,
-      schema: { type: 'string' },
+      schema: { type: 'integer' },
       description: 'Thing id',
     },
   ],
@@ -180,7 +200,7 @@ export const updateThingDoc = swaggerRoute({
       name: 'id',
       in: 'path',
       required: true,
-      schema: { type: 'string' },
+      schema: { type: 'integer' },
       description: 'Thing id',
     },
   ],
@@ -223,7 +243,7 @@ export const deleteThingDoc = swaggerRoute({
       name: 'id',
       in: 'path',
       required: true,
-      schema: { type: 'string' },
+      schema: { type: 'integer' },
       description: 'Thing id',
     },
   ],

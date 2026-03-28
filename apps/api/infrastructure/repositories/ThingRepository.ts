@@ -13,7 +13,7 @@ export class ThingRepository implements IThingRepository {
     this.table = process.env.SUPABASE_THINGS_TABLE?.trim() || 'things';
   }
 
-  async findById(id: string): Promise<Thing | null> {
+  async findById(id: number): Promise<Thing | null> {
     const rows = await this.dataAdapter.get<ThingRecord[]>(
       `${this.table}?select=id,name,created_at&id=eq.${encodeURIComponent(id)}`
     );
@@ -46,11 +46,16 @@ export class ThingRepository implements IThingRepository {
     );
   }
 
-  async delete(id: string): Promise<boolean> {
-    const rows = await this.dataAdapter.delete<Array<{ id: string }>>(
-      `${this.table}?id=eq.${encodeURIComponent(id)}&select=id`
+  async delete(id: number): Promise<boolean> {
+    const existing = await this.findById(id);
+    if (!existing) {
+      return false;
+    }
+
+    await this.dataAdapter.delete(
+      `${this.table}?id=eq.${encodeURIComponent(id)}`
     );
-    return rows.length > 0;
+    return true;
   }
 }
 

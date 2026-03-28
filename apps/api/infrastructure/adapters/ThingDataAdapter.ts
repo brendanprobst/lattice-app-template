@@ -1,5 +1,5 @@
 export type ThingRecord = {
-  id: string;
+  id: number;
   name: string;
   created_at: string;
 };

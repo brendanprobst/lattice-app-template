@@ -6,7 +6,7 @@ import { ThingDto } from '../dtos/ThingDto';
 export class GetThingByIdUseCase {
   constructor(private thingRepository: IThingRepository) {}
 
-  async execute(id: string): Promise<Result<ThingDto>> {
+  async execute(id: number): Promise<Result<ThingDto>> {
     try {
       const thing = await this.thingRepository.findById(id);
       if (!thing) {

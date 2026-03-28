@@ -3,7 +3,7 @@
  */
 export class Thing {
   constructor(
-    public readonly id: string,
+    public readonly id: number,
     public name: string,
     public readonly createdAt: Date
   ) {}
@@ -12,7 +12,7 @@ export class Thing {
     this.name = name.trim();
   }
 
-  toPrimitives(): { id: string; name: string; createdAt: string } {
+  toPrimitives(): { id: number; name: string; createdAt: string } {
     return {
       id: this.id,
       name: this.name,

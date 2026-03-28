@@ -1,0 +1,1 @@
+export { ThingsPage } from "./ThingsPage";

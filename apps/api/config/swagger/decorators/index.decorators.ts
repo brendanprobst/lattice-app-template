@@ -10,6 +10,7 @@ import { swaggerRoute } from './route.decorator';
  *   get:
  *     summary: Get API information
  *     tags: [General]
+ *     security: []
  *     responses:
  *       200:
  *         description: API information

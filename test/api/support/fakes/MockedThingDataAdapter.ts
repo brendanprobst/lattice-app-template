@@ -1,7 +1,7 @@
 import { ThingDataAdapter, ThingDataAdapterOptions, ThingRecord } from '@api/infrastructure/adapters/ThingDataAdapter';
 
 export class MockedThingDataAdapter implements ThingDataAdapter {
-  private readonly store = new Map<string, ThingRecord>();
+  private readonly store = new Map<number, ThingRecord>();
 
   async get<T>(path: string): Promise<T> {
     if (path.includes('id=eq.')) {
@@ -57,11 +57,15 @@ export class MockedThingDataAdapter implements ThingDataAdapter {
     return [{ id }] as T;
   }
 
-  private extractId(path: string): string {
+  private extractId(path: string): number {
     const match = path.match(/id=eq\.([^&]+)/);
     if (!match) {
       throw new Error(`Path does not contain id filter: ${path}`);
     }
-    return decodeURIComponent(match[1]);
+    const parsed = Number(decodeURIComponent(match[1]));
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      throw new Error(`Path contains invalid numeric id: ${path}`);
+    }
+    return parsed;
   }
 }

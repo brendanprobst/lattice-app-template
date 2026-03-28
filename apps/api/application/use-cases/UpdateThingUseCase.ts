@@ -6,7 +6,7 @@ import { ThingDto } from '../dtos/ThingDto';
 export class UpdateThingUseCase {
   constructor(private thingRepository: IThingRepository) {}
 
-  async execute(id: string, name: string): Promise<Result<ThingDto>> {
+  async execute(id: number, name: string): Promise<Result<ThingDto>> {
     const trimmed = name?.trim() ?? '';
     if (!trimmed) {
       return Result.failure(ErrorCatalog.THING_NAME_INVALID);

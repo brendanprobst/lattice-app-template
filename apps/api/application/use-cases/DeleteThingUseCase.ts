@@ -5,7 +5,7 @@ import { IThingRepository } from '../../domain/repositories/IThingRepository';
 export class DeleteThingUseCase {
   constructor(private thingRepository: IThingRepository) {}
 
-  async execute(id: string): Promise<Result<void>> {
+  async execute(id: number): Promise<Result<void>> {
     try {
       const removed = await this.thingRepository.delete(id);
       if (!removed) {
