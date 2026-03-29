@@ -55,11 +55,9 @@ Create the bucket and table **once** (often manually or a tiny bootstrap stack),
 
 ### 5. GitHub Actions (optional): deploy from CI without long-lived keys
 
-This repo’s default **CI** does **not** deploy to AWS (`terraform validate` uses `-backend=false` and needs no cloud credentials). To **deploy from GitHub**, add a workflow that:
+This repo’s default **CI** job does **not** deploy to AWS (`terraform validate` uses `-backend=false` and needs no cloud credentials). For a **manual** deploy from GitHub (OIDC, no long-lived keys in secrets), use the **Deploy (AWS)** workflow and **`npm run deploy:aws`** — see **[`docs/deploy-aws.md`](../../docs/deploy-aws.md)**.
 
-1. Configures AWS using **OIDC** (recommended): [GitHub’s OIDC with AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services) and [AWS IAM OIDC provider for GitHub](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html).
-2. In AWS: create an **IAM role** whose **trust policy** allows `sts:AssumeRoleWithWebIdentity` for your **repository** (and branch/environment if you use `sub` conditions).
-3. In the workflow: use **`aws-actions/configure-aws-credentials`** with `role-to-assume` (no `AWS_SECRET_ACCESS_KEY` in repo secrets).
+In AWS, create an **IAM role** whose **trust policy** allows `sts:AssumeRoleWithWebIdentity` for your **repository** (narrow by `sub` / environment as needed). References: [GitHub OIDC with AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services), [AWS IAM OIDC provider for GitHub](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html).
 
 Keep **Terraform state**, **tfvars**, and **AWS account IDs** out of public logs; mask outputs in Actions.
 

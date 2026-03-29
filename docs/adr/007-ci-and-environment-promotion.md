@@ -22,11 +22,10 @@ We also expect many downstream projects to eventually require multi-environment 
 
 ### Deployment policy
 
-- Deployment is **manual by command**, not automatic by push.
-- Support a command structure with:
-  - **per-layer commands** (API bundle, web static bundle, Terraform apply, web sync),
-  - and a future **single master deploy command** for convenience in forks.
-- For this template, manual runbook commands remain the source of truth; downstream forks can wire CI deployment once project ownership, credentials, and approvals are established.
+- Deployment is **manual by command**, not automatic by push to `main`.
+- The template ships **`npm run deploy:aws`** (API Lambda bundle, Terraform apply, static web build with `NEXT_PUBLIC_API_URL` from Terraform output, `aws s3 sync`) — see [`docs/deploy-aws.md`](../deploy-aws.md).
+- An optional **GitHub Actions** workflow **Deploy (AWS)** runs only via **workflow_dispatch** (never on every commit); it uses OIDC and the same deploy script.
+- Support remains for **per-layer** steps if you do not use the single command.
 
 ### Environment promotion policy
 

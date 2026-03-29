@@ -34,6 +34,10 @@ You can still **fork** or **“Use this template”** on GitHub if you prefer; t
 
 **`config/repo-features.json`** gates which workflows run on push/PR (`test`, `web-e2e`, `terraform`) and records whether **Dependabot** should stay enabled. Turn jobs or Dependabot off from the start, or re-enable later, without hunting through YAML. Run **`npm run repo-features:apply`** after changing **`dependabot.enabled`**. Details: **[`docs/repo-features.md`](docs/repo-features.md)**.
 
+### Deploy to AWS
+
+**`npm run deploy:aws`** builds the API Lambda bundle, runs **Terraform** in `infra/terraform/envs/dev`, builds the static web app with **`NEXT_PUBLIC_API_URL`** from Terraform output, then **`aws s3 sync`**. Optional: trigger the **Deploy (AWS)** workflow in GitHub Actions (manual, OIDC). See **[`docs/deploy-aws.md`](docs/deploy-aws.md)**.
+
 ### After you have an app repo (clone happy path)
 
 Use this to validate a **machine or teammate clone** once the repo already contains the scaffold (see **[`docs/scaffold-workflow.md`](docs/scaffold-workflow.md)** or a GitHub fork/template):
