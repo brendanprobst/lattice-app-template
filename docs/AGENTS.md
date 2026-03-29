@@ -5,6 +5,7 @@
 - **`adr/`** — Architecture Decision Records numbered `NNN-title.md`; see `adr/README.md` for the index.
 - **`plans/`** — Runbooks and backlogs (e.g. [smoke test deployment](plans/smoke_test_deployment_guide.plan.md), [template completeness backlog](plans/template_completeness_backlog.plan.md)).
 - **[Scaffold workflow](scaffold-workflow.md)** — Recommended path: new GitHub repo + clone + `npm run scaffold` from a local template copy (no GitHub fork required).
+- **[Repo feature flags](repo-features.md)** — `config/repo-features.json`: enable/disable CI jobs and Dependabot from the start.
 - **`research/`** — Exploratory notes (not ADRs), e.g. [Supabase access patterns](research/supabase-access-patterns.md) (client SDK vs API vs ORM) and the canonical [security-first Supabase Auth default](research/supabase-auth-security-first.md) for API/client separation.
 
 ## For agents

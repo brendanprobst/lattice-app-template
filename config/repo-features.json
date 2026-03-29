@@ -1,0 +1,13 @@
+{
+  "$schema": "./repo-features.schema.json",
+  "ci": {
+    "enabled": true,
+    "test": true,
+    "webE2e": true,
+    "terraform": true
+  },
+  "dependabot": {
+    "enabled": true
+  },
+  "custom": {}
+}

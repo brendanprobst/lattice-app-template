@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lattice.local/config/repo-features.schema.json",
+  "title": "Lattice repo feature flags",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "$schema": { "type": "string" },
+    "ci": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Master switch for CI jobs in .github/workflows/ci.yml (test, web-e2e, terraform)."
+        },
+        "test": {
+          "type": "boolean",
+          "description": "Turbo build, lint, type-check, Jest coverage, Vitest (Node matrix)."
+        },
+        "webE2e": {
+          "type": "boolean",
+          "description": "Playwright E2E job."
+        },
+        "terraform": {
+          "type": "boolean",
+          "description": "terraform fmt -check and terraform validate (dev stack)."
+        }
+      }
+    },
+    "dependabot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "When false, run npm run repo-features:apply to move .github/dependabot.yml aside so Dependabot does not run."
+        }
+      }
+    },
+    "custom": {
+      "type": "object",
+      "description": "Opaque bag for your own scripts or docs; Lattice tooling ignores unknown top-level keys except those defined here."
+    }
+  }
+}

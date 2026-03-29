@@ -12,7 +12,42 @@ env:
   TURBO_TELEMETRY_DISABLED: 1
 
 jobs:
+  repo-config:
+    runs-on: ubuntu-latest
+    outputs:
+      ci_enabled: ${{ steps.read.outputs.ci_enabled }}
+      job_test: ${{ steps.read.outputs.job_test }}
+      job_web_e2e: ${{ steps.read.outputs.job_web_e2e }}
+      job_terraform: ${{ steps.read.outputs.job_terraform }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read config/repo-features.json
+        id: read
+        shell: bash
+        run: |
+          set -euo pipefail
+          F=config/repo-features.json
+          write_defaults() {
+            echo "ci_enabled=true" >> "$GITHUB_OUTPUT"
+            echo "job_test=true" >> "$GITHUB_OUTPUT"
+            echo "job_web_e2e=true" >> "$GITHUB_OUTPUT"
+            echo "job_terraform=true" >> "$GITHUB_OUTPUT"
+          }
+          if [ ! -f "$F" ]; then
+            write_defaults
+            exit 0
+          fi
+          jq empty "$F"
+          echo "ci_enabled=$(jq -r '.ci.enabled // true' "$F")" >> "$GITHUB_OUTPUT"
+          echo "job_test=$(jq -r '.ci.test // true' "$F")" >> "$GITHUB_OUTPUT"
+          echo "job_web_e2e=$(jq -r '.ci.webE2e // true' "$F")" >> "$GITHUB_OUTPUT"
+          echo "job_terraform=$(jq -r '.ci.terraform // true' "$F")" >> "$GITHUB_OUTPUT"
+
   test:
+    needs: repo-config
+    if: needs.repo-config.outputs.ci_enabled == 'true' && needs.repo-config.outputs.job_test == 'true'
     runs-on: ubuntu-latest
 
     strategy:
@@ -47,6 +82,8 @@ jobs:
         run: npm run ci
 
   web-e2e:
+    needs: repo-config
+    if: needs.repo-config.outputs.ci_enabled == 'true' && needs.repo-config.outputs.job_web_e2e == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -67,6 +104,8 @@ jobs:
         run: npm run test:web:e2e
 
   terraform:
+    needs: repo-config
+    if: needs.repo-config.outputs.ci_enabled == 'true' && needs.repo-config.outputs.job_terraform == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

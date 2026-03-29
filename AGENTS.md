@@ -9,6 +9,7 @@
 - **`apps/api/`** — Application entry (`app.ts`), routes, controllers, domain, use cases, infrastructure.
 - **`apps/web/`** — Next.js `app/` routes; feature code under `client/` (see `apps/web/AGENTS.md`).
 - **`test/`** — Automated tests: **`test/api/`** (Jest), **`test/web/`** (Vitest + Playwright). See [`test/AGENTS.md`](test/AGENTS.md).
+- **`config/`** — **`repo-features.json`**: CI / Dependabot toggles (see [`docs/repo-features.md`](docs/repo-features.md)).
 - **`docs/`** — Architecture decision records (ADRs).
 - **`infra/terraform/`** — AWS Terraform; Supabase URL/keys from **`terraform.tfvars`** → optional **SSM** (see [`infra/AGENTS.md`](infra/AGENTS.md)).
 
@@ -18,7 +19,7 @@ Each major directory contains **`AGENTS.md`**. Use that name so humans and autom
 
 ## CI parity
 
-- **`npm run ci`** — `turbo run build lint type-check` plus **`//#test:coverage`** (Jest + coverage) and **`//#test:web:unit`** (Vitest). Matches the `test` job in `.github/workflows/ci.yml`. Playwright E2E runs in the separate **`web-e2e`** job. Prefer **required status checks** on `main` so PRs cannot merge without green CI.
+- **`npm run ci`** — `turbo run build lint type-check` plus **`//#test:coverage`** (Jest + coverage) and **`//#test:web:unit`** (Vitest). Matches the `test` job in `.github/workflows/ci.yml`. Playwright E2E runs in the **`web-e2e`** job; Terraform in **`terraform`**. Jobs are gated by **`config/repo-features.json`** (see **[`docs/repo-features.md`](docs/repo-features.md)**). **Dependabot** reads `.github/dependabot.yml`; use **`npm run repo-features:apply`** after toggling **`dependabot.enabled`**. Prefer **required status checks** on `main` so PRs cannot merge without green CI — update rules if you disable jobs.
 - **Tests-first in Cursor** — the **Test expert** rule auto-attaches when editing `apps/api/`, `apps/web/client/`, or `apps/web/app/` (see **`agents/README.md`**). PRs use **`.github/pull_request_template.md`** to confirm tests were updated.
 - **Installs** — Commit the root **`package-lock.json`** and use **`npm ci`** in CI and clean clones so dependency trees match exactly.
 - **Node** — Root **`engines.node`** is **>=20.19.0**; **`.nvmrc`** pins a known-good line for local dev. CI uses **`20.19.x`** and **`22.x`** (see `.github/workflows/ci.yml`).

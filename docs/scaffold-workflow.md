@@ -113,4 +113,5 @@ This creates `../my-app` if needed, then merges the template. You still run **`g
 
 - [`scripts/fork.mjs`](../scripts/fork.mjs) — `fork:init` / `fork:check` (called automatically after the copy).
 - `npm run fork:check` — After scaffold, confirms `repository.url` and package names are not still template defaults.
+- [Repo feature flags](repo-features.md) — Disable CI jobs or Dependabot in **`config/repo-features.json`** before the first push if you want a quieter start.
 - [Smoke test deployment guide](plans/smoke_test_deployment_guide.plan.md) — Deploy after the app repo exists.

@@ -1,4 +1,7 @@
 # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# When dependabot.enabled is false in config/repo-features.json, npm run repo-features:apply
+# renames this file to dependabot.yml.disabled (and back when true).
 version: 2
 updates:
   - package-ecosystem: "npm"

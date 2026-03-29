@@ -30,6 +30,10 @@ You can still **fork** or **“Use this template”** on GitHub if you prefer; t
 - Node.js **>=20.19.0** (root `package.json` → **`engines`**; use **`.nvmrc`** with **nvm** / **fnm** / **asdf** so your laptop matches CI and avoids tooling `EBADENGINE` warnings).
 - npm (see **`packageManager`** in `package.json`; **`npm ci`** in CI)
 
+### Repo automation (CI + Dependabot)
+
+**`config/repo-features.json`** gates which workflows run on push/PR (`test`, `web-e2e`, `terraform`) and records whether **Dependabot** should stay enabled. Turn jobs or Dependabot off from the start, or re-enable later, without hunting through YAML. Run **`npm run repo-features:apply`** after changing **`dependabot.enabled`**. Details: **[`docs/repo-features.md`](docs/repo-features.md)**.
+
 ### After you have an app repo (clone happy path)
 
 Use this to validate a **machine or teammate clone** once the repo already contains the scaffold (see **[`docs/scaffold-workflow.md`](docs/scaffold-workflow.md)** or a GitHub fork/template):
