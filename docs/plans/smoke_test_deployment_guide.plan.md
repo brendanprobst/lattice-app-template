@@ -190,7 +190,8 @@ Aligned with `.cursor/rules/code-janitor.mdc`: no credentials in repo, minimal l
 
 ### AWS account
 
-- Billing tolerance for the test; **AWS CLI** creds for Terraform.
+- **Connect the repo to AWS for deployment** — there is no GitHub “Connect AWS” button in this template. You authenticate **your machine or CI** with IAM (CLI profile, SSO, or OIDC for Actions). Full playbook: **[`infra/terraform/README.md` — Connecting your AWS account](../../infra/terraform/README.md#connecting-your-aws-account-for-deployment)**.
+- Billing tolerance for the test; **AWS CLI** installed and **`aws sts get-caller-identity`** succeeding before `terraform apply`.
 - **Cost allocation tag `Project`** if using budget alerts; confirm Budgets email subscribers.
 
 ### Terraform variables

@@ -69,6 +69,7 @@ The **web client is intentionally thin** today: mostly default Next.js App Route
 
 ## Related documents
 
+- [Terraform README — AWS account connection for deployment](../../infra/terraform/README.md#connecting-your-aws-account-for-deployment)
 - [ADR-001: DDD Architecture](./001-ddd-architecture.md)
 - [ADR-004: Repository Pattern](./004-repository-pattern.md) (persistence and testing)
 - [Smoke test deployment guide](../plans/smoke_test_deployment_guide.plan.md)

@@ -2,12 +2,70 @@
 
 Modular layout for **AWS** plus optional **Supabase credentials in config**: you define Supabase values in `terraform.tfvars`, and Terraform can mirror them into **SSM Parameter Store** for Lambdas, ECS, or CI to read with IAM.
 
+**Provider lockfile:** this repo commits **`envs/dev/.terraform.lock.hcl`** (not gitignored). After you change providers or run `terraform init` and the lockfile updates, **commit the lockfile** so CI (`terraform fmt` / `validate`) and every machine resolve the same provider versions.
+
 ## Layout
 
 - `modules/supabase_ssm` — Writes Supabase URL/keys from tfvars into SSM (SecureString where appropriate).
 - `envs/dev` — Example root: `locals` for tags + `name_prefix`; add more modules or `envs/prod` as needed.
 
 Extract shared **tag** or **naming** logic into new modules under `modules/` when you add a second environment or stack.
+
+## Connecting your AWS account (for deployment)
+
+There is **no automatic “link GitHub to AWS”** in this template. **Deployment** means: Terraform and the AWS CLI run with **credentials** that are allowed to create and update resources in **your** AWS account. The **repository** only holds Terraform code; **connection** = **IAM identity + credential chain** on the machine or CI runner that runs `terraform apply` and `aws s3 sync`.
+
+### 1. Create or choose an AWS account
+
+Use a dedicated account or sub-account for **non-prod** smoke where you accept small spend. Turn on **billing alerts** and (optional) **cost allocation tags** if you use budget filters from this stack.
+
+### 2. Local development: authenticate the AWS CLI
+
+Terraform uses the **same credential chain** as the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html). Pick one approach:
+
+| Approach | When to use |
+|----------|-------------|
+| **`aws configure`** | Long-lived **IAM user** access keys on a **dev machine only** (never commit keys; rotate if leaked). |
+| **`aws configure sso`** | **IAM Identity Center** (SSO) — short-lived creds; recommended for teams. |
+| **Environment variables** | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and optional `AWS_SESSION_TOKEN` for **assumed roles** or CI that injects secrets. |
+| **Profile** | Set `AWS_PROFILE` to a named profile from `~/.aws/credentials` / `config`. |
+
+Set a **default region** (or pass `-var`/provider config) so resources land where you expect (`terraform.tfvars` also sets `aws_region`).
+
+**Sanity check** (should print your account and ARN):
+
+```bash
+aws sts get-caller-identity
+```
+
+### 3. IAM permissions (Terraform)
+
+Terraform needs permission to create/update everything this stack defines (Lambda, API Gateway, S3, CloudFront, IAM roles for Lambdas, SSM parameters, budgets, etc.). For a **personal sandbox**, many teams use an **administrator-equivalent** role **only in that account**. For stricter orgs, generate a **custom policy** from `terraform plan` / your review process and attach least privilege—this template does not ship a minimal IAM policy JSON.
+
+**Never** commit access keys, session tokens, or `terraform.tfvars` with secrets.
+
+### 4. Remote Terraform state (S3 backend) — optional but recommended for teams
+
+If you uncomment the **`backend "s3"`** block in `envs/dev/versions.tf`, the **same** credentials (or a narrower **state** role) must be allowed to:
+
+- Read/write the **state object** in S3
+- **Lock** state via the **DynamoDB** table you name in `backend`
+
+Create the bucket and table **once** (often manually or a tiny bootstrap stack), then configure the backend and run `terraform init -migrate-state` when moving from local state.
+
+### 5. GitHub Actions (optional): deploy from CI without long-lived keys
+
+This repo’s default **CI** does **not** deploy to AWS (`terraform validate` uses `-backend=false` and needs no cloud credentials). To **deploy from GitHub**, add a workflow that:
+
+1. Configures AWS using **OIDC** (recommended): [GitHub’s OIDC with AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services) and [AWS IAM OIDC provider for GitHub](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html).
+2. In AWS: create an **IAM role** whose **trust policy** allows `sts:AssumeRoleWithWebIdentity` for your **repository** (and branch/environment if you use `sub` conditions).
+3. In the workflow: use **`aws-actions/configure-aws-credentials`** with `role-to-assume` (no `AWS_SECRET_ACCESS_KEY` in repo secrets).
+
+Keep **Terraform state**, **tfvars**, and **AWS account IDs** out of public logs; mask outputs in Actions.
+
+### 6. After credentials work
+
+Continue with **[First run (local)](#first-run-local)** below (`terraform init` → `plan` → `apply`). The **`aws` CLI** is also used for **`aws s3 sync`** after the web static build.
 
 ## First run (local)
 
@@ -25,7 +83,7 @@ terraform plan
 terraform apply
 ```
 
-Use a **remote S3 backend** for anything shared or production; see commented block in `versions.tf`.
+Use a **remote S3 backend** for anything shared or production; see commented block in `versions.tf`. Local state is acceptable for a **personal smoke** only—switch before team or production workflows.
 
 ## CI
 
@@ -54,7 +112,7 @@ aws s3 sync /path/to/repo/apps/web/out s3://<web_bucket_name> --delete
 
 ## Later (hygiene and hardening)
 
-- **Dependency lockfile**: After `terraform init` in `envs/dev`, commit the generated `infra/terraform/envs/dev/.terraform.lock.hcl` so CI and every machine use the same provider versions (root `.gitignore` keeps the lockfile tracked, not ignored).
+- **Dependency lockfile**: The dev stack lockfile is **already tracked**; keep it updated when providers change (see **Provider lockfile** above).
 - **State and secrets**: Managed SSM parameter values live in Terraform state as well as in AWS. Use an encrypted remote backend and strict IAM on state; do not share or commit state files.
 - **SSM toggle**: With `manage_supabase_credentials_in_ssm = false`, Supabase variables are still required today—consider making them optional when the module is disabled if you often run without mirroring to SSM.
 - **Remote backend**: Enable the S3 backend in `envs/dev/versions.tf` before team or production workflows (already summarized above).
