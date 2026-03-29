@@ -18,6 +18,7 @@
   - **`full-stack.spec.ts`** — profile claims + Things CRUD (matches manual smoke minus real Supabase login UI).
   - **`home.spec.ts`**, **`ui-gallery.spec.ts`** — public routes.
 - **Run:** `npm run test:web:e2e` (install browsers once: `npx playwright install`).
+- **Artifacts:** traces, videos, and test output go under **`test/web/test-results/`** (gitignored; **`outputDir`** in `playwright.config.ts`). **`npm run clean`** removes that folder (and caches).
 - **Port conflicts:** if `3000` / `3001` are already in use, stop other dev servers or set `CI=true` so Playwright does not reuse an existing process.
 
 ## CI

@@ -19,9 +19,9 @@ apps/**/package-lock.json
 test/coverage/
 *.lcov
 
-# Playwright
-playwright-report/
-test-results/
+# Playwright (paths aligned with test/web/playwright.config.ts outputDir)
+test/web/playwright-report/
+test/web/test-results/
 blob-report/
 
 # IDE
