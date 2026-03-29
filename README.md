@@ -249,7 +249,7 @@ git push -u origin main
 
 Use HTTPS instead of SSH if you prefer.
 
-**After fork:** set `package.json` → **`repository.url`** to your app repo (not the template). Run **`npm run fork:check`** for a one-line reminder if the placeholder is still present.
+**After fork:** set `package.json` → **`repository.url`** to your app repo (not the template). Run **`npm run fork:check`** to list anything still at template defaults. To rebrand in one shot (root `name`, repo URL, optional **`--scope`** for `@lattice/*` packages, and copy-facing “Lattice” strings), use **`npm run fork:init -- --npm-name your-app --repo https://github.com/you/your-app.git`** (add **`--display-name`** / **`--scope`** / **`--dry-run`** as needed; see header comment in `scripts/fork.mjs`). Add **`--reset-readme`** to replace the long template **`README.md`** with a short scaffold (placeholder **`Upstream`** links to Lattice + Lattice API).
 
 ### Repo hygiene (forks and teams)
 

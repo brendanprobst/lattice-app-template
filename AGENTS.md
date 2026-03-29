@@ -22,7 +22,7 @@ Each major directory contains **`AGENTS.md`**. Use that name so humans and autom
 - **Tests-first in Cursor** — the **Test expert** rule auto-attaches when editing `apps/api/`, `apps/web/client/`, or `apps/web/app/` (see **`agents/README.md`**). PRs use **`.github/pull_request_template.md`** to confirm tests were updated.
 - **Installs** — Commit the root **`package-lock.json`** and use **`npm ci`** in CI and clean clones so dependency trees match exactly.
 - **Node** — Root **`engines.node`** is **>=20.19.0**; **`.nvmrc`** pins a known-good line for local dev. CI uses **`20.19.x`** and **`22.x`** (see `.github/workflows/ci.yml`).
-- **Forks** — **`npm run fork:check`** reminds you to replace **`package.json` → `repository.url`** after copying the template. **Dependabot** config lives under **`.github/dependabot.yml`** (enable in repo settings on the fork if desired).
+- **Forks** — **`npm run fork:check`** flags template defaults (`repository.url`, root name, workspace package names). **`npm run fork:init`** (see `scripts/fork.mjs`) applies renames/branding in one pass; **`--reset-readme`** replaces the root **`README.md`** with a short scaffold and placeholder links to Lattice + Lattice API. **Dependabot** config lives under **`.github/dependabot.yml`** (enable in repo settings on the fork if desired).
 
 ## Conventions
 

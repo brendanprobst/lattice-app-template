@@ -5,6 +5,7 @@
  *   npm run fork:check
  *   npm run fork:init -- --npm-name acme-app --repo https://github.com/acme/acme-app.git
  *   npm run fork:init -- --npm-name acme-app --repo git@github.com:acme/acme-app.git --display-name "Acme" --scope acme
+ *   npm run fork:init -- ... --reset-readme   # replace root README.md with an empty scaffold (+ upstream links)
  *   npm run fork:init -- ... --dry-run
  */
 import { readFileSync, writeFileSync } from "node:fs";
@@ -18,6 +19,7 @@ function parseArgs(argv) {
   const cmd = args[0] === "init" ? "init" : "check";
   const opts = {
     dryRun: false,
+    resetReadme: false,
     npmName: null,
     repo: null,
     displayName: null,
@@ -27,6 +29,7 @@ function parseArgs(argv) {
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
     if (a === "--dry-run") opts.dryRun = true;
+    else if (a === "--reset-readme") opts.resetReadme = true;
     else if (a === "--npm-name" && rest[i + 1]) opts.npmName = rest[++i];
     else if (a === "--repo" && rest[i + 1]) opts.repo = rest[++i];
     else if (a === "--display-name" && rest[i + 1]) opts.displayName = rest[++i];
@@ -83,6 +86,52 @@ function applyWorkspaceScope(content, scopeName) {
   return content
     .replaceAll("@lattice/api", `@${scopeName}/api`)
     .replaceAll("@lattice/web", `@${scopeName}/web`);
+}
+
+/** Root README after `--reset-readme`: section shells only; links need your URLs. */
+function readmeScaffold(displayName) {
+  return `# ${displayName}
+
+<!-- One or two sentences: what this project is and who it is for. -->
+
+## Upstream
+
+This repository is based on **[Lattice](https://github.com/brendanprobst/lattice-app-template)** (the template this fork started from). For the original API documentation, see **[Lattice API](__TODO_LATTICE_API__)**.
+
+## Overview
+
+<!-- Problem domain, scope, and main capabilities. -->
+
+## Prerequisites
+
+<!-- e.g. Node version, package manager, optional CLI tools -->
+
+## Getting started
+
+\`\`\`bash
+# Clone, install, env files, dev command — document your happy path.
+\`\`\`
+
+## Development
+
+<!-- Local workflow, monorepo layout, pointers to AGENTS.md / internal docs. -->
+
+## Testing
+
+<!-- Unit, integration, E2E commands; CI expectations. -->
+
+## Deployment
+
+<!-- Environments, infra entry points, runbooks. -->
+
+## License
+
+<!-- SPDX id, or "See LICENSE". -->
+
+## Contributing
+
+<!-- PR process, if you accept external contributions. -->
+`;
 }
 
 function runCheck() {
@@ -203,7 +252,7 @@ function runInit(opts) {
 
     const pwPath = join(root, "test/web/playwright.config.ts");
     let pw = readFileSync(pwPath, "utf8");
-    pw = applyWorkspaceScope(pw);
+    pw = applyWorkspaceScope(pw, scope);
     if (opts.dryRun) console.log("[dry-run] would write test/web/playwright.config.ts");
     else {
       writeFileSync(pwPath, pw, "utf8");
@@ -236,6 +285,10 @@ function runInit(opts) {
     `<p className="text-muted-foreground text-sm">${displayName} · ${webPkgLabel}</p>`,
   );
   writeText("apps/web/client/pages/ui-gallery/UiGalleryPage.tsx", ug, opts);
+
+  if (opts.resetReadme) {
+    writeText("README.md", readmeScaffold(displayName), opts);
+  }
 
   console.log(
     `\nDone.${opts.dryRun ? " (dry-run — no files written)" : ""}\n` + "Next: npm ci && npm run ci\n",

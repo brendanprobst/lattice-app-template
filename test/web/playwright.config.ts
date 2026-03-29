@@ -13,6 +13,7 @@ const e2eToken = createE2eAccessToken();
  */
 export default defineConfig({
   testDir: path.join(repoRoot, "test/web/e2e"),
+  outputDir: path.join(repoRoot, "test/web/test-results"),
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
