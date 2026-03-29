@@ -79,8 +79,10 @@ function replaceBranding(content, displayName, apiTitle, supportName) {
   return s;
 }
 
-function applyWorkspaceScope(content, scope) {
-  return content.replaceAll("@lattice/api", `@${scope}/api`).replaceAll("@lattice/web", `@${scope}/web`);
+function applyWorkspaceScope(content, scopeName) {
+  return content
+    .replaceAll("@lattice/api", `@${scopeName}/api`)
+    .replaceAll("@lattice/web", `@${scopeName}/web`);
 }
 
 function runCheck() {
@@ -192,7 +194,7 @@ function runInit(opts) {
 
     const turboPath = join(root, "turbo.json");
     let turbo = readFileSync(turboPath, "utf8");
-    turbo = applyWorkspaceScope(turbo);
+    turbo = applyWorkspaceScope(turbo, scope);
     if (opts.dryRun) console.log("[dry-run] would write turbo.json");
     else {
       writeFileSync(turboPath, turbo, "utf8");
@@ -210,7 +212,7 @@ function runInit(opts) {
 
     const webReadme = join(root, "apps/web/README.md");
     let wr = readFileSync(webReadme, "utf8");
-    wr = applyWorkspaceScope(wr);
+    wr = applyWorkspaceScope(wr, scope);
     if (opts.dryRun) console.log("[dry-run] would write apps/web/README.md");
     else {
       writeFileSync(webReadme, wr, "utf8");
