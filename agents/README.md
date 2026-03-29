@@ -9,6 +9,12 @@ This folder holds **prompts** plus a **registry** that lines up with **Cursor pr
 | **Path-scoped experts** (DDD, test, infra) | Cursor loads the matching `.mdc` rule when you edit files under the globs in each rule. See `.cursor/rules/README.md`. |
 | **Global experts** (debugger, code janitor) | No auto glob — in **Chat** or **Composer**, type **`@`**, choose **Rules** (or **Cursor Rules**), then pick **Debugger expert** or **Code janitor**. |
 
+### Tests-first feature work (Test expert)
+
+Cursor does **not** run a separate “test agent” on save or commit. **Automatic rule context** is what you get: the **Test expert** rule (`.cursor/rules/test-expert.mdc`) applies when you edit **`test/**`** *or* application code under **`apps/api/`**, **`apps/web/client/`**, or **`apps/web/app/`**. That loads test conventions in the same session as other path rules (e.g. DDD), steering the model to **add or update tests with the feature** unless you explicitly want a spike without tests.
+
+**Stronger gates:** required **`ci`** check + branch protection; **`.github/pull_request_template.md`** checklist; optional local **pre-push** `npm run ci`.
+
 Rule bodies live in `.cursor/rules/*.mdc`; short mirrors and `@` hints live under `prompts/`.
 
 ## Layout

@@ -17,6 +17,9 @@ agents:
       - test/api/**
       - test/web/**
       - test/AGENTS.md
+      - apps/api/**
+      - apps/web/client/**
+      - apps/web/app/**
 
   - id: infra-expert
     path: prompts/infra-expert.md

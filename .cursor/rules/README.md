@@ -5,7 +5,7 @@ These `.mdc` files define **expert personas** for this repo.
 | Rule file | When it applies |
 |-----------|------------------|
 | `ddd-expert.mdc` | Automatically when you work under `apps/api/domain/`, `apps/api/application/`, or `docs/adr/`. |
-| `test-expert.mdc` | Automatically when you work under `test/api/` or `test/web/`. |
+| `test-expert.mdc` | Automatically when you work under `test/api/`, `test/web/`, or **feature code** under `apps/api/`, `apps/web/client/`, or `apps/web/app/` (tests-first alongside implementation). |
 | `infra-expert.mdc` | Automatically when you work under `apps/api/infrastructure/`, `apps/api/config/`, or root `seed.json`. |
 | `debugger-expert.mdc` | **Not** path-scoped — attach manually (see below). |
 | `code-janitor.mdc` | **Not** path-scoped — attach manually (see below). |
