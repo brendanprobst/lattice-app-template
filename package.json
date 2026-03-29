@@ -37,7 +37,8 @@
     "infra:fmt:check": "terraform fmt -check -recursive infra/terraform",
     "infra:validate": "cd infra/terraform/envs/dev && terraform init -backend=false -input=false && terraform validate",
     "fork:check": "node scripts/fork.mjs check",
-    "fork:init": "node scripts/fork.mjs init"
+    "fork:init": "node scripts/fork.mjs init",
+    "scaffold": "node scripts/scaffold.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

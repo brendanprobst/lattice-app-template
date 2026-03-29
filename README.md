@@ -6,21 +6,33 @@ The **API** (`@lattice/api`) is a DDD Express app with Jest tests under **`test/
 
 ## Getting Started
 
-This template is designed for a **fork-first workflow**:
+### Recommended: new repo + scaffold (no GitHub fork)
 
-1. Improve scaffold/docs in this template repo.
-2. Fork (or use as a GitHub Template) to create an app repo.
-3. Validate from a clean clone locally.
-4. Deploy and smoke test the **forked app repo**, not this template repo.
+1. Create a **new empty repository** on GitHub (README-only is fine).
+2. **Clone** it next to your local copy of this template (same parent folder).
+3. From **this template** folder, run **`npm run scaffold`** into that clone, then install, test, and push.
+
+Full steps, flags, and prompts: **[`docs/scaffold-workflow.md`](docs/scaffold-workflow.md)**.
+
+```bash
+cd /path/to/lattice-app-template
+npm ci
+npm run scaffold -- --into ../my-app --name my-app --repo https://github.com/your-org/my-app.git
+cd ../my-app
+npm ci && npm run ci
+git add -A && git commit -m "Lattice scaffold" && git push -u origin main
+```
+
+You can still **fork** or **“Use this template”** on GitHub if you prefer; the scaffold command is for when org-level forks are awkward.
 
 ### Prerequisites
 
 - Node.js **>=20.19.0** (root `package.json` → **`engines`**; use **`.nvmrc`** with **nvm** / **fnm** / **asdf** so your laptop matches CI and avoids tooling `EBADENGINE` warnings).
 - npm (see **`packageManager`** in `package.json`; **`npm ci`** in CI)
 
-### First clone or fork (happy path)
+### After you have an app repo (clone happy path)
 
-Use this to mimic a fresh machine and catch drift before you rely on the template:
+Use this to validate a **machine or teammate clone** once the repo already contains the scaffold (see **[`docs/scaffold-workflow.md`](docs/scaffold-workflow.md)** or a GitHub fork/template):
 
 ```bash
 git clone <your-repo-url> my-app && cd my-app

@@ -23,6 +23,8 @@ Keep it in-repo so every fork repeats the same steps safely.
 
 Use this section to track **this documentation pass** vs **follow-up work** (no code changes required here unless noted).
 
+A consolidated **template completeness** backlog (v1 “done” line, quick wins, future goals) lives in [`template_completeness_backlog.plan.md`](./template_completeness_backlog.plan.md).
+
 ### Addressed in the doc checkpoint (you are here)
 
 - **`apps/web/.env.example`** — tracked example env for `NEXT_PUBLIC_*` variables (fork “happy path” matches README).
