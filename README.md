@@ -15,8 +15,8 @@ This template is designed for a **fork-first workflow**:
 
 ### Prerequisites
 
-- Node.js **20.19+** (see `package.json` `engines`; CI tests **20.x** and **22.x**)
-- npm
+- Node.js **>=20.19.0** (root `package.json` → **`engines`**; use **`.nvmrc`** with **nvm** / **fnm** / **asdf** so your laptop matches CI and avoids tooling `EBADENGINE` warnings).
+- npm (see **`packageManager`** in `package.json`; **`npm ci`** in CI)
 
 ### First clone or fork (happy path)
 
@@ -64,7 +64,7 @@ Use this when preparing a release of the scaffold:
 Use this sequence when taking a fresh fork from local dev to deployable smoke-test state. The **full first-hour runbook** (ordered sections, **web-first smoke**, Supabase DDL, JWT-aware API checks, **checkpoint / what’s left**) is **[`docs/plans/smoke_test_deployment_guide.plan.md`](docs/plans/smoke_test_deployment_guide.plan.md)** — treat that file as canonical for deploy verification.
 
 1. **Tooling/runtime versions**
-   - Confirm Node.js version matches `package.json` engines (`20.19+`).
+   - Confirm Node.js **>=20.19.0** (see **`engines`** and **`.nvmrc`**).
    - Install Terraform and AWS CLI on your machine.
 
 2. **Install and baseline checks**
@@ -208,12 +208,14 @@ Application use cases return structured errors mapped to HTTP status codes via `
 
 AWS IaC lives under **`infra/terraform/`**. Put **Supabase URL and API keys** in **`infra/terraform/envs/dev/terraform.tfvars`** (copy from `terraform.tfvars.example`; file is gitignored). With **`manage_supabase_credentials_in_ssm = true`**, Terraform writes them to **SSM Parameter Store** under `/{project}-{env}/supabase/*` for Lambdas, ECS, or CI.
 
+**Deploying to your AWS account:** authenticate the AWS CLI (or CI via OIDC), then run Terraform from this repo — see **[Connecting your AWS account](infra/terraform/README.md#connecting-your-aws-account-for-deployment)** in **`infra/terraform/README.md`**.
+
 ```bash
 npm run infra:fmt
 npm run infra:validate
 ```
 
-See [`infra/terraform/README.md`](infra/terraform/README.md) for `terraform init` / `apply` and remote state.
+See [`infra/terraform/README.md`](infra/terraform/README.md) for `terraform init` / `apply`, remote state, and the AWS connection playbook.
 
 ## Development
 
@@ -245,4 +247,18 @@ git branch -M main
 git push -u origin main
 ```
 
-Use HTTPS instead of SSH if you prefer. Update `package.json` → `repository.url` to match your fork.
+Use HTTPS instead of SSH if you prefer.
+
+**After fork:** set `package.json` → **`repository.url`** to your app repo (not the template). Run **`npm run fork:check`** for a one-line reminder if the placeholder is still present.
+
+### Repo hygiene (forks and teams)
+
+| Topic | What to do |
+|--------|------------|
+| **`repository.url`** | Update after fork; **`npm run fork:check`** |
+| **Node** | **`engines`** + **`.nvmrc`**; CI uses **`20.19.x`** and **`22.x`** (not bare `20.x`, so patch 20.18 never slips in) |
+| **Terraform providers** | **`infra/terraform/envs/dev/.terraform.lock.hcl`** is committed — re-commit after `terraform init` / provider bumps so laptops and CI match |
+| **Terraform state** | Local backend is fine for solo smoke; enable the **S3 backend** in `envs/dev/versions.tf` before shared or prod work (see **`infra/terraform/README.md`**) |
+| **AWS ↔ repo** | No GitHub “connect” button — use **CLI/SSO/OIDC** as in **[Connecting your AWS account](infra/terraform/README.md#connecting-your-aws-account-for-deployment)** |
+| **Dependency updates** | **Dependabot** is configured (`.github/dependabot.yml`) for **npm** and **GitHub Actions** — enable “Dependabot alerts” / version updates in the fork’s GitHub settings if you want automated PRs |
+| **CI vs E2E** | **`npm run ci`** matches the main workflow job; Playwright stays in the **`web-e2e`** job |

@@ -20,6 +20,8 @@ Each major directory contains **`AGENTS.md`**. Use that name so humans and autom
 
 - **`npm run ci`** — `turbo run build lint type-check` plus **`//#test:coverage`** (Jest + coverage) and **`//#test:web:unit`** (Vitest). Matches the `test` job in `.github/workflows/ci.yml`. Playwright E2E runs in the separate **`web-e2e`** job.
 - **Installs** — Commit the root **`package-lock.json`** and use **`npm ci`** in CI and clean clones so dependency trees match exactly.
+- **Node** — Root **`engines.node`** is **>=20.19.0**; **`.nvmrc`** pins a known-good line for local dev. CI uses **`20.19.x`** and **`22.x`** (see `.github/workflows/ci.yml`).
+- **Forks** — **`npm run fork:check`** reminds you to replace **`package.json` → `repository.url`** after copying the template. **Dependabot** config lives under **`.github/dependabot.yml`** (enable in repo settings on the fork if desired).
 
 ## Conventions
 

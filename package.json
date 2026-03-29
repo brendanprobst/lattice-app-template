@@ -8,6 +8,9 @@
     "url": "git+https://github.com/your-username/lattice-app-template.git"
   },
   "packageManager": "npm@10.8.2",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "workspaces": [
     "apps/*"
   ],
@@ -32,7 +35,8 @@
     "ci": "turbo run build lint type-check \"//#test:coverage\" \"//#test:web:unit\"",
     "infra:fmt": "terraform fmt -recursive infra/terraform",
     "infra:fmt:check": "terraform fmt -check -recursive infra/terraform",
-    "infra:validate": "cd infra/terraform/envs/dev && terraform init -backend=false -input=false && terraform validate"
+    "infra:validate": "cd infra/terraform/envs/dev && terraform init -backend=false -input=false && terraform validate",
+    "fork:check": "node scripts/post-fork-reminder.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
