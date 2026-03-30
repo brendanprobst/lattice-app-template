@@ -1,12 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { HomePage } from "@client/pages/home";
+import { HomePage, HOME_LANDING_HERO_TITLE } from "@client/pages/home";
 
 describe("HomePage", () => {
-  it("renders Lattice hero and API URL from env", () => {
+  it("renders template hero and API URL from env", () => {
     render(<HomePage />);
     expect(
-      screen.getByRole("heading", { level: 1, name: "Lattice" }),
+      screen.getByRole("heading", { level: 1, name: HOME_LANDING_HERO_TITLE }),
     ).toBeInTheDocument();
     expect(screen.getByText("http://127.0.0.1:3000")).toBeInTheDocument();
   });

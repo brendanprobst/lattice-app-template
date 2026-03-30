@@ -193,6 +193,8 @@ function runInit(opts) {
   const supportName = `${displayName} Support`;
   const scope = opts.scope?.trim() || null;
 
+  // Home landing (`client/pages/home/HomePage.tsx`) keeps the template "Lattice" hero by design.
+  // Do not add that file or home route tests here — replaceBranding would desync tests from UI.
   const brandingFiles = [
     "apps/web/app/layout.tsx",
     "apps/api/routes/index.ts",
@@ -200,8 +202,6 @@ function runInit(opts) {
     "apps/api/config/swagger/index.ts",
     "apps/api/config/swagger/decorators/index.decorators.ts",
     "apps/web/client/pages/login/LoginPage.tsx",
-    "test/web/unit/HomePage.test.tsx",
-    "test/web/e2e/home.spec.ts",
     "test/api/index.test.ts",
   ];
 
