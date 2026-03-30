@@ -21,7 +21,8 @@ export class ResultError {
   formatMessage(values: Record<string, string | number>): string {
     let formatted = this.message;
     for (const [key, value] of Object.entries(values)) {
-      formatted = formatted.replace(`{${key}}`, String(value));
+      const token = `{${key}}`;
+      formatted = formatted.split(token).join(String(value));
     }
     return formatted;
   }
