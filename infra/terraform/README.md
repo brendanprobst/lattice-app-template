@@ -97,7 +97,7 @@ Root `npm run infra:fmt` and `npm run infra:validate` (no AWS credentials requir
 ## Cost controls (Phase 3)
 
 - **Hard caps**:
-  - Lambda `reserved_concurrent_executions` via `api_lambda_reserved_concurrency`
+  - Lambda `reserved_concurrent_executions` via optional `api_lambda_reserved_concurrency` (default unset; explicit reservation can fail if the account’s unreserved concurrency pool would drop below AWS’s minimum, often 10)
   - API Gateway stage throttling via `api_gateway_throttling_rate_limit` and `api_gateway_throttling_burst_limit`
 - **Budget alerts**: `aws_budgets_budget` with threshold notifications (50/80/100% by default) to `budget_alert_email_addresses`.
 - **Scheduled pause/resume** (optional): EventBridge Scheduler can pause the API by setting Lambda concurrency to `0`, then resume by removing the override.

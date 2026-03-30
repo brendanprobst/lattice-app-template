@@ -8,10 +8,12 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import app from '../app';
+import { createApp } from '../app';
 import debug from 'debug';
 import http from 'http';
 import { Logger } from '../utils/logger';
+
+const app = createApp();
 
 const debugLog = debug('api:server');
 

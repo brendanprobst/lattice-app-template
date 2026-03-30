@@ -82,8 +82,9 @@ resource "aws_lambda_function" "api" {
   timeout       = var.api_lambda_timeout_seconds
   filename      = data.archive_file.api_lambda_zip.output_path
 
-  source_code_hash               = data.archive_file.api_lambda_zip.output_base64sha256
-  reserved_concurrent_executions = var.api_lambda_reserved_concurrency
+  source_code_hash = data.archive_file.api_lambda_zip.output_base64sha256
+  # null maps to -1 so the AWS provider uses the unreserved pool / clears reservation (per provider behavior).
+  reserved_concurrent_executions = var.api_lambda_reserved_concurrency != null ? var.api_lambda_reserved_concurrency : -1
 
   environment {
     variables = {
@@ -127,6 +128,12 @@ resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.api_http.id
   name        = "$default"
   auto_deploy = true
+
+  # Avoid empty auto-deploy: stage must apply after routes or first deploy can race with no valid routes.
+  depends_on = [
+    aws_apigatewayv2_route.root,
+    aws_apigatewayv2_route.proxy,
+  ]
 
   default_route_settings {
     throttling_rate_limit  = var.api_gateway_throttling_rate_limit

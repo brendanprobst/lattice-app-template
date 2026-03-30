@@ -69,6 +69,3 @@ export function createApp(container?: Container): Express {
 
   return app;
 }
-
-const app = createApp();
-export default app;

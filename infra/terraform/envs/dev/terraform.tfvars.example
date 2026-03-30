@@ -15,7 +15,7 @@ manage_supabase_credentials_in_ssm = true
 things_table_name                  = "things"
 
 # Phase 3 cost controls
-api_lambda_reserved_concurrency   = 5
+# api_lambda_reserved_concurrency = 5 # optional; only if account has spare regional concurrency, so copying the example does not force reservation
 api_gateway_throttling_rate_limit = 10
 api_gateway_throttling_burst_limit = 20
 

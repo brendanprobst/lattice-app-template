@@ -78,9 +78,10 @@ variable "api_lambda_memory_mb" {
 }
 
 variable "api_lambda_reserved_concurrency" {
-  description = "Max concurrent API Lambda executions (cost and blast-radius cap)."
+  description = "Optional reservation limit for concurrent API Lambda executions. AWS enforces a minimum unreserved concurrency per region; setting this consumes from that pool and apply can fail if unreserved would drop below that minimum. Omit or null to leave the function on the unreserved pool (no explicit reservation)."
   type        = number
-  default     = 5
+  nullable    = true
+  default     = null
 }
 
 variable "api_gateway_throttling_rate_limit" {
