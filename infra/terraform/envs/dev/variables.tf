@@ -96,6 +96,12 @@ variable "api_gateway_throttling_burst_limit" {
   default     = 20
 }
 
+variable "api_cors_extra_origins" {
+  description = "Optional comma-separated extra browser origins for the Express CORS middleware (e.g. https://app.example.com). The deployed CloudFront HTTPS origin and local dev (3001) origins are always included."
+  type        = string
+  default     = ""
+}
+
 variable "things_table_name" {
   description = "Supabase table name used by the API repository."
   type        = string
