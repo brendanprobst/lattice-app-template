@@ -10,9 +10,10 @@ const options: swaggerJsdoc.Options = {
       description: `API documentation for the Lattice API.
 
 Authentication:
-- Protected routes use Bearer auth with a Supabase access token.
-- In Swagger UI, click **Authorize** and set value as: 'Bearer <access_token></access_token>'.
-- You can get 'access_toke' by signing in through the web app ('/login') and reading the Supabase session token in browser storage/devtools.
+- Protected routes expect a **Supabase Auth access token** (JWT), not the anon key, service_role key, or API key.
+- In Swagger UI, click **Authorize** and paste **only the JWT** (Swagger adds the \`Bearer \` prefix). Do not paste \`Bearer …\` again.
+- Get a token: sign in via the web app (\`/login\`), then read \`session.access_token\` from the Supabase client (or Application → Local Storage / session in devtools for the Supabase project).
+- The API must use the same Supabase project as the token: set \`SUPABASE_URL\` (and optional \`SUPABASE_JWT_ISSUER\`) in \`apps/api/.env\` to match that project.
 `,
       contact: {
         name: 'Lattice Support',
@@ -30,7 +31,8 @@ Authentication:
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
-          description: 'Supabase access token. Format: Bearer <access_token>',
+          description:
+            'Supabase session access_token (JWT only). Paste the token here — do not include the word Bearer.',
         },
       },
       schemas: {
