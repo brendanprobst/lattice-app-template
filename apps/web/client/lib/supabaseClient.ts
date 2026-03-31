@@ -20,7 +20,14 @@ export function getSupabaseClient() {
   }
 
   if (!supabaseClient) {
-    supabaseClient = createClient(config.url, config.anonKey);
+    supabaseClient = createClient(config.url, config.anonKey, {
+      auth: {
+        flowType: "pkce",
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    });
   }
 
   return supabaseClient;

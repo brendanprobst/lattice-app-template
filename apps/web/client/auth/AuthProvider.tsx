@@ -1,5 +1,6 @@
 "use client";
 
+import { safeNextPath } from "@client/lib/safeNextPath";
 import { getSupabaseClient } from "@client/lib/supabaseClient";
 import type { Provider, Session } from "@supabase/supabase-js";
 import {
@@ -7,8 +8,10 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
+import { AuthBootstrapShell } from "./AuthBootstrapShell";
 import type { AuthContextValue } from "./authTypes";
 import { AuthContext } from "./authTypes";
 import { E2eAuthProvider } from "./E2eAuthProvider";
@@ -31,6 +34,7 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [configError, setConfigError] = useState<string | null>(null);
   const supabase = useMemo(() => getSupabaseClient(), []);
+  const bootstrapFallbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!supabase) {
@@ -41,20 +45,32 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
 
     let isMounted = true;
 
-    supabase.auth.getSession().then(({ data }) => {
+    bootstrapFallbackTimer.current = setTimeout(() => {
       if (isMounted) {
-        setSession(data.session ?? null);
+        setLoading(false);
+      }
+    }, 12_000);
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!isMounted) {
+        return;
+      }
+      setSession(nextSession);
+      // First hydrate includes OAuth code exchange (detectSessionInUrl); don't end bootstrap early.
+      if (event === "INITIAL_SESSION") {
+        if (bootstrapFallbackTimer.current) {
+          clearTimeout(bootstrapFallbackTimer.current);
+          bootstrapFallbackTimer.current = null;
+        }
         setLoading(false);
       }
     });
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setLoading(false);
-    });
-
     return () => {
       isMounted = false;
+      if (bootstrapFallbackTimer.current) {
+        clearTimeout(bootstrapFallbackTimer.current);
+      }
       authListener.subscription.unsubscribe();
     };
   }, [supabase]);
@@ -82,7 +98,9 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       if (!supabase) {
         return { message: "Supabase auth is not configured." };
       }
-      const redirectTo = `${window.location.origin}/things`;
+      const params = new URLSearchParams(window.location.search);
+      const next = safeNextPath(params.get("next"));
+      const redirectTo = `${window.location.origin}/login?next=${encodeURIComponent(next)}`;
       const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
       return error;
     },
@@ -101,7 +119,11 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
     },
   }), [configError, loading, session, supabase]);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      <AuthBootstrapShell>{children}</AuthBootstrapShell>
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

@@ -180,6 +180,16 @@ resource "aws_cloudfront_origin_access_control" "web" {
   signing_protocol                  = "sigv4"
 }
 
+# S3 REST API origins do not map /things → things/index.html (unlike website endpoints).
+# Without this, deep links fall through to custom_error_response and serve root index.html (wrong page).
+resource "aws_cloudfront_function" "web_static_export_uri_rewrite" {
+  name    = "${local.name_prefix}-web-static-export-uri"
+  runtime = "cloudfront-js-2.0"
+  comment = "Rewrite extensionless paths to Next static export (*.html at bucket root)"
+  publish = true
+  code    = file("${path.module}/../../cloudfront/functions/viewer_request_next_static_export.js")
+}
+
 resource "aws_cloudfront_distribution" "web" {
   enabled             = true
   default_root_object = "index.html"

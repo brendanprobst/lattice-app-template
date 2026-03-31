@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@client/auth/AuthProvider";
+import { normalizeAppPathname } from "@client/lib/normalizeAppPathname";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
@@ -10,7 +11,9 @@ export function useRequireAuth() {
 
   useEffect(() => {
     if (!loading && !user) {
-      const next = pathname || "/things"; // replace "things" with the default route you want to redirect to
+      const raw = pathname?.trim() ?? "";
+      const base = raw === "" ? "/things" : raw;
+      const next = normalizeAppPathname(base);
       // Full navigation so sessionStorage / auth edge cases behave like a fresh load (matches E2E + manual hard refresh).
       window.location.replace(`/login?next=${encodeURIComponent(next)}`);
     }

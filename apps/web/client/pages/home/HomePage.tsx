@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@client/auth";
 import { Alert, AlertDescription, AlertTitle } from "@client/components/ui/alert";
 import { Badge } from "@client/components/ui/badge";
 import { Button, buttonVariants } from "@client/components/ui/button";
@@ -88,6 +89,7 @@ const stackItems = [
 ] as const;
 
 export function HomePage() {
+  const { user, loading } = useAuth();
   const apiBaseUrl = getPublicApiBaseUrl();
   const repoUrl = templateRepoUrl();
 
@@ -128,8 +130,8 @@ export function HomePage() {
               <ArrowRight className="size-4" />
             </Link>
             <Link
-              href="/login"
-              className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
+              href="/login?next=%2Fthings"
+              className={cn(buttonVariants({ size: "lg" }))}
             >
               Login demo
             </Link>
@@ -144,6 +146,40 @@ export function HomePage() {
             </a>
           </div>
         </header>
+
+        {!loading && user ? (
+          <section aria-labelledby="home-crud-demo-heading">
+            <Card className="border-primary/25 bg-primary/5">
+              <CardHeader className="pb-2">
+                <h2
+                  id="home-crud-demo-heading"
+                  className="font-heading text-lg font-semibold tracking-tight"
+                >
+                  CRUD demo
+                </h2>
+                <CardDescription>
+                  You&apos;re signed in — try the authenticated Things flow (list, create, edit,
+                  delete) backed by the API.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                <a
+                  href="/things"
+                  className={cn(buttonVariants({ size: "sm" }))}
+                >
+                  Open Things
+                  <ArrowRight className="size-4" />
+                </a>
+                <a
+                  href="/profile"
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                >
+                  Profile
+                </a>
+              </CardContent>
+            </Card>
+          </section>
+        ) : null}
 
         <Alert>
           <Terminal />

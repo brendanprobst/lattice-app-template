@@ -1,8 +1,43 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import type { AuthContextValue } from "@client/auth/authTypes";
+import { useAuth } from "@client/auth";
 import { HomePage, HOME_LANDING_HERO_TITLE } from "@client/pages/home";
+import { render, screen } from "@testing-library/react";
+import type { User } from "@supabase/supabase-js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@client/auth", () => ({
+  useAuth: vi.fn(),
+}));
+
+const mockUser = { id: "u1", email: "you@example.com" } as User;
+
+function authLoggedOut(): AuthContextValue {
+  return {
+    user: null,
+    session: null,
+    loading: false,
+    configError: null,
+    signInWithPassword: vi.fn(),
+    signUpWithPassword: vi.fn(),
+    signInWithOAuth: vi.fn(),
+    signOut: vi.fn(),
+    getAccessToken: vi.fn(),
+  };
+}
+
+function authSignedIn(user: User = mockUser): AuthContextValue {
+  return {
+    ...authLoggedOut(),
+    user,
+    session: {} as AuthContextValue["session"],
+  };
+}
 
 describe("HomePage", () => {
+  beforeEach(() => {
+    vi.mocked(useAuth).mockReturnValue(authLoggedOut());
+  });
+
   it("renders template hero and API URL from env", () => {
     render(<HomePage />);
     expect(
@@ -23,7 +58,15 @@ describe("HomePage", () => {
     render(<HomePage />);
     expect(screen.getByRole("link", { name: /login demo/i })).toHaveAttribute(
       "href",
-      "/login",
+      "/login?next=%2Fthings",
     );
+  });
+
+  it("shows CRUD demo when signed in", () => {
+    vi.mocked(useAuth).mockReturnValue(authSignedIn());
+    render(<HomePage />);
+    expect(screen.getByRole("heading", { name: "CRUD demo" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /open things/i })).toHaveAttribute("href", "/things");
+    expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute("href", "/profile");
   });
 });

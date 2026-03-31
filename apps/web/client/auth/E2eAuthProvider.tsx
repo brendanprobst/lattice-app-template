@@ -2,6 +2,7 @@
 
 import type { Provider, Session } from "@supabase/supabase-js";
 import { ReactNode, useEffect, useMemo, useState } from "react";
+import { AuthBootstrapShell } from "./AuthBootstrapShell";
 import type { AuthContextValue } from "./authTypes";
 import { AuthContext } from "./authTypes";
 import { buildE2eSession } from "./e2eSession";
@@ -56,5 +57,9 @@ export function E2eAuthProvider({ accessToken, children }: { accessToken: string
     [loading, session],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      <AuthBootstrapShell>{children}</AuthBootstrapShell>
+    </AuthContext.Provider>
+  );
 }
