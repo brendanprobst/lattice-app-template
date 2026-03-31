@@ -3,7 +3,7 @@
  * Deploy API (Lambda bundle) + Terraform (AWS infra) + static web build + S3 sync.
  *
  * Order: build Lambda → terraform apply → read api_url → build web (NEXT_PUBLIC_API_URL from Terraform)
- *       → aws s3 sync. Supabase NEXT_PUBLIC_* must come from env or apps/web/.env.local files.
+ * → aws s3 sync → cloudfront invalidation. Supabase NEXT_PUBLIC_* must come from env or apps/web/.env.local files.
  *
  *   npm run deploy:aws
  *   npm run deploy:aws -- --plan-only
@@ -159,6 +159,17 @@ function main() {
   console.log(`→ aws s3 sync → s3://${bucket}\n`);
   run("aws", ["s3", "sync", outDir, `s3://${bucket}`, "--delete"]);
 
+  const distributionId = capture("terraform", [chdir, "output", "-raw", "web_cloudfront_distribution_id"]);
+  console.log(`→ aws cloudfront create-invalidation (${distributionId})\n`);
+  run("aws", [
+    "cloudfront",
+    "create-invalidation",
+    "--distribution-id",
+    distributionId,
+    "--paths",
+    "/*",
+  ]); 
+  
   console.log("\nDeploy finished.");
   printOutputs();
 }
