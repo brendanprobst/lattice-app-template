@@ -4,7 +4,7 @@ Use this when you **do not** want to fork the template on GitHub. You create an 
 
 ## Prerequisites
 
-- Node.js **>=20.19.0** (see root `package.json` `engines` and `.nvmrc`)
+- Node.js **22** (see root `package.json` `engines`, `.nvmrc`, and `.npmrc` `engine-strict`)
 - **Git** on your PATH (for `git init` only when the target has no `.git`; cloned repos keep their existing `.git`)
 - A **local clone** of this template (for example `lattice-app-template` under your GitHub/projects folder)
 

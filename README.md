@@ -27,7 +27,7 @@ You can still **fork** or **“Use this template”** on GitHub if you prefer; t
 
 ### Prerequisites
 
-- Node.js **>=20.19.0** (root `package.json` → **`engines`**; use **`.nvmrc`** with **nvm** / **fnm** / **asdf** so your laptop matches CI and avoids tooling `EBADENGINE` warnings).
+- Node.js **22** (root `package.json` → **`engines`** is **`>=22.0.0 <23`**; **`.npmrc`** → **`engine-strict=true`**; use **`.nvmrc`** with **nvm** / **fnm** / **asdf** so your laptop matches CI and avoids tooling `EBADENGINE` warnings).
 - npm (see **`packageManager`** in `package.json`; **`npm ci`** in CI)
 
 ### Repo automation (CI + Dependabot)
@@ -84,7 +84,7 @@ Use this when preparing a release of the scaffold:
 Use this sequence when taking a fresh fork from local dev to deployable smoke-test state. The **full first-hour runbook** (ordered sections, **web-first smoke**, Supabase DDL, JWT-aware API checks, **checkpoint / what’s left**) is **[`docs/plans/smoke_test_deployment_guide.plan.md`](docs/plans/smoke_test_deployment_guide.plan.md)** — treat that file as canonical for deploy verification.
 
 1. **Tooling/runtime versions**
-   - Confirm Node.js **>=20.19.0** (see **`engines`** and **`.nvmrc`**).
+   - Confirm Node.js **22** (see **`engines`**, **`.nvmrc`**, and **`.npmrc`** `engine-strict`).
    - Install Terraform and AWS CLI on your machine.
 
 2. **Install and baseline checks**
@@ -276,7 +276,7 @@ Use HTTPS instead of SSH if you prefer.
 | Topic | What to do |
 |--------|------------|
 | **`repository.url`** | Update after fork; **`npm run fork:check`** |
-| **Node** | **`engines`** + **`.nvmrc`**; CI uses **`20.19.x`** and **`22.x`** (not bare `20.x`, so patch 20.18 never slips in) |
+| **Node** | **`engines`** (22.x only) + **`.nvmrc`** (`22`) + **`engine-strict`**; CI uses **`22.x`** |
 | **Terraform providers** | **`infra/terraform/envs/dev/.terraform.lock.hcl`** is committed — re-commit after `terraform init` / provider bumps so laptops and CI match |
 | **Terraform state** | Local backend is fine for solo smoke; enable the **S3 backend** in `envs/dev/versions.tf` before shared or prod work (see **`infra/terraform/README.md`**) |
 | **AWS ↔ repo** | No GitHub “connect” button — use **CLI/SSO/OIDC** as in **[Connecting your AWS account](infra/terraform/README.md#connecting-your-aws-account-for-deployment)** |

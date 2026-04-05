@@ -62,7 +62,7 @@ variable "api_lambda_bundle_path" {
 variable "api_lambda_runtime" {
   description = "Lambda runtime for the API function."
   type        = string
-  default     = "nodejs20.x"
+  default     = "nodejs22.x"
 }
 
 variable "api_lambda_timeout_seconds" {

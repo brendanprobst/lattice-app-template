@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "tsc",
-    "build:lambda": "esbuild lambda.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist-lambda/index.js",
+    "build:lambda": "esbuild lambda.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist-lambda/index.js",
     "start": "node ./dist/bin/www.js",
     "dev": "ts-node-dev --respawn --transpile-only ./bin/www.ts",
     "type-check": "tsc --noEmit"

@@ -54,7 +54,7 @@ Goal: from a clean clone of **your fork**, reach a **known-good deployed smoke**
 
 ### A. Machine and repo (≈10 min)
 
-1. **Node.js** — `20.19+` (matches `package.json` `engines` and CI).
+1. **Node.js** — **22** (matches `package.json` `engines`, `.nvmrc`, and CI).
 2. **Clone your fork** (not the upstream template, if you treat that as read-only source).
 3. **`npm ci`** at repo root (uses committed `package-lock.json`).
 4. **`npm run ci`** — same pipeline as GitHub Actions `test` job (build, lint, type-check, API Jest + coverage, web Vitest). Fix failures before deploying.

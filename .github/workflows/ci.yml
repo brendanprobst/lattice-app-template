@@ -53,8 +53,8 @@ jobs:
 
     strategy:
       matrix:
-        # Match root package.json engines (>=20.19.0). Pin 20.19.x so CI never resolves to 20.18.x.
-        node-version: ["20.19.x", "22.x"]
+        # Match root package.json engines (Node 22 only). Pin 22.x so CI never resolves to Node 23+.
+        node-version: ["22.x"]
 
     steps:
       - name: Checkout code
