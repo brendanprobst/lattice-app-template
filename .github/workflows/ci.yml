@@ -40,10 +40,11 @@ jobs:
             exit 0
           fi
           jq empty "$F"
-          echo "ci_enabled=$(jq -r '.ci.enabled // true' "$F")" >> "$GITHUB_OUTPUT"
-          echo "job_test=$(jq -r '.ci.test // true' "$F")" >> "$GITHUB_OUTPUT"
-          echo "job_web_e2e=$(jq -r '.ci.webE2e // true' "$F")" >> "$GITHUB_OUTPUT"
-          echo "job_terraform=$(jq -r '.ci.terraform // true' "$F")" >> "$GITHUB_OUTPUT"
+          # jq's // treats false like null, so we must not use // for booleans (false would become default true).
+          echo "ci_enabled=$(jq -r 'if (.ci // {}) | has("enabled") then (if .ci.enabled == null then "true" else (.ci.enabled | tostring) end) else "true" end' "$F")" >> "$GITHUB_OUTPUT"
+          echo "job_test=$(jq -r 'if (.ci // {}) | has("test") then (if .ci.test == null then "true" else (.ci.test | tostring) end) else "true" end' "$F")" >> "$GITHUB_OUTPUT"
+          echo "job_web_e2e=$(jq -r 'if (.ci // {}) | has("webE2e") then (if .ci.webE2e == null then "true" else (.ci.webE2e | tostring) end) else "true" end' "$F")" >> "$GITHUB_OUTPUT"
+          echo "job_terraform=$(jq -r 'if (.ci // {}) | has("terraform") then (if .ci.terraform == null then "true" else (.ci.terraform | tostring) end) else "true" end' "$F")" >> "$GITHUB_OUTPUT"
 
   test:
     needs: repo-config
