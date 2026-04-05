@@ -4,7 +4,7 @@
     "enabled": true,
     "test": true,
     "webE2e": true,
-    "terraform": true
+    "terraform": false
   },
   "dependabot": {
     "enabled": true
