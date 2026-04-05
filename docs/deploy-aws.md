@@ -57,4 +57,5 @@ If you enable an **S3 backend** in `infra/terraform/envs/dev/versions.tf`, the O
 ## See also
 
 - [`infra/terraform/README.md`](../infra/terraform/README.md) — AWS account setup, cost controls.
+- [`docs/playbooks/route53-custom-domain.md`](playbooks/route53-custom-domain.md) — Custom domain, Route 53, ACM, and registrar nameserver steps.
 - [`docs/plans/smoke_test_deployment_guide.plan.md`](plans/smoke_test_deployment_guide.plan.md) — Post-deploy smoke checks.

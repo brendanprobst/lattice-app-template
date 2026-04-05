@@ -28,3 +28,18 @@ enable_api_schedule_controls  = false
 api_pause_schedule_expression = "cron(0 2 * * ? *)"
 api_resume_schedule_expression = "cron(0 13 * * ? *)"
 api_schedule_timezone         = "UTC"
+
+# --- Optional: custom HTTPS hostname (Route 53 + ACM + CloudFront alias) ---
+# See docs/playbooks/route53-custom-domain.md for registrar nameserver delegation.
+#
+# web_custom_domain            = "app.example.com"
+# create_route53_hosted_zone   = true
+# route53_zone_name            = "example.com"
+#
+# Or use an existing Route 53 zone in the same account:
+# web_custom_domain          = "app.example.com"
+# route53_hosted_zone_id     = "Z1234567890ABC"
+#
+# If DNS stays at third-party provider (e.g. Squarespace), disable Route 53 DNS management:
+# web_custom_domain          = "app.example.com"
+# manage_web_dns_in_route53  = false

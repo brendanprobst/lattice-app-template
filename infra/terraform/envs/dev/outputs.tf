@@ -33,6 +33,26 @@ output "web_cloudfront_domain" {
   value       = aws_cloudfront_distribution.web.domain_name
 }
 
+output "web_public_base_url" {
+  description = "HTTPS URL users should open: custom domain when configured, otherwise the CloudFront default hostname."
+  value       = local.web_use_custom_domain ? "https://${trimspace(var.web_custom_domain)}" : "https://${aws_cloudfront_distribution.web.domain_name}"
+}
+
+output "web_custom_domain" {
+  description = "Custom hostname for the web app, if configured; otherwise null."
+  value       = local.web_use_custom_domain ? trimspace(var.web_custom_domain) : null
+}
+
+output "route53_hosted_zone_id" {
+  description = "Route 53 hosted zone used for the web app DNS (when custom domain is enabled); otherwise null."
+  value       = local.web_use_custom_domain ? local.route53_zone_id : null
+}
+
+output "route53_zone_name_servers" {
+  description = "Nameservers to set at your registrar when create_route53_hosted_zone is true. After delegation propagates, ACM validation and HTTPS can complete."
+  value       = var.create_route53_hosted_zone ? aws_route53_zone.web[0].name_servers : null
+}
+
 output "web_cloudfront_distribution_id" {
   description = "CloudFront distribution ID for cache invalidation."
   value       = aws_cloudfront_distribution.web.id

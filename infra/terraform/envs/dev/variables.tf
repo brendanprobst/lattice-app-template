@@ -78,10 +78,15 @@ variable "api_lambda_memory_mb" {
 }
 
 variable "api_lambda_reserved_concurrency" {
-  description = "Optional reservation limit for concurrent API Lambda executions. AWS enforces a minimum unreserved concurrency per region; setting this consumes from that pool and apply can fail if unreserved would drop below that minimum. Omit or null to leave the function on the unreserved pool (no explicit reservation)."
+  description = <<-EOT
+    Optional reserved concurrency for the API Lambda (PutFunctionConcurrency).
+    Omit or set to null to leave the function in the account's unreserved pool.
+    Use a positive number (e.g. 5) only if your account has enough regional concurrency:
+    AWS requires at least 10 unreserved concurrent executions; reserving too much can fail apply.
+  EOT
   type        = number
-  nullable    = true
   default     = null
+  nullable    = true
 }
 
 variable "api_gateway_throttling_rate_limit" {

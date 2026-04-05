@@ -21,10 +21,13 @@ locals {
 
   budget_notification_thresholds = [50, 80, 100]
 
-   # Matches apps/api/app.ts — browser Origin must be listed for credentialed requests.
+  # Matches apps/api/app.ts — browser Origin must be listed for credentialed requests.
   api_cors_origins = join(",", compact(concat(
     [
       "https://${aws_cloudfront_distribution.web.domain_name}",
+    ],
+    local.web_use_custom_domain ? ["https://${trimspace(var.web_custom_domain)}"] : [],
+    [
       "http://localhost:3001",
       "http://127.0.0.1:3001",
     ],

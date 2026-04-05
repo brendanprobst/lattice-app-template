@@ -20,4 +20,4 @@
 
 CI runs **`terraform fmt -check`** and **`validate`** as the standard low-overhead baseline. For stricter static analysis later, **tflint** is a common add-on (not wired in this template by default).
 
-See [`terraform/README.md`](terraform/README.md) for layout, **first-time apply**, and **[connecting your AWS account](terraform/README.md#connecting-your-aws-account-for-deployment)** (CLI / SSO / optional GitHub OIDC for deployment).
+See [`terraform/README.md`](terraform/README.md) for layout, **first-time apply**, and **[connecting your AWS account](terraform/README.md#connecting-your-aws-account-for-deployment)** (CLI / SSO / optional GitHub OIDC for deployment). Optional **custom domain + Route 53**: [`docs/playbooks/route53-custom-domain.md`](../docs/playbooks/route53-custom-domain.md).
