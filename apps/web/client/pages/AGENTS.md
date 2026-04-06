@@ -11,6 +11,7 @@
 | **`home/`**   | `/`   | Marketing / template landing. |
 | **`things/`** | `/things` | Example CRUD page; composes **`@client/features/things`** + **`@client/stores/thingsStore`**. |
 | **`ui-gallery/`** | `/ui` | Design-system smoke / QA (not product UI). |
+| **`auth/`** | `/auth/*` | Supabase sign-in, sign-up, forgot-password, reset-password (wired from **`app/auth/`**). |
 
 - **Do not** put shadcn primitives here — those stay in **`client/components/ui/`** (see [`../components/AGENTS.md`](../components/AGENTS.md)).
 - **Splitting:** As a page grows, add colocated modules under the same folder (e.g. `home/StepCards.tsx`, `home/constants.ts`) and keep **`HomePage.tsx`** as the thin composer.
@@ -20,5 +21,6 @@
 
 ```ts
 import { HomePage } from "@client/pages/home";
+import { SignInPage } from "@client/pages/auth";
 import { UiGalleryPage } from "@client/pages/ui-gallery";
 ```

@@ -1,5 +1,6 @@
 "use client";
 
+import { authPaths } from "@client/lib/constants/authPaths";
 import { safeNextPath } from "@client/lib/safeNextPath";
 import { getSupabaseClient } from "@client/lib/supabaseClient";
 import type { Provider, Session } from "@supabase/supabase-js";
@@ -94,13 +95,28 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signUp({ email, password });
       return error;
     },
+    async requestPasswordReset(email) {
+      if (!supabase) {
+        return { message: "Supabase auth is not configured." };
+      }
+      const redirectTo = `${window.location.origin}${authPaths.resetPassword}`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+      return error;
+    },
+    async updatePassword(password) {
+      if (!supabase) {
+        return { message: "Supabase auth is not configured." };
+      }
+      const { error } = await supabase.auth.updateUser({ password });
+      return error;
+    },
     async signInWithOAuth(provider: Provider) {
       if (!supabase) {
         return { message: "Supabase auth is not configured." };
       }
       const params = new URLSearchParams(window.location.search);
       const next = safeNextPath(params.get("next"));
-      const redirectTo = `${window.location.origin}/login?next=${encodeURIComponent(next)}`;
+      const redirectTo = `${window.location.origin}${authPaths.signIn}?next=${encodeURIComponent(next)}`;
       const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
       return error;
     },

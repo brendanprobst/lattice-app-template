@@ -130,7 +130,7 @@ export function HomePage() {
               <ArrowRight className="size-4" />
             </Link>
             <Link
-              href="/login?next=%2Fthings"
+              href="/auth/sign-in?next=%2Fthings"
               className={cn(buttonVariants({ size: "lg" }))}
             >
               Login demo

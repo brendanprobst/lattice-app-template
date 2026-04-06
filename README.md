@@ -147,7 +147,7 @@ For day-to-day iteration you can use `npm install` when you change dependencies;
 
 Auth flow in this template uses a security-first split:
 
-- Supabase Auth for identity in the web app (`/login`)
+- Supabase Auth for identity in the web app (`/auth/sign-in`)
 - Bearer token to API
 - API verifies JWT and protects `/profile` + `/things`
 

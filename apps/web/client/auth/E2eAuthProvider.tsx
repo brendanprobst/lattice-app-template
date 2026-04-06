@@ -43,6 +43,12 @@ export function E2eAuthProvider({ accessToken, children }: { accessToken: string
       async signUpWithPassword() {
         return { message: "E2E mode uses a synthetic session." };
       },
+      async requestPasswordReset() {
+        return { message: "E2E mode uses a synthetic session." };
+      },
+      async updatePassword() {
+        return { message: "E2E mode uses a synthetic session." };
+      },
       async signInWithOAuth(_provider: Provider) {
         return { message: "E2E mode uses a synthetic session." };
       },

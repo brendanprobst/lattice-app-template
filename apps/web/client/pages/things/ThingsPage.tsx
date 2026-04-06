@@ -12,7 +12,7 @@ import {
   useUpdateThingMutation,
 } from "@client/features/things";
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { type SubmitEvent, useMemo, useState } from "react";
 
 export function ThingsPage() {
   const { loading } = useRequireAuth();
@@ -54,7 +54,7 @@ export function ThingsPage() {
     return q ?? m;
   }, [createThing.error, deleteThing.error, error, isError, updateThing.error]);
 
-  async function onCreate(event: FormEvent<HTMLFormElement>) {
+  async function onCreate(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
       await createThing.mutateAsync(newName);

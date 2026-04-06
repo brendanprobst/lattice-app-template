@@ -7,7 +7,12 @@ import { usePathname } from "next/navigation";
 import { ReactNode, useContext } from "react";
 
 /** Routes where a full-screen blocking overlay would trap clicks (e.g. `/?utm=…` home). */
-const SESSION_BOOTSTRAP_NON_BLOCKING = new Set(["/", "/login", "/ui"]);
+function isSessionBootstrapNonBlocking(pathname: string): boolean {
+  if (pathname === "/" || pathname === "/ui") {
+    return true;
+  }
+  return pathname.startsWith("/auth/");
+}
 
 /**
  * Until Supabase emits `INITIAL_SESSION`, either block with a full-screen gate (protected
@@ -31,7 +36,7 @@ export function AuthBootstrapShell({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
-  if (SESSION_BOOTSTRAP_NON_BLOCKING.has(pathname)) {
+  if (isSessionBootstrapNonBlocking(pathname)) {
     return (
       <>
         <div

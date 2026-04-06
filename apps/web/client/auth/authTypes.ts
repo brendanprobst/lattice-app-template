@@ -8,6 +8,8 @@ export interface AuthContextValue {
   configError: string | null;
   signInWithPassword(email: string, password: string): Promise<{ message: string } | null>;
   signUpWithPassword(email: string, password: string): Promise<{ message: string } | null>;
+  requestPasswordReset(email: string): Promise<{ message: string } | null>;
+  updatePassword(password: string): Promise<{ message: string } | null>;
   signInWithOAuth(provider: Provider): Promise<{ message: string } | null>;
   signOut(): Promise<void>;
   getAccessToken(): Promise<string | null>;

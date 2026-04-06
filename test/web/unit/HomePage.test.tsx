@@ -19,6 +19,8 @@ function authLoggedOut(): AuthContextValue {
     configError: null,
     signInWithPassword: vi.fn(),
     signUpWithPassword: vi.fn(),
+    requestPasswordReset: vi.fn(),
+    updatePassword: vi.fn(),
     signInWithOAuth: vi.fn(),
     signOut: vi.fn(),
     getAccessToken: vi.fn(),
@@ -58,7 +60,7 @@ describe("HomePage", () => {
     render(<HomePage />);
     expect(screen.getByRole("link", { name: /login demo/i })).toHaveAttribute(
       "href",
-      "/login?next=%2Fthings",
+      "/auth/sign-in?next=%2Fthings",
     );
   });
 

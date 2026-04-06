@@ -201,7 +201,7 @@ function runInit(opts) {
     "apps/api/app.ts",
     "apps/api/config/swagger/index.ts",
     "apps/api/config/swagger/decorators/index.decorators.ts",
-    "apps/web/client/pages/login/LoginPage.tsx",
+    "apps/web/client/pages/auth/SignInPage.tsx",
     "test/api/index.test.ts",
   ];
 

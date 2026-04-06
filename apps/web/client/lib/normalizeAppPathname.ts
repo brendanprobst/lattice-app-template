@@ -1,5 +1,5 @@
 /**
- * Map real static-host paths (`/index.html`, `/login.html`) to App Router paths (`/`, `/login`).
+ * Map real static-host paths (`/index.html`, `/login.html`, `/auth/sign-in.html`) to App Router paths (`/`, `/auth/sign-in`, …).
  * See `AuthBootstrapShell` — `usePathname()` can reflect the HTML filename in the address bar.
  */
 export function normalizeAppPathname(pathname: string | null | undefined): string {

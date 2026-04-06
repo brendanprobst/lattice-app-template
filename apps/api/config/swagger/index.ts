@@ -12,7 +12,7 @@ const options: swaggerJsdoc.Options = {
 Authentication:
 - Protected routes expect a **Supabase Auth access token** (JWT), not the anon key, service_role key, or API key.
 - In Swagger UI, click **Authorize** and paste **only the JWT** (Swagger adds the \`Bearer \` prefix). Do not paste \`Bearer …\` again.
-- Get a token: sign in via the web app (\`/login\`), then read \`session.access_token\` from the Supabase client (or Application → Local Storage / session in devtools for the Supabase project).
+- Get a token: sign in via the web app (\`/auth/sign-in\`), then read \`session.access_token\` from the Supabase client (or Application → Local Storage / session in devtools for the Supabase project).
 - The API must use the same Supabase project as the token: set \`SUPABASE_URL\` (and optional \`SUPABASE_JWT_ISSUER\`) in \`apps/api/.env\` to match that project.
 `,
       contact: {
