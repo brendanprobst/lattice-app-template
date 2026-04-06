@@ -95,6 +95,7 @@ Use this sequence when taking a fresh fork from local dev to deployable smoke-te
    - API: copy `apps/api/.env.example` -> `apps/api/.env`
    - Web: copy `apps/web/.env.example` -> `apps/web/.env.local`
    - Local-only values should stay in these files (never commit real secrets).
+   - (Optional) **PostHog** product analytics: off by default; see **[`docs/playbooks/posthog-analytics.md`](docs/playbooks/posthog-analytics.md)** when you want to enable it.
 
 4. **External service setup (outside repo)**
    - Create Supabase project and required table(s) for API persistence.

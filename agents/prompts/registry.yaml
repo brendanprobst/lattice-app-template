@@ -28,6 +28,7 @@ agents:
     globs:
       - apps/api/infrastructure/**
       - apps/api/config/**
+      - apps/web/client/lib/**
       - seed.json
 
   - id: debugger-expert

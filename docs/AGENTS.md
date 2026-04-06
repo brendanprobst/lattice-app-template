@@ -8,6 +8,8 @@
 - **[Repo feature flags](repo-features.md)** — `config/repo-features.json`: enable/disable CI jobs and Dependabot from the start.
 - **[Deploy to AWS](deploy-aws.md)** — `npm run deploy:aws` and the manual **Deploy (AWS)** GitHub workflow.
 - **[Route 53 custom domain](playbooks/route53-custom-domain.md)** — Optional HTTPS hostname, ACM, registrar nameservers.
+- **[PostHog analytics](playbooks/posthog-analytics.md)** — Optional, feature-flagged web analytics (`@lattice/web`).
+- **[Scaffold vs adapters](research/scaffold-agents-and-adapters.md)** — Why `npm run scaffold` does not generate adapters; how agent rules scope to API infra vs web analytics.
 - **`research/`** — Exploratory notes (not ADRs), e.g. [Supabase access patterns](research/supabase-access-patterns.md) (client SDK vs API vs ORM) and the canonical [security-first Supabase Auth default](research/supabase-auth-security-first.md) for API/client separation.
 
 ## For agents

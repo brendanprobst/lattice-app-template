@@ -3,6 +3,7 @@ description: Infra expert — adapters, composition root, config, seed (auto whe
 globs:
   - "apps/api/infrastructure/**"
   - "apps/api/config/**"
+  - "apps/web/client/lib/**"
   - "seed.json"
 alwaysApply: false
 ---
@@ -14,3 +15,4 @@ alwaysApply: false
 - **Seed** (`apps/api/infrastructure/seed.ts`, root `seed.json`): optional bootstrap for in-memory/demo; production paths will swap adapters here later — keep seed shape documented in code comments if non-obvious.
 - **Config** (`apps/api/config/`): Swagger assembly and env-driven OpenAPI metadata; add new decorator paths to `config/swagger/index.ts` when you add route JSDoc files.
 - Do not import Express or HTTP framework types into repositories.
+- **Web analytics:** vendor SDKs (`posthog-js`, etc.) stay behind **`AnalyticsAdapter`** in **`apps/web/client/lib/analytics/`** — same “port + implementation” idea as API adapters, separate from **`Container`** (browser has no DI container; use **`getAnalyticsAdapter()`**).
