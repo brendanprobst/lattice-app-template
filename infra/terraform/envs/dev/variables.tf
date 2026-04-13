@@ -154,3 +154,44 @@ variable "api_schedule_timezone" {
   type        = string
   default     = "UTC"
 }
+
+
+# --- Optional: custom web hostname (Route 53 + ACM + CloudFront) ---
+
+# variable "web_custom_domain" {
+#   description = "FQDN for the static web app (e.g. app.example.com). Leave null to use the CloudFront default domain only."
+#   type        = string
+#   default     = null
+#   nullable    = true
+
+#   validation {
+#     condition     = var.web_custom_domain == null || trimspace(var.web_custom_domain) != ""
+#     error_message = "web_custom_domain, if set, must not be empty or whitespace-only."
+#   }
+# }
+
+# variable "create_route53_hosted_zone" {
+#   description = "When true, create a new public Route 53 hosted zone for route53_zone_name. You must delegate nameservers at your registrar before ACM DNS validation can succeed."
+#   type        = bool
+#   default     = false
+# }
+
+# variable "route53_zone_name" {
+#   description = "Apex domain for the new hosted zone (e.g. example.com). Required when create_route53_hosted_zone is true."
+#   type        = string
+#   default     = null
+#   nullable    = true
+# }
+
+# variable "route53_hosted_zone_id" {
+#   description = "Existing Route 53 hosted zone ID (e.g. Z123...). Use this when DNS already lives in Route 53. Ignored if create_route53_hosted_zone is true."
+#   type        = string
+#   default     = null
+#   nullable    = true
+# }
+
+# variable "manage_web_dns_in_route53" {
+#   description = "When true, Terraform manages ACM DNS validation + web alias records in Route 53. Set false when DNS stays at a third-party provider (e.g. Squarespace)."
+#   type        = bool
+#   default     = true
+# }
