@@ -65,9 +65,11 @@ function logAuthWarning(req: Request, message: string, details?: Record<string, 
 }
 
 /**
- * Load ESM-only jose from a CommonJS build without transpiling to require().
+ * Use native dynamic import so Node can load ESM-only jose and bundlers can still
+ * statically detect the dependency for Lambda packaging.
  */
-const importJose = new Function('specifier', 'return import(specifier)') as (specifier: string) => Promise<any>;
+
+const importJose = () => import('jose');
 
 async function verifyWithJwks(token: string): Promise<JwtPayload> {
   const issuer = getExpectedIssuer();
@@ -75,7 +77,7 @@ async function verifyWithJwks(token: string): Promise<JwtPayload> {
   const supabaseUrl = getSupabaseUrl();
   const jwksUrl = `${supabaseUrl}/auth/v1/.well-known/jwks.json`;
 
-  const jose = await importJose('jose');
+  const jose = await importJose();
   const JWKS = jose.createRemoteJWKSet(new URL(jwksUrl));
   const { payload } = await jose.jwtVerify(token, JWKS, {
     issuer,

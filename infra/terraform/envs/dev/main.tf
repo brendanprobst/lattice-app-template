@@ -102,6 +102,7 @@ resource "aws_lambda_function" "api" {
   environment {
     variables = {
       NODE_ENV                        = "production"
+      CORS_ORIGINS                    = local.api_cors_origins
       SUPABASE_URL_PARAM              = local.supabase_parameter_names.url
       SUPABASE_SERVICE_ROLE_KEY_PARAM = local.supabase_parameter_names.service_role_key
       SUPABASE_THINGS_TABLE           = var.things_table_name
