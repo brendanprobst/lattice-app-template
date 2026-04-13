@@ -75,6 +75,8 @@ npm ci
 npm run ci
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
+cp infra/terraform/envs/dev/terraform.tfvars.example infra/terraform/envs/dev/terraform.tfvars
+# Follow the guide in `docs/plans/smoke_test_deployment_guide.plan.md` to deploy and smoke test the app.
 ```
 
 Then commit and push:
