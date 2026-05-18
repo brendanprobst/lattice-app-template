@@ -289,14 +289,13 @@ function preserveTail(existing) {
 }
 
 function buildDocument(opts, buckets, templateDir, spawnDir, productContext) {
-  const spawnName = opts.spawnName || basename(spawnDir);
+  const childAppName = opts.spawnName || basename(spawnDir);
   const templateLabel = "lattice-app-template";
-  const spawnLabel = spawnName;
   const { productSection, feature, foundation, excluded } = buildScriptSections(
     buckets,
-    spawnName,
+    childAppName,
     templateLabel,
-    spawnLabel,
+    childAppName,
     productContext.meta,
   );
   const existing = existsSync(opts.out) ? readFileSync(opts.out, "utf8") : "";
