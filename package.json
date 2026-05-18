@@ -41,7 +41,8 @@
     "scaffold": "node scripts/scaffold.mjs",
     "repo-features:apply": "node scripts/apply-repo-features.mjs",
     "deploy:aws": "node scripts/deploy-aws.mjs",
-    "deploy:aws:plan": "node scripts/deploy-aws.mjs --plan-only"
+    "deploy:aws:plan": "node scripts/deploy-aws.mjs --plan-only",
+    "lattice:harvest-index": "node scripts/lattice-harvest-index.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

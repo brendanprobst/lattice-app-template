@@ -1,0 +1,5 @@
+{
+  "productPathSegments": ["my-custom-domain-segment"],
+  "platformPathSegments": ["internal-admin"],
+  "disableInference": false
+}
