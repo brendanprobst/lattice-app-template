@@ -32,7 +32,12 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@api/*": ["./*"]
+    }
   },
   "include": [
     "**/*.ts"

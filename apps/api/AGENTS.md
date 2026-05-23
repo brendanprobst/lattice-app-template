@@ -14,11 +14,15 @@
 - **`controllers/`**, **`routes/`** — Presentation layer.
 - **`domain/`**, **`application/`**, **`infrastructure/`** — DDD layers.
 
+## Imports
+
+Use the **`@api/*`** path alias only (no relative `../` imports). Configured in `apps/api/tsconfig.json` and the root `tsconfig.json` used by Jest.
+
 ## Adding a feature
 
 1. Domain entity + repository interface (+ optional domain services).
 2. Use case(s) + DTOs returning `Result<T>`.
 3. In-memory (or real) repository implementation.
 4. `Container` getters for new repositories and use cases.
-5. Controller + router; mount router in `app.ts`.
+5. Controller + router; mount router in `app.ts` behind `createProtectedMiddlewareStack()` (shared auth + allowlist).
 6. Swagger decorators and `config/swagger/index.ts` schema paths as needed.

@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
-import '../config/swagger/decorators/index.decorators';
+import '@api/config/swagger/decorators/index.decorators';
 
 const router = express.Router();
 

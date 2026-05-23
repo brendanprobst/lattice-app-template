@@ -1,7 +1,7 @@
 import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { APIGatewayProxyEventV2, Context } from 'aws-lambda';
 import serverlessExpress from '@vendia/serverless-express';
-import { createApp } from './app';
+import { createApp } from '@api/app';
 
 let cachedServer: ReturnType<typeof serverlessExpress> | null = null;
 

@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { InMemoryThingRepository } from './repositories/InMemoryThingRepository';
+import { InMemoryThingRepository } from '@api/infrastructure/repositories/InMemoryThingRepository';
 
 /**
  * Optional bootstrap: load seed JSON into in-memory repositories.

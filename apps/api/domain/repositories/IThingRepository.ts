@@ -1,4 +1,4 @@
-import { Thing } from '../entities/Thing';
+import { Thing } from '@api/domain/entities/Thing';
 
 /**
  * Port for persisting Things (replace with DB adapter in real deployments).
