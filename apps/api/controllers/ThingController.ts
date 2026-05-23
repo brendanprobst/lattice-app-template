@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { Container } from '../infrastructure/container';
-import { ResponseHandler } from '../utils/responseHandler';
-import { Logger } from '../utils/logger';
+import { Container } from '@api/infrastructure/container';
+import { ResponseHandler } from '@api/utils/responseHandler';
+import { Logger } from '@api/utils/logger';
 
 /**
  * HTTP adapter for Thing CRUD (template vertical slice).

@@ -1,6 +1,6 @@
-import { Result } from '../../domain/errors/Result';
-import { ErrorCatalog } from '../../domain/errors/ErrorCatalog';
-import { IThingRepository } from '../../domain/repositories/IThingRepository';
+import { Result } from '@api/domain/errors/Result';
+import { ErrorCatalog } from '@api/domain/errors/ErrorCatalog';
+import { IThingRepository } from '@api/domain/repositories/IThingRepository';
 
 export class DeleteThingUseCase {
   constructor(private thingRepository: IThingRepository) {}

@@ -106,6 +106,7 @@ resource "aws_lambda_function" "api" {
       SUPABASE_URL_PARAM              = local.supabase_parameter_names.url
       SUPABASE_SERVICE_ROLE_KEY_PARAM = local.supabase_parameter_names.service_role_key
       SUPABASE_THINGS_TABLE           = var.things_table_name
+      EMAIL_ALLOWLIST_ENABLED         = var.email_allowlist_enabled ? "true" : "false"
     }
   }
 
@@ -211,6 +212,11 @@ resource "aws_cloudfront_distribution" "web" {
     target_origin_id       = "s3-${aws_s3_bucket.web.id}"
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.web_static_export_uri_rewrite.arn
+    }
 
     forwarded_values {
       query_string = false

@@ -11,6 +11,8 @@
  *   npm run deploy:aws -- --skip-api-build
  *   npm run deploy:aws -- --auto-approve     # terraform apply -auto-approve (required in non-TTY)
  *
+ * Web-only (no Lambda / no apply): npm run deploy:aws:web — see scripts/deploy-aws-web.mjs
+ *
  * Prerequisites: AWS CLI + credentials, Terraform, terraform.tfvars in infra/terraform/envs/dev/
  * (or equivalent TF_VAR_*). See docs/deploy-aws.md.
  */

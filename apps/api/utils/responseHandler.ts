@@ -1,8 +1,8 @@
 import { Response } from 'express';
-import { Result } from '../domain/errors/Result';
-import { HttpErrorMapper } from './httpErrorMapper';
-import { ErrorCatalog } from '../domain/errors/ErrorCatalog';
-import { Logger } from './logger';
+import { Result } from '@api/domain/errors/Result';
+import { HttpErrorMapper } from '@api/utils/httpErrorMapper';
+import { ErrorCatalog } from '@api/domain/errors/ErrorCatalog';
+import { Logger } from '@api/utils/logger';
 
 /**
  * ResponseHandler - Utility functions for handling HTTP responses

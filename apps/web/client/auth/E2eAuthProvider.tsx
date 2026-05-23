@@ -36,6 +36,7 @@ export function E2eAuthProvider({ accessToken, children }: { accessToken: string
       user: session?.user ?? null,
       session,
       loading,
+      apiAuthAccepted: Boolean(session?.user),
       configError: null,
       async signInWithPassword() {
         return { message: "E2E mode uses a synthetic session." };

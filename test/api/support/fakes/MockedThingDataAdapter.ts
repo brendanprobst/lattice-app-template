@@ -1,6 +1,7 @@
-import { ThingDataAdapter, ThingDataAdapterOptions, ThingRecord } from '@api/infrastructure/adapters/ThingDataAdapter';
+import type { DataAdapter, DataAdapterOptions } from '@api/infrastructure/adapters/dataAdapter/DataAdapter';
+import { ThingRecord } from '@api/infrastructure/adapters/ThingDataAdapter';
 
-export class MockedThingDataAdapter implements ThingDataAdapter {
+export class MockedThingDataAdapter implements DataAdapter {
   private readonly store = new Map<number, ThingRecord>();
 
   async get<T>(path: string): Promise<T> {
@@ -13,7 +14,7 @@ export class MockedThingDataAdapter implements ThingDataAdapter {
     return Array.from(this.store.values()) as T;
   }
 
-  async post<T>(path: string, body?: unknown, _options: ThingDataAdapterOptions = {}): Promise<T> {
+  async post<T>(path: string, body?: unknown, _options: DataAdapterOptions = {}): Promise<T> {
     if (!path.includes('on_conflict=id')) {
       throw new Error(`Unexpected POST path: ${path}`);
     }

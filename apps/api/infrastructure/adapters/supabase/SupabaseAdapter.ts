@@ -1,4 +1,4 @@
-import { ThingDataAdapter, ThingDataAdapterOptions } from '../ThingDataAdapter';
+import type { DataAdapter, DataAdapterOptions } from '@api/infrastructure/adapters/dataAdapter/DataAdapter';
 
 type SupabaseAdapterConfig = {
   url: string;
@@ -20,7 +20,7 @@ function getConfig(): SupabaseAdapterConfig {
   };
 }
 
-export class SupabaseAdapter implements ThingDataAdapter {
+export class SupabaseAdapter implements DataAdapter {
   private readonly url: string;
   private readonly serviceRoleKey: string;
 
@@ -33,11 +33,11 @@ export class SupabaseAdapter implements ThingDataAdapter {
     return this.request<T>(path, 'GET');
   }
 
-  async post<T>(path: string, body?: unknown, options: ThingDataAdapterOptions = {}): Promise<T> {
+  async post<T>(path: string, body?: unknown, options: DataAdapterOptions = {}): Promise<T> {
     return this.request<T>(path, 'POST', body, options);
   }
 
-  async update<T>(path: string, body?: unknown, options: ThingDataAdapterOptions = {}): Promise<T> {
+  async update<T>(path: string, body?: unknown, options: DataAdapterOptions = {}): Promise<T> {
     return this.request<T>(path, 'PATCH', body, options);
   }
 
@@ -49,7 +49,7 @@ export class SupabaseAdapter implements ThingDataAdapter {
     path: string,
     method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
     body?: unknown,
-    options: ThingDataAdapterOptions = {}
+    options: DataAdapterOptions = {}
   ): Promise<T> {
     const response = await fetch(`${this.url}/rest/v1/${path}`, {
       method,

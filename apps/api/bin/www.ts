@@ -8,10 +8,11 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { createApp } from '../app';
+import { createApp } from '@api/app';
+import { getAuthVerificationStartupInfo } from '@api/auth/supabaseAuthMiddleware';
 import debug from 'debug';
 import http from 'http';
-import { Logger } from '../utils/logger';
+import { Logger } from '@api/utils/logger';
 
 const app = createApp();
 
@@ -46,8 +47,45 @@ server.on('listening', onListening);
 
 // Log the port we're trying to use
 Logger.server(`Starting server on port ${port}...`);
+try {
+  const auth = getAuthVerificationStartupInfo();
+  Logger.info(
+    `[auth] verification mode=${auth.mode} issuer=${auth.issuer} audience=${auth.audience}`,
+  );
+} catch (error) {
+  Logger.warning(
+    `[auth] unable to resolve verification startup config: ${error instanceof Error ? error.message : 'unknown'}`,
+  );
+}
 
 server.listen(port);
+
+let shuttingDown = false;
+
+function shutdown(signal: NodeJS.Signals): void {
+  if (shuttingDown) {
+    return;
+  }
+  shuttingDown = true;
+  Logger.info(`[server] received ${signal}; closing HTTP server...`);
+  server.close((error?: Error) => {
+    if (error) {
+      Logger.error(`[server] graceful shutdown failed: ${error.message}`);
+      process.exit(1);
+      return;
+    }
+    Logger.success('[server] HTTP server closed cleanly');
+    process.exit(0);
+  });
+
+  setTimeout(() => {
+    Logger.warning('[server] force exit after shutdown timeout');
+    process.exit(1);
+  }, 5000).unref();
+}
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 /**
  * Normalize a port into a number, string, or false.

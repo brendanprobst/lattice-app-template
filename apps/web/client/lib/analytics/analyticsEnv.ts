@@ -1,8 +1,10 @@
+import { isLatticeE2eEnabled } from "@client/lib/latticeFeatureFlags";
+
 /**
  * Env gate for PostHog-backed analytics (must stay aligned with `PostHogAnalyticsAdapter`).
  */
 export function isPostHogAnalyticsConfigured(): boolean {
-  if (process.env.NEXT_PUBLIC_LATTICE_E2E === "1") {
+  if (isLatticeE2eEnabled()) {
     return false;
   }
   if (process.env.NEXT_PUBLIC_LATTICE_POSTHOG_ENABLED !== "1") {

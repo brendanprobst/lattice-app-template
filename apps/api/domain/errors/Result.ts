@@ -1,4 +1,4 @@
-import { ResultError } from './ResultError';
+import { ResultError } from '@api/domain/errors/ResultError';
 
 /**
  * Result - A domain entity representing the outcome of an operation

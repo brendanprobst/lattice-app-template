@@ -1,5 +1,5 @@
-import { Thing } from '../../domain/entities/Thing';
-import { IThingRepository } from '../../domain/repositories/IThingRepository';
+import { Thing } from '@api/domain/entities/Thing';
+import { IThingRepository } from '@api/domain/repositories/IThingRepository';
 
 /**
  * In-memory Thing persistence for local dev and tests.

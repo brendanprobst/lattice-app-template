@@ -366,7 +366,16 @@ function main() {
   console.log(
     `  feature candidates: ${counts.feature} | foundation: ${counts.foundation} | excluded: ${counts.excluded} | template-only: ${counts.templateOnly}`,
   );
-  console.log("\nNext: agent fills § AGENT — sections (see docs/playbooks/upstream-harvest.md).");
+  console.log(`
+Step 1 done (SCRIPT sections only).
+
+  Next:
+    1. Open the file above
+    2. Agent chat → fill § AGENT — (see docs/playbooks/upstream-harvest.md § Step 2)
+    3. You → fill § REVIEWER — Decisions
+    4. Agent → integrate approved items on a template branch → npm run ci
+
+  Child app is not modified.`);
 }
 
 main();

@@ -1,7 +1,7 @@
-import { Result } from '../../domain/errors/Result';
-import { ErrorCatalog } from '../../domain/errors/ErrorCatalog';
-import { IThingRepository } from '../../domain/repositories/IThingRepository';
-import { ThingDto } from '../dtos/ThingDto';
+import { Result } from '@api/domain/errors/Result';
+import { ErrorCatalog } from '@api/domain/errors/ErrorCatalog';
+import { IThingRepository } from '@api/domain/repositories/IThingRepository';
+import { ThingDto } from '@api/application/dtos/ThingDto';
 
 export class GetThingByIdUseCase {
   constructor(private thingRepository: IThingRepository) {}

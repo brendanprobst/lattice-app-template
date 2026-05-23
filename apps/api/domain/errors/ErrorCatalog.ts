@@ -1,4 +1,4 @@
-import { ResultError } from './ResultError';
+import { ResultError } from '@api/domain/errors/ResultError';
 
 /**
  * ErrorCatalog - Centralized catalog of domain errors
@@ -18,6 +18,16 @@ export class ErrorCatalog {
   static readonly INTERNAL_SERVER_ERROR = ResultError.create(
     'INTERNAL_SERVER_ERROR',
     'Something went wrong on our end. Please try again later.'
+  );
+
+  static readonly EMAIL_NOT_APPROVED = ResultError.create(
+    'EMAIL_NOT_APPROVED',
+    'Account email is not approved for access.',
+  );
+
+  static readonly ALLOWLIST_UNAVAILABLE = ResultError.create(
+    'ALLOWLIST_UNAVAILABLE',
+    'Access check temporarily unavailable.',
   );
 
   /**

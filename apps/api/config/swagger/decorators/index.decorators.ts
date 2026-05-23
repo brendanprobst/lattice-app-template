@@ -1,4 +1,4 @@
-import { swaggerRoute } from './route.decorator';
+import { swaggerRoute } from '@api/config/swagger/decorators/route.decorator';
 
 /**
  * Swagger decorators for Index/General routes

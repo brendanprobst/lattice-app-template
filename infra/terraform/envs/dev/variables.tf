@@ -113,6 +113,18 @@ variable "things_table_name" {
   default     = "things"
 }
 
+variable "email_allowlist_enabled" {
+  description = <<-EOT
+    When true, sets EMAIL_ALLOWLIST_ENABLED on the API Lambda so requireAllowedEmail
+    checks public.allowed_emails on every authenticated API request.
+    This does not enable the Supabase DB trigger — still run set_allowlist_enabled(true)
+    in SQL for signup-time blocking (see docs/playbooks/email-allowlist.md).
+    Default is false so new scaffolds stay open until you opt in; set true when the DB gate and allowlist rows are ready.
+  EOT
+  type        = bool
+  default     = false
+}
+
 variable "enable_budget_alerts" {
   description = "When true, create AWS Budget alerts for monthly spend."
   type        = bool
@@ -158,40 +170,40 @@ variable "api_schedule_timezone" {
 
 # --- Optional: custom web hostname (Route 53 + ACM + CloudFront) ---
 
-# variable "web_custom_domain" {
-#   description = "FQDN for the static web app (e.g. app.example.com). Leave null to use the CloudFront default domain only."
-#   type        = string
-#   default     = null
-#   nullable    = true
+variable "web_custom_domain" {
+  description = "FQDN for the static web app (e.g. app.example.com). Leave null to use the CloudFront default domain only."
+  type        = string
+  default     = null
+  nullable    = true
 
-#   validation {
-#     condition     = var.web_custom_domain == null || trimspace(var.web_custom_domain) != ""
-#     error_message = "web_custom_domain, if set, must not be empty or whitespace-only."
-#   }
-# }
+  validation {
+    condition     = var.web_custom_domain == null || trimspace(var.web_custom_domain) != ""
+    error_message = "web_custom_domain, if set, must not be empty or whitespace-only."
+  }
+}
 
-# variable "create_route53_hosted_zone" {
-#   description = "When true, create a new public Route 53 hosted zone for route53_zone_name. You must delegate nameservers at your registrar before ACM DNS validation can succeed."
-#   type        = bool
-#   default     = false
-# }
+variable "create_route53_hosted_zone" {
+  description = "When true, create a new public Route 53 hosted zone for route53_zone_name. You must delegate nameservers at your registrar before ACM DNS validation can succeed."
+  type        = bool
+  default     = false
+}
 
-# variable "route53_zone_name" {
-#   description = "Apex domain for the new hosted zone (e.g. example.com). Required when create_route53_hosted_zone is true."
-#   type        = string
-#   default     = null
-#   nullable    = true
-# }
+variable "route53_zone_name" {
+  description = "Apex domain for the new hosted zone (e.g. example.com). Required when create_route53_hosted_zone is true."
+  type        = string
+  default     = null
+  nullable    = true
+}
 
-# variable "route53_hosted_zone_id" {
-#   description = "Existing Route 53 hosted zone ID (e.g. Z123...). Use this when DNS already lives in Route 53. Ignored if create_route53_hosted_zone is true."
-#   type        = string
-#   default     = null
-#   nullable    = true
-# }
+variable "route53_hosted_zone_id" {
+  description = "Existing Route 53 hosted zone ID (e.g. Z123...). Use this when DNS already lives in Route 53. Ignored if create_route53_hosted_zone is true."
+  type        = string
+  default     = null
+  nullable    = true
+}
 
-# variable "manage_web_dns_in_route53" {
-#   description = "When true, Terraform manages ACM DNS validation + web alias records in Route 53. Set false when DNS stays at a third-party provider (e.g. Squarespace)."
-#   type        = bool
-#   default     = true
-# }
+variable "manage_web_dns_in_route53" {
+  description = "When true, Terraform manages ACM DNS validation + web alias records in Route 53. Set false when DNS stays at a third-party provider (e.g. Squarespace)."
+  type        = bool
+  default     = true
+}

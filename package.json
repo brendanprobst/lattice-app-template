@@ -41,6 +41,7 @@
     "scaffold": "node scripts/scaffold.mjs",
     "repo-features:apply": "node scripts/apply-repo-features.mjs",
     "deploy:aws": "node scripts/deploy-aws.mjs",
+    "deploy:aws:web": "node scripts/deploy-aws-web.mjs",
     "deploy:aws:plan": "node scripts/deploy-aws.mjs --plan-only",
     "lattice:harvest-index": "node scripts/lattice-harvest-index.mjs"
   },

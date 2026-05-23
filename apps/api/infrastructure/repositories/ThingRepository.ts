@@ -1,6 +1,7 @@
-import { Thing } from '../../domain/entities/Thing';
-import { IThingRepository } from '../../domain/repositories/IThingRepository';
-import { ThingDataAdapter, ThingRecord } from '../adapters/ThingDataAdapter';
+import { Thing } from '@api/domain/entities/Thing';
+import { IThingRepository } from '@api/domain/repositories/IThingRepository';
+import type { DataAdapter } from '@api/infrastructure/adapters/dataAdapter/DataAdapter';
+import { ThingRecord } from '@api/infrastructure/adapters/ThingDataAdapter';
 
 function toThing(row: ThingRecord): Thing {
   return new Thing(row.id, row.name.trim(), new Date(row.created_at));
@@ -9,7 +10,7 @@ function toThing(row: ThingRecord): Thing {
 export class ThingRepository implements IThingRepository {
   private readonly table: string;
 
-  constructor(private readonly dataAdapter: ThingDataAdapter) {
+  constructor(private readonly dataAdapter: DataAdapter) {
     this.table = process.env.SUPABASE_THINGS_TABLE?.trim() || 'things';
   }
 

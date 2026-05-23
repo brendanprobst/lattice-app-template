@@ -14,6 +14,10 @@ supabase_service_role_key   = "YOUR_SERVICE_ROLE_KEY"
 manage_supabase_credentials_in_ssm = true
 things_table_name                  = "things"
 
+# API allowlist middleware (EMAIL_ALLOWLIST_ENABLED on Lambda). Defaults to true in variables.tf;
+# set explicitly only when you need to turn it off: email_allowlist_enabled = false
+# email_allowlist_enabled = true
+
 # Phase 3 cost controls
 # api_lambda_reserved_concurrency = 5 # optional; only if account has spare regional concurrency, so copying the example does not force reservation
 api_gateway_throttling_rate_limit = 10
