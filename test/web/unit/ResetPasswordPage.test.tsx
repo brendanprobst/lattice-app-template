@@ -21,6 +21,7 @@ function baseAuth(overrides: Partial<AuthContextValue> = {}): AuthContextValue {
     user: null,
     session: null,
     loading: false,
+    apiAuthAccepted: false,
     configError: null,
     signInWithPassword: vi.fn(),
     signUpWithPassword: vi.fn(),

@@ -5,6 +5,8 @@ export interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  /** True when Supabase Auth accepted the JWT (matches credentialed API calls). */
+  apiAuthAccepted: boolean;
   configError: string | null;
   signInWithPassword(email: string, password: string): Promise<{ message: string } | null>;
   signUpWithPassword(email: string, password: string): Promise<{ message: string } | null>;

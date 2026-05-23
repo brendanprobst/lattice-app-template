@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@client/auth";
+import { friendlyAuthErrorMessage, useAuth } from "@client/auth";
 import { Alert, AlertDescription, AlertTitle } from "@client/components/ui/alert";
 import { Badge } from "@client/components/ui/badge";
 import { Button } from "@client/components/ui/button";
@@ -37,7 +37,7 @@ export function SignUpPage() {
     setInfoMessage(null);
     const error = await signUpWithPassword(email, password);
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(friendlyAuthErrorMessage(error.message));
     } else {
       setInfoMessage("Account created. Check your email if confirmation is required, then sign in.");
     }
@@ -50,7 +50,7 @@ export function SignUpPage() {
     setInfoMessage(null);
     const error = await signInWithOAuth(getOauthProvider());
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(friendlyAuthErrorMessage(error.message));
       setBusy(false);
     }
   }

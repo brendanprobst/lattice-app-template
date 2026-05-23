@@ -3,6 +3,7 @@
 import { authPaths } from "@client/lib/constants/authPaths";
 import { safeNextPath } from "@client/lib/safeNextPath";
 import { getSupabaseClient } from "@client/lib/supabaseClient";
+import { isLatticeE2eEnabled } from "@client/lib/latticeFeatureFlags";
 import type { Provider, Session } from "@supabase/supabase-js";
 import {
   ReactNode,
@@ -16,12 +17,12 @@ import { AuthBootstrapShell } from "./AuthBootstrapShell";
 import type { AuthContextValue } from "./authTypes";
 import { AuthContext } from "./authTypes";
 import { E2eAuthProvider } from "./E2eAuthProvider";
+import { verifyAuthUsableForApi } from "./verifyAuthUsableForApi";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const e2eToken =
-    process.env.NEXT_PUBLIC_LATTICE_E2E === "1"
-      ? process.env.NEXT_PUBLIC_LATTICE_E2E_ACCESS_TOKEN?.trim()
-      : undefined;
+  const e2eToken = isLatticeE2eEnabled()
+    ? process.env.NEXT_PUBLIC_LATTICE_E2E_ACCESS_TOKEN?.trim()
+    : undefined;
 
   if (e2eToken) {
     return <E2eAuthProvider accessToken={e2eToken}>{children}</E2eAuthProvider>;
@@ -33,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [apiAuthAccepted, setApiAuthAccepted] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
   const supabase = useMemo(() => getSupabaseClient(), []);
   const bootstrapFallbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -41,6 +43,7 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) {
       setConfigError("Supabase client auth is not configured in environment variables.");
       setLoading(false);
+      setApiAuthAccepted(false);
       return;
     }
 
@@ -52,18 +55,45 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       }
     }, 12_000);
 
+    const clearBootstrapTimer = () => {
+      if (bootstrapFallbackTimer.current) {
+        clearTimeout(bootstrapFallbackTimer.current);
+        bootstrapFallbackTimer.current = null;
+      }
+    };
+
+    const applyVerifiedAuth = () => {
+      void verifyAuthUsableForApi(supabase).then((r) => {
+        if (!isMounted) {
+          return;
+        }
+        setSession(r.session);
+        setApiAuthAccepted(r.apiAuthAccepted);
+        setLoading(false);
+        clearBootstrapTimer();
+      });
+    };
+
     const { data: authListener } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!isMounted) {
         return;
       }
       setSession(nextSession);
-      // First hydrate includes OAuth code exchange (detectSessionInUrl); don't end bootstrap early.
+
       if (event === "INITIAL_SESSION") {
-        if (bootstrapFallbackTimer.current) {
-          clearTimeout(bootstrapFallbackTimer.current);
-          bootstrapFallbackTimer.current = null;
-        }
+        applyVerifiedAuth();
+        return;
+      }
+
+      if (event === "SIGNED_OUT") {
+        setApiAuthAccepted(false);
         setLoading(false);
+        clearBootstrapTimer();
+        return;
+      }
+
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        applyVerifiedAuth();
       }
     });
 
@@ -80,6 +110,7 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
     user: session?.user ?? null,
     session,
     loading,
+    apiAuthAccepted,
     configError,
     async signInWithPassword(email, password) {
       if (!supabase) {
@@ -114,9 +145,7 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       if (!supabase) {
         return { message: "Supabase auth is not configured." };
       }
-      const params = new URLSearchParams(window.location.search);
-      const next = safeNextPath(params.get("next"));
-      const redirectTo = `${window.location.origin}${authPaths.signIn}?next=${encodeURIComponent(next)}`;
+      const redirectTo = `${window.location.origin}${authPaths.signIn}?next=${encodeURIComponent(safeNextPath(null))}`;
       const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
       return error;
     },
@@ -133,7 +162,7 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       const { data } = await supabase.auth.getSession();
       return data.session?.access_token ?? null;
     },
-  }), [configError, loading, session, supabase]);
+  }), [apiAuthAccepted, configError, loading, session, supabase]);
 
   return (
     <AuthContext.Provider value={value}>

@@ -16,6 +16,7 @@ function authLoggedOut(): AuthContextValue {
     user: null,
     session: null,
     loading: false,
+    apiAuthAccepted: false,
     configError: null,
     signInWithPassword: vi.fn(),
     signUpWithPassword: vi.fn(),
@@ -32,6 +33,7 @@ function authSignedIn(user: User = mockUser): AuthContextValue {
     ...authLoggedOut(),
     user,
     session: {} as AuthContextValue["session"],
+    apiAuthAccepted: true,
   };
 }
 

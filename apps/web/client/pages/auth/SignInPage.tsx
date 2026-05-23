@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@client/auth";
+import { friendlyAuthErrorMessage, useAuth } from "@client/auth";
 import { Alert, AlertDescription, AlertTitle } from "@client/components/ui/alert";
 import { Badge } from "@client/components/ui/badge";
 import { Button } from "@client/components/ui/button";
@@ -13,7 +13,7 @@ import { safeNextPath } from "@client/lib/safeNextPath";
 import { AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type SubmitEvent, useMemo, useState } from "react";
+import { type SubmitEvent, useEffect, useMemo, useState } from "react";
 import { AuthPageShell } from "./AuthPageShell";
 import { getOauthProvider } from "./oauth";
 import { SignedInCard } from "./SignedInCard";
@@ -29,13 +29,20 @@ export function SignInPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    const description = searchParams.get("error_description") ?? searchParams.get("error");
+    if (description) {
+      setMessage(friendlyAuthErrorMessage(description));
+    }
+  }, [searchParams]);
+
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setMessage(null);
     const error = await signInWithPassword(email, password);
     if (error) {
-      setMessage(error.message);
+      setMessage(friendlyAuthErrorMessage(error.message));
     } else {
       router.replace(destination);
     }
@@ -47,7 +54,7 @@ export function SignInPage() {
     setMessage(null);
     const error = await signInWithOAuth(getOauthProvider());
     if (error) {
-      setMessage(error.message);
+      setMessage(friendlyAuthErrorMessage(error.message));
       setBusy(false);
     }
   }
