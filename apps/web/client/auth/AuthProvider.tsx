@@ -145,7 +145,8 @@ function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       if (!supabase) {
         return { message: "Supabase auth is not configured." };
       }
-      const redirectTo = `${window.location.origin}${authPaths.signIn}?next=${encodeURIComponent(safeNextPath(null))}`;
+      const nextParam = new URLSearchParams(window.location.search).get("next");
+      const redirectTo = `${window.location.origin}${authPaths.signIn}?next=${encodeURIComponent(safeNextPath(nextParam))}`;
       const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
       return error;
     },
