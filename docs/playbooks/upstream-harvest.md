@@ -1,110 +1,185 @@
 # Upstream harvest (child app → template)
 
-Pull **platform** improvements from a **child app** (any repo scaffolded from this template) into **`lattice-app-template`** so future `npm run scaffold` copies inherit them. The child app's **product domain** stays in that repo — only shared platform work moves upstream.
+Pull **platform** improvements from a **child app** into **`lattice-app-template`** so future `npm run scaffold` copies inherit them. Product code stays in the child app.
 
-**Ecosystem docs** (plans, research, per-run harvest files) live in the sibling **`cursor/`** folder (open `lattice-ecosystem.code-workspace` alongside this repo) — not inside the template. See `cursor/plans/lattice-contrib-system.md` locally.
+**Ecosystem docs** live in sibling **`cursor/`** (open `lattice-ecosystem.code-workspace`). Master plan: `cursor/plans/lattice-contrib-system.md`.
 
 ## Terminology
 
 | Term | Meaning |
 |------|---------|
-| **Template** | `lattice-app-template` — canonical stencil |
-| **Child app** | A fork/scaffold where you built product V1 (e.g. `runout` today; more later) |
-| **`<child-app>`** | Placeholder for the child folder or `--spawn-name` (e.g. `runout`, `acme-billing`) |
+| **Template** | `lattice-app-template` |
+| **Child app** | Repo scaffolded from the template where you built V1 (e.g. `runout`) |
+| **Harvest doc** | `cursor/research/harvests/harvest-<date>-<child-app>.md` — one file per run |
+
+---
+
+## Workflow at a glance
+
+| Step | Who | What you have when done |
+|------|-----|-------------------------|
+| **1. Index** | You run script | Harvest doc with **§ SCRIPT —** filled (file lists only) |
+| **2. Analyze** | Cursor Agent | Same file with **§ AGENT —** filled (what to port + `F-###` foundation notes) |
+| **3. Decide** | You | **§ REVIEWER —** table filled (`APPROVE` / `SKIP` / `DEFER`) |
+| **4. Integrate** | Cursor Agent | Changes on a **template** branch; `npm run ci` green; you merge |
+| **5. (Later)** | Optional | New scaffolds get the update; **child app is not auto-updated** |
+
+```text
+  npm run lattice:harvest-index     →  § SCRIPT —
+  Agent chat                        →  § AGENT —
+  You edit the markdown             →  § REVIEWER —
+  Agent on template branch          →  git diff in lattice-app-template
+  You merge                         →  future scaffolds win
+```
+
+---
 
 ## Prerequisites
 
-- **Node 22** at the template root
-- **Child app clone** next to the template (e.g. `../<child-app>`)
-- **Multi-root workspace** recommended: `lattice-ecosystem.code-workspace` (template + child app + `cursor/`)
+- **Node 22** at the template root (`nvm use` if needed)
+- Child app cloned next to template (e.g. `../runout`)
+- **Multi-root workspace** recommended: template + child app + `cursor/`
 
-## 1. Generate the index (script)
+---
+
+## Step 1 — Generate the index (script) ✓ you may be here
 
 From **`lattice-app-template`**:
-
-```bash
-npm run lattice:harvest-index -- --from ../<child-app>
-```
-
-Example (current child app):
 
 ```bash
 npm run lattice:harvest-index -- --from ../runout
 ```
 
-Options:
+Output (default): **`../cursor/research/harvests/harvest-<today>-runout.md`**
+
+Open that file. You should see:
+
+| Section | Status after step 1 |
+|---------|---------------------|
+| § SCRIPT — Product exclusion rules | ✅ Filled by script |
+| § SCRIPT — Feature candidates | ✅ Filled by script |
+| § SCRIPT — Foundation files changed | ✅ Filled by script |
+| § SCRIPT — Excluded and template-only | ✅ Filled by script |
+| § AGENT — Feature proposals | ⬜ Stub only — **next step** |
+| § AGENT — Foundation audit | ⬜ Stub only — **next step** |
+| § REVIEWER — Decisions | ⬜ Empty — **you fill after step 2** |
+
+**Quick read (5–10 min):** Skim **Product exclusion rules** (sane?). Skim **Feature candidates** (platform-ish paths, not product folders). Note **Foundation files changed** (small plumbing diffs — agent will explain each).
+
+Re-run the script anytime to refresh **§ SCRIPT —** only; it keeps **§ AGENT —** / **§ REVIEWER —** if already written.
+
+### Script options
 
 | Flag | Purpose |
 |------|---------|
 | `--from <path>` | Child app repo (required) |
-| `--spawn-name <child-app>` | Output filename segment (default: basename of `--from`) |
-| `--out <file.md>` | Override output (default: `../cursor/research/harvests/harvest-<date>-<child-app>.md`) |
-| `--dry-run` | Print markdown to stdout |
+| `--spawn-name <name>` | Filename segment (default: folder basename) |
+| `--out <file.md>` | Override output path |
+| `--dry-run` | Print to stdout |
 
-The script writes **§ SCRIPT —** sections only (inventory). Re-run updates SCRIPT blocks and **preserves** existing **§ AGENT —** and **§ REVIEWER —** content.
+### Product exclusions (automatic)
 
-### Product exclusions (per child app — not hardcoded)
+Not a fixed Runout list. The script **infers** product path segments (child app has `matches/`, template has `things/`, etc.) plus optional `lattice-harvest.json` in the child app. See `.lattice/harvest.json.example`.
 
-The script does **not** use a fixed list of product folder names. It builds exclusions from:
+---
 
-1. **Inference** — feature folder/file tokens in the **child app** but not in the **template** (`apps/web/app/`, `apps/api/routes/`, use-cases, entities, …). Example: template has `things/`; a child app has `matches/` → `matches` is excluded for that harvest.
-2. **Child app config** (optional) — `lattice-harvest.json` or `.lattice/harvest.json` at the child app repo root.
-3. **Template config** (optional) — same file in the template repo for shared defaults.
+## Step 2 — Analyze (Cursor Agent) ← do this next
 
-Example child app override (`lattice-harvest.json` next to `package.json`):
-
-```json
-{
-  "productPathSegments": ["billing", "legacy-import"],
-  "platformPathSegments": ["auth"],
-  "disableInference": false
-}
-```
-
-| Field | Purpose |
-|-------|---------|
-| `productPathSegments` | Extra path segments to treat as product-only (any path component match) |
-| `platformPathSegments` | Segments to **never** exclude (even if only in the child app) |
-| `disableInference` | If `true`, use only config lists (no child−template token diff) |
-
-The harvest doc lists inferred + config segments under **§ SCRIPT — Product exclusion rules**.
-
-## 2. Analyze (agent)
-
-In Cursor Agent, attach **Template integrator** (when configured in `cursor/.cursor/rules/`) and prompt:
+1. Open **`lattice-ecosystem.code-workspace`** (or ensure `cursor/` and both repos are in the workspace).
+2. Open your harvest doc (e.g. `cursor/research/harvests/harvest-2026-05-18-runout.md`).
+3. Start a **new Agent** chat.
+4. Paste (replace the filename if yours differs):
 
 ```text
-Read cursor/research/harvests/harvest-<date>-<child-app>.md (SCRIPT sections are done).
-Fill § AGENT — Feature proposals and § AGENT — Foundation audit.
-Every foundation hunk needs F-###, What/Why, classification, and recommendation.
-Leave § REVIEWER — Decisions empty. Do not edit lattice-app-template or the child app.
+Read cursor/research/harvests/harvest-2026-05-18-runout.md.
+
+The § SCRIPT — sections are complete. Do not re-scan both repos from scratch — use that file as your checklist.
+
+1. Fill § AGENT — Feature proposals (Track 1):
+   - Group § SCRIPT — Feature candidates into universal platform bundles (e.g. email-allowlist, deploy-aws-web).
+   - Per bundle: files, wiring checklist, bake-in vs optional, conflicts with template Things scaffold.
+   - Skip anything that is child-app product domain.
+
+2. Fill § AGENT — Foundation audit (Track 2):
+   - For each file in § SCRIPT — Foundation files changed, diff template vs child app.
+   - Per logical change assign F-001, F-002, … with: What, Why, UNIVERSAL|PROTOTYPE|UNSURE, INCLUDE|SKIP|DEFER.
+
+Do not edit lattice-app-template or the child app. Do not fill § REVIEWER — yet.
 ```
 
-## 3. Decide (you)
+5. When the agent finishes, read **§ AGENT —**. Push back in chat if foundation changes are vague or product code slipped in.
 
-Fill **§ REVIEWER — Decisions** — which features and which `F-###` foundation IDs to port.
+*(Optional later: attach a **Template integrator** rule from `cursor/.cursor/rules/` when that file exists.)*
 
-## 4. Integrate (agent)
+---
+
+## Step 3 — Decide (you)
+
+In the same harvest doc, fill **§ REVIEWER — Decisions**:
+
+| Item | Type | Verdict | Notes |
+|------|------|---------|-------|
+| email-allowlist | feature | APPROVE | bake into template |
+| deploy-aws-web | feature | APPROVE | |
+| F-002 | foundation | APPROVE | auth localhost helper |
+| F-007 | foundation | SKIP | runout-specific |
+| … | | | |
+
+- **Feature rows** — name the bundle from § AGENT — Feature proposals.
+- **Foundation rows** — use `F-###` IDs from § AGENT — Foundation audit.
+- **SKIP** anything you do not want in the template.
+
+You do not need every SCRIPT path — only what you explicitly approve here gets integrated.
+
+---
+
+## Step 4 — Integrate (Cursor Agent)
+
+1. Create/use a branch in **`lattice-app-template`** only (e.g. `integrate/runout-2026-05-18`).
+2. New Agent chat (or continue) with:
 
 ```text
-Using harvest-<date>-<child-app>.md § REVIEWER — Decisions: integrate approved items on branch
-integrate/<child-app>-<date> in lattice-app-template. Generalize for template (Things scaffold stays).
-npm run ci until green.
+In lattice-app-template only, on branch integrate/runout-2026-05-18:
+
+Integrate only what § REVIEWER — Decisions marks APPROVE in
+cursor/research/harvests/harvest-2026-05-18-runout.md.
+
+- Generalize for the template (keep Things scaffold; strip child-app naming).
+- Wire Container, routes, .env.example, terraform, tests as needed.
+- Do not modify the child app repo.
+
+Run npm run ci from lattice-app-template and fix until green.
 ```
 
-Review the diff and merge template `main`. **Existing child apps are not auto-updated** — only future scaffolds inherit the change unless you port back manually.
+3. Review the **git diff in the template repo**.
+4. Merge to template `main` when satisfied.
+
+**Child app (`runout`) does not change** unless you manually port fixes back later.
+
+---
+
+## Step 5 — After merge
+
+- **New apps:** `npm run scaffold` copies the updated template.
+- **Existing child app:** unchanged unless you cherry-pick or re-harvest later.
+- **Smoke-test:** refresh from template when you want CI/deploy parity.
+
+---
 
 ## Validation
 
 ```bash
+cd lattice-app-template
 npm run ci
 ```
 
-from the template root before merge.
+Before merging the integrate branch.
+
+---
 
 ## Related
 
-- Path classification: `scripts/lattice-harvest-paths.mjs`, `scripts/lattice-harvest-product-context.mjs`
-- Config example: `.lattice/harvest.json.example`
-- Ecosystem research: `../cursor/research/lattice-ecosystem-upstream-harvest.md` (local workspace)
-- Scaffold outbound: [Scaffold workflow](../scaffold-workflow.md)
+- `scripts/lattice-harvest-index.mjs`, `lattice-harvest-paths.mjs`, `lattice-harvest-product-context.mjs`
+- `.lattice/harvest.json.example`
+- `cursor/research/lattice-ecosystem-upstream-harvest.md` — example Tier 1 ideas (runout scan)
+- [Scaffold workflow](../scaffold-workflow.md) — template → new child app
