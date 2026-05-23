@@ -5,12 +5,13 @@ import cors from 'cors';
 import logger from 'morgan';
 import swaggerUi from 'swagger-ui-express';
 
-import { swaggerSpec } from './config/swagger/index';
-import indexRouter from './routes/index';
-import { createThingRouter } from './routes/things';
-import { createProfileRouter } from './routes/profile';
-import { Container } from './infrastructure/container';
-import { Logger } from './utils/logger';
+import { swaggerSpec } from '@api/config/swagger/index';
+import indexRouter from '@api/routes/index';
+import { createThingRouter } from '@api/routes/things';
+import { createProfileRouter } from '@api/routes/profile';
+import { Container } from '@api/infrastructure/container';
+import { createProtectedMiddlewareStack } from '@api/auth/createProtectedMiddlewareStack';
+import { Logger } from '@api/utils/logger';
 
 /**
  * Creates an Express app instance with the given container
@@ -20,6 +21,7 @@ export function createApp(container?: Container): Express {
   const appContainer = container || new Container();
 
   const app = express();
+  const protectedMiddleware = createProtectedMiddlewareStack(appContainer);
   const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3001,http://127.0.0.1:3001')
     .split(',')
     .map((origin) => origin.trim())
@@ -40,9 +42,9 @@ export function createApp(container?: Container): Express {
   }));
 
   app.use('/', indexRouter);
-  app.use('/profile', createProfileRouter());
-  app.use('/me', createProfileRouter());
-  app.use('/things', createThingRouter(appContainer));
+  app.use('/profile', ...protectedMiddleware, createProfileRouter(appContainer));
+  app.use('/me', ...protectedMiddleware, createProfileRouter(appContainer));
+  app.use('/things', ...protectedMiddleware, createThingRouter(appContainer));
 
   app.use(function(_req: Request, _res: Response, next: NextFunction) {
     next(createError(404));

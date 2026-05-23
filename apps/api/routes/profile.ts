@@ -1,11 +1,11 @@
 import express, { Router } from 'express';
-import { requireSupabaseAuth } from '../auth/supabaseAuthMiddleware';
-import { RequestWithUser } from '../auth/types';
+import { Container } from '@api/infrastructure/container';
+import { RequestWithUser } from '@api/auth/types';
 
-export function createProfileRouter(): Router {
+export function createProfileRouter(_container: Container): Router {
   const router = express.Router();
 
-  router.get('/', requireSupabaseAuth, (req, res) => {
+  router.get('/', (req, res) => {
     const authReq = req as RequestWithUser;
     res.json({
       id: authReq.user.id,
