@@ -23,8 +23,9 @@ The script order is: **build API Lambda bundle → `terraform apply` → read `a
 | `npm run deploy:aws -- --skip-web` | Lambda + Terraform only (no static build, no S3 sync). |
 | `npm run deploy:aws -- --skip-api-build` | Reuse existing `apps/api/dist-lambda` (still runs Terraform + web). |
 | `npm run deploy:aws -- --auto-approve` | Non-interactive apply (required in CI and headless shells). |
+| `npm run deploy:aws:web` | Static web only: build, S3 sync, CloudFront invalidation (no Lambda build, no `terraform apply`). Uses existing Terraform outputs — run a full deploy after infra changes. |
 
-**CI / automation:** always pass **`--auto-approve`**.
+**CI / automation:** always pass **`--auto-approve`** for full deploys. The **Deploy (AWS)** workflow supports **web_only** for front-end-only updates.
 
 ## GitHub Actions (OIDC)
 

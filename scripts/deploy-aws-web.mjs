@@ -1,20 +1,19 @@
 #!/usr/bin/env node
 /**
- * Deploy API (Lambda bundle) + Terraform (AWS infra) + static web build + S3 sync.
+ * Front-end only: static Next export + S3 sync + CloudFront invalidation.
  *
- * Order: build Lambda → terraform apply → read api_url → build web (NEXT_PUBLIC_API_URL from Terraform)
- * → aws s3 sync → cloudfront invalidation. Supabase NEXT_PUBLIC_* must come from env or apps/web/.env.local files.
+ * Does **not** build the API Lambda bundle and does **not** run `terraform apply`.
+ * Reads `api_url`, bucket, and distribution id from **existing** Terraform state
+ * (run a full `npm run deploy:aws` at least once after infra changes).
  *
- *   npm run deploy:aws
- *   npm run deploy:aws -- --plan-only
- *   npm run deploy:aws -- --skip-web          # infra + API only (no static site build/sync)
- *   npm run deploy:aws -- --skip-api-build
- *   npm run deploy:aws -- --auto-approve     # terraform apply -auto-approve (required in non-TTY)
+ *   npm run deploy:aws:web
  *
- * Web-only (no Lambda / no apply): npm run deploy:aws:web — see scripts/deploy-aws-web.mjs
+ * `NEXT_PUBLIC_API_URL` is taken from Terraform output (same as full deploy).
+ * `NEXT_PUBLIC_SUPABASE_*` must be set in the environment or loaded from
+ * `apps/web/.env.local` / `apps/web/.env.production.local` (this script loads those files).
  *
- * Prerequisites: AWS CLI + credentials, Terraform, terraform.tfvars in infra/terraform/envs/dev/
- * (or equivalent TF_VAR_*). See docs/deploy-aws.md.
+ * Prerequisites: AWS CLI, Terraform, `terraform.tfvars` in `infra/terraform/envs/dev/`.
+ * See docs/deploy-aws.md.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -22,31 +21,6 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-
-function parseArgs(argv) {
-  const args = argv.slice(2);
-  const opts = {
-    planOnly: false,
-    skipWeb: false,
-    skipApiBuild: false,
-    autoApprove: false,
-  };
-  for (let i = 0; i < args.length; i++) {
-    const a = args[i];
-    if (a === "--plan-only") opts.planOnly = true;
-    else if (a === "--skip-web") opts.skipWeb = true;
-    else if (a === "--skip-api-build") opts.skipApiBuild = true;
-    else if (a === "--auto-approve") opts.autoApprove = true;
-    else if (a.startsWith("-")) {
-      console.error(`Unknown flag: ${a}`);
-      process.exit(1);
-    } else {
-      console.error(`Unexpected argument: ${a}`);
-      process.exit(1);
-    }
-  }
-  return opts;
-}
 
 function loadEnvFile(relPath) {
   const full = join(root, relPath);
@@ -68,11 +42,11 @@ function loadEnvFile(relPath) {
   }
 }
 
-function run(cmd, args, extraEnv = {}) {
+function run(cmd, args) {
   const r = spawnSync(cmd, args, {
     cwd: root,
     stdio: "inherit",
-    env: { ...process.env, ...extraEnv },
+    env: process.env,
     shell: false,
   });
   if (r.error) throw r.error;
@@ -97,44 +71,11 @@ const tfDir = join(root, "infra/terraform/envs/dev");
 const chdir = `-chdir=${tfDir}`;
 
 function main() {
-  const opts = parseArgs(process.argv);
-
   loadEnvFile("apps/web/.env.production.local");
   loadEnvFile("apps/web/.env.local");
 
-  if (!opts.skipApiBuild) {
-    console.log("→ npm run api:build:lambda\n");
-    run("npm", ["run", "api:build:lambda"]);
-  }
-
-  console.log("→ terraform init\n");
+  console.log("→ terraform init (read outputs only; no apply)\n");
   run("terraform", [chdir, "init", "-input=false"]);
-
-  if (opts.planOnly) {
-    console.log("→ terraform plan\n");
-    run("terraform", [chdir, "plan", "-input=false"]);
-    console.log("\nPlan complete (--plan-only). No apply, no web build.");
-    return;
-  }
-
-  if (!opts.autoApprove && !process.stdout.isTTY) {
-    console.error(
-      "Refusing terraform apply in a non-interactive terminal without --auto-approve (e.g. CI).",
-    );
-    process.exit(1);
-  }
-
-  const applyArgs = [chdir, "apply", "-input=false"];
-  if (opts.autoApprove) applyArgs.push("-auto-approve");
-
-  console.log("→ terraform apply\n");
-  run("terraform", applyArgs);
-
-  if (opts.skipWeb) {
-    console.log("\nSkipped web build and S3 sync (--skip-web).");
-    printOutputs();
-    return;
-  }
 
   const apiUrl = capture("terraform", [chdir, "output", "-raw", "api_url"]);
   process.env.NEXT_PUBLIC_API_URL = apiUrl;
@@ -170,18 +111,12 @@ function main() {
     distributionId,
     "--paths",
     "/*",
-  ]); 
-  
-  console.log("\nDeploy finished.");
-  printOutputs();
-}
+  ]);
 
-function printOutputs() {
-  const apiUrl = capture("terraform", [chdir, "output", "-raw", "api_url"]);
   const domain = capture("terraform", [chdir, "output", "-raw", "web_cloudfront_domain"]);
-  console.log("\nOutputs:");
-  console.log(`  API:        ${apiUrl}`);
+  console.log("\nWeb deploy finished.");
   console.log(`  Web (HTTPS): https://${domain}/`);
+  console.log(`  API (from state): ${apiUrl}`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
