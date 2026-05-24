@@ -4,12 +4,13 @@
 
 - **`adr/`** — Architecture Decision Records numbered `NNN-title.md`; see `adr/README.md` for the index.
 - **`plans/`** — Runbooks and backlogs (e.g. [smoke test deployment](plans/smoke_test_deployment_guide.plan.md), [template completeness backlog](plans/template_completeness_backlog.plan.md)).
-- **[Scaffold workflow](scaffold-workflow.md)** — Recommended path: new GitHub repo + clone + `npm run scaffold` from a local template copy (no GitHub fork required).
+- **[Scaffold workflow](scaffold-workflow.md)** — New repo + clone + `npm run scaffold`; **[refresh an existing spawn](scaffold-workflow.md#refresh-an-existing-spawn-re-sync-from-template)** re-syncs a long-lived fork from a local template checkout (`.lattice/refresh.json` in the target repo).
 - **[Repo feature flags](repo-features.md)** — `config/repo-features.json`: enable/disable CI jobs and Dependabot from the start.
 - **[Deploy to AWS](deploy-aws.md)** — `npm run deploy:aws` and the manual **Deploy (AWS)** GitHub workflow.
 - **[Route 53 custom domain](playbooks/route53-custom-domain.md)** — Optional HTTPS hostname, ACM, registrar nameservers.
 - **[PostHog analytics](playbooks/posthog-analytics.md)** — Optional, feature-flagged web analytics (`@lattice/web`).
 - **[Email allowlist](playbooks/email-allowlist.md)** — Optional private-app signup and API gate.
+- **[Supabase migrations](playbooks/supabase-migrations.md)** — CLI / psql workflow; one Supabase project per spawn repo (planned `supabase/` layout).
 - **[Upstream harvest](playbooks/upstream-harvest.md)** — Pull platform work from a **child app** into the template (`npm run lattice:harvest-index`); harvest reports live in ecosystem `cursor/research/harvests/`.
 - **[Scaffold vs adapters](research/scaffold-agents-and-adapters.md)** — Why `npm run scaffold` does not generate adapters; how agent rules scope to API infra vs web analytics.
 - **`research/`** — Exploratory notes (not ADRs), e.g. [Supabase access patterns](research/supabase-access-patterns.md) (client SDK vs API vs ORM) and the canonical [security-first Supabase Auth default](research/supabase-auth-security-first.md) for API/client separation.

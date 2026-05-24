@@ -11,6 +11,12 @@ todos:
   - id: verify-terraform-lock-committed
     content: Ensure infra/terraform/envs/dev/.terraform.lock.hcl stays committed when providers change (CI/laptop parity)
     status: pending
+  - id: add-supabase-cli-layout
+    content: Add root supabase/ (config.toml, timestamped migrations), npm run supabase:push; see docs/playbooks/supabase-migrations.md
+    status: pending
+  - id: add-refresh-spawn-script
+    content: Implement scripts/refresh-spawn.mjs + npm run scaffold:refresh (reads target .lattice/refresh.json); spec in docs/scaffold-workflow.md
+    status: pending
   - id: add-scripts-smoke
     content: Optional scripts/smoke for deployed HTTPS (API_BASE_URL + BEARER_TOKEN); no secret logging—pairs with smoke guide
     status: pending
@@ -97,6 +103,8 @@ High value, small scope—work in roughly this order:
 
 | Order | Item | Notes |
 |-------|------|--------|
+| F0 | **`scripts/refresh-spawn.mjs`** | Re-sync long-lived spawns from local template; target owns `.lattice/refresh.json` — [scaffold workflow § Refresh](../scaffold-workflow.md#refresh-an-existing-spawn-re-sync-from-template). |
+| F0b | **Supabase CLI layout** | Root `supabase/migrations/`, `npm run supabase:push` — [Supabase migrations playbook](../playbooks/supabase-migrations.md). |
 | F1 | **`scripts/smoke`** | Deployed HTTPS checks with `API_BASE_URL` + `BEARER_TOKEN`; no secret logging. |
 | F2 | **Deploy + smoke GitHub workflow** | AWS OIDC; masked outputs. |
 | F3 | **Prod hardening** | Restrict or disable `/api-docs` on public API URLs; Lambda logging verbosity (`morgan` vs structured). |

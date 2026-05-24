@@ -162,7 +162,7 @@ Run npm run ci from lattice-app-template and fix until green.
 
 - **New apps:** `npm run scaffold` copies the updated template.
 - **Existing child app:** unchanged unless you cherry-pick or re-harvest later.
-- **Smoke-test:** refresh from template when you want CI/deploy parity.
+- **Long-lived spawns (e.g. smoke-test):** re-sync platform code from your local template checkout — see **[Refresh an existing spawn](../scaffold-workflow.md#refresh-an-existing-spawn-re-sync-from-template)**. Commit **`.lattice/refresh.json`** in the spawn repo (see [`.lattice/refresh.json.example`](../.lattice/refresh.json.example)); run **`npm run scaffold:refresh -- --into ../your-spawn`** from the template once **`scripts/refresh-spawn.mjs`** is implemented.
 
 ---
 
@@ -180,6 +180,7 @@ Before merging the integrate branch.
 ## Related
 
 - `scripts/lattice-harvest-index.mjs`, `lattice-harvest-paths.mjs`, `lattice-harvest-product-context.mjs`
-- `.lattice/harvest.json.example`
+- `.lattice/harvest.json.example` — optional product-path hints for harvest indexing (child app)
+- `.lattice/refresh.json.example` — spawn refresh manifest (committed in **target** repo after scaffold)
 - `cursor/research/lattice-ecosystem-upstream-harvest.md` — example Tier 1 ideas (runout scan)
-- [Scaffold workflow](../scaffold-workflow.md) — template → new child app
+- [Scaffold workflow](../scaffold-workflow.md) — greenfield scaffold and [refresh an existing spawn](../scaffold-workflow.md#refresh-an-existing-spawn-re-sync-from-template)

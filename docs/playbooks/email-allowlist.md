@@ -39,7 +39,7 @@ The trigger and table are defined in `apps/api/supabase/migrations/allowed_email
 
 Supabase grants `USAGE` on the `auth` schema to the SQL Editor role but withholds `CREATE`, so the function-in-`public` pattern above works. If your project also withholds `TRIGGER` privilege on `auth.users`, the final `create trigger` line will fail with a similar `permission denied` error. Two fallbacks:
 
-1. **Run the migration via the Supabase CLI / direct psql as the `postgres` role.** From Project Settings → Database → "Connection string", copy the URI and run:
+1. **Run the migration via the Supabase CLI / direct psql as the `postgres` role.** See **[Supabase migrations playbook](supabase-migrations.md)**. Quick form:
    ```bash
    psql "postgresql://postgres:<password>@<host>:5432/postgres" \
      -f apps/api/supabase/migrations/allowed_emails_signup_gate.sql
