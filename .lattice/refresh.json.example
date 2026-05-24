@@ -3,7 +3,8 @@
   "repo": "https://github.com/your-org/lattice-app-smoke-test.git",
   "prunePaths": [
     "apps/web/app/login",
-    "apps/web/client/pages/login"
+    "apps/web/client/pages/login",
+    "test/api/auth/supabaseAuthMidleware.test.ts"
   ],
   "notes": "Optional free-form reminder for operators (not read by tooling). Example: update Supabase redirect URLs from /login to /auth/sign-in after refresh."
 }

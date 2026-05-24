@@ -154,9 +154,9 @@ Add or adjust `prunePaths` when a template refactor **removes** routes or folder
 
 **First-time setup:** after greenfield scaffold, copy `.lattice/refresh.json.example` → `.lattice/refresh.json`, fill `name` / `repo`, commit in the spawn repo.
 
-### Planned command (from template checkout)
+### Refresh command (from template checkout)
 
-Implementation: **`scripts/refresh-spawn.mjs`** + **`npm run scaffold:refresh`**.
+**`scripts/refresh-spawn.mjs`** + **`npm run scaffold:refresh`**.
 
 ```bash
 cd ~/GitHub/lattice-app-template          # template at the commit you want to sync

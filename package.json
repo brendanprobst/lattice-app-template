@@ -1,6 +1,6 @@
 {
   "name": "lattice-app-template",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Lattice — web app monorepo starter (DDD API, Turborepo; Next.js and infra planned)",
   "repository": {
@@ -39,6 +39,7 @@
     "fork:check": "node scripts/fork.mjs check",
     "fork:init": "node scripts/fork.mjs init",
     "scaffold": "node scripts/scaffold.mjs",
+    "scaffold:refresh": "node scripts/refresh-spawn.mjs",
     "repo-features:apply": "node scripts/apply-repo-features.mjs",
     "deploy:aws": "node scripts/deploy-aws.mjs",
     "deploy:aws:web": "node scripts/deploy-aws-web.mjs",

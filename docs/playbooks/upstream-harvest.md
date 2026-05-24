@@ -162,7 +162,7 @@ Run npm run ci from lattice-app-template and fix until green.
 
 - **New apps:** `npm run scaffold` copies the updated template.
 - **Existing child app:** unchanged unless you cherry-pick or re-harvest later.
-- **Long-lived spawns (e.g. smoke-test):** re-sync platform code from your local template checkout — see **[Refresh an existing spawn](../scaffold-workflow.md#refresh-an-existing-spawn-re-sync-from-template)**. Commit **`.lattice/refresh.json`** in the spawn repo (see [`.lattice/refresh.json.example`](../.lattice/refresh.json.example)); run **`npm run scaffold:refresh -- --into ../your-spawn`** from the template once **`scripts/refresh-spawn.mjs`** is implemented.
+- **Long-lived spawns (e.g. smoke-test):** re-sync platform code from your local template checkout — see **[Refresh an existing spawn](../scaffold-workflow.md#refresh-an-existing-spawn-re-sync-from-template)**. Commit **`.lattice/refresh.json`** in the spawn repo (see [`.lattice/refresh.json.example`](../.lattice/refresh.json.example)); run **`npm run scaffold:refresh -- --into ../your-spawn`** from the template.
 
 ---
 
