@@ -200,6 +200,12 @@ resource "aws_cloudfront_distribution" "web" {
   default_root_object = "index.html"
   price_class         = "PriceClass_100"
 
+  # Route 53 alias + ACM cert are useless until CloudFront lists the hostname and serves that cert.
+  aliases = local.web_use_custom_domain ? [trimspace(var.web_custom_domain)] : []
+
+  # Wait for ACM DNS validation when Terraform manages it (otherwise CloudFront may reject a pending cert).
+  depends_on = [aws_acm_certificate_validation.web]
+
   origin {
     domain_name              = aws_s3_bucket.web.bucket_regional_domain_name
     origin_id                = "s3-${aws_s3_bucket.web.id}"
@@ -232,8 +238,14 @@ resource "aws_cloudfront_distribution" "web" {
     }
   }
 
-  viewer_certificate {
-    cloudfront_default_certificate = true
+  dynamic "viewer_certificate" {
+    for_each = local.web_use_custom_domain ? ["acm"] : ["default"]
+    content {
+      cloudfront_default_certificate = viewer_certificate.value == "default"
+      acm_certificate_arn            = viewer_certificate.value == "acm" ? aws_acm_certificate.web[0].arn : null
+      ssl_support_method             = viewer_certificate.value == "acm" ? "sni-only" : null
+      minimum_protocol_version       = viewer_certificate.value == "acm" ? "TLSv1.2_2021" : null
+    }
   }
 
   custom_error_response {
