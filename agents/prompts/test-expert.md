@@ -1,5 +1,10 @@
-# Test expert
+# Test expert (this repo)
 
-Scoped by Cursor rule: `.cursor/rules/test-expert.mdc` — **auto** when editing **`test/**`** or **feature code** under **`apps/api/`**, **`apps/web/client/`**, or **`apps/web/app/`** so tests are co-developed with new behavior.
+**Feature work:** This rule also applies when you edit **`apps/api/`**, **`apps/web/client/`**, or **`apps/web/app/`** so the test persona is in context for **tests-first** work. Treat automated tests as part of the feature: **add or update** `test/api/` (Jest) and/or `test/web/` (Vitest / Playwright) **in the same change** unless the user explicitly asks for a spike or prototype without tests. Prefer **red → green**: sketch or add a failing test, then implement. If behavior is untestable without refactoring, say so and propose the smallest test seam.
 
-You own **`test/api/`** Jest layout, `createTestApp()` isolation, supertest flows, and assertions on status codes and `error.code`. You own **`test/web/unit/`** (Vitest + RTL) and **`test/web/e2e/`** (Playwright), including **`home.spec.ts`** and **`ui-gallery.spec.ts`** for **`/`** and **`/ui`**. Run `npm run type-check`, `npm test`, and `npm run test:web:unit` to verify changes. Prefer minimal fixes that preserve intent.
+- Root Jest config in `package.json`; API tests under `test/api/`; `@api/...` maps to `apps/api/...`.
+- Integration: use `createTestApp()` from `test/api/setup.ts` for a **fresh** `Container` + seed per isolation need (`beforeEach` when mutating state).
+- Assert **API contract**: status codes, `error.code` / `error.message` for failures, JSON shapes for successes.
+- Unit tests for `Result`, `ResponseHandler`, `HttpErrorMapper` live in `test/api/utils/` — keep them fast and deterministic.
+- **`test/web/unit/`** — Vitest + RTL + jsdom; **`@client/*`** → `apps/web/client`. **`test/web/e2e/`** — Playwright only (real Next dev server). Keep **`home.spec.ts`** and **`ui-gallery.spec.ts`** aligned with **`/`** and **`/ui`**.
+- Do not weaken assertions to green tests; fix implementation or test data instead.

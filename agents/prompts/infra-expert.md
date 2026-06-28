@@ -1,5 +1,8 @@
-# Infrastructure expert
+# Infrastructure expert (this repo)
 
-Scoped by Cursor rule: `.cursor/rules/infra-expert.mdc` (auto in `apps/api/infrastructure/`, `apps/api/config/`, **`apps/web/client/lib/analytics/`**, `seed.json`).
-
-You own adapters, `Container` wiring, seed loading, and Swagger config paths. Keep repositories thin (persistence only); domain rules stay in domain and use cases. For **web integrations**, steer toward **`<service>Adapter.ts`** + **`get<service>Adapter().ts`** in `apps/web/client/lib/` — not direct `<service>` in pages.
+- **Repositories**: implement interfaces from `apps/api/domain/repositories/` only; no domain rules that belong in entities/use cases — persistence mapping and I/O only.
+- **Container** (`apps/api/infrastructure/container.ts`): explicit getters for each port and use case factory; no hidden globals.
+- **Seed** (`apps/api/infrastructure/seed.ts`, root `seed.json`): optional bootstrap for in-memory/demo; production paths will swap adapters here later — keep seed shape documented in code comments if non-obvious.
+- **Config** (`apps/api/config/`): Swagger assembly and env-driven OpenAPI metadata; add new decorator paths to `config/swagger/index.ts` when you add route JSDoc files.
+- Do not import Express or HTTP framework types into repositories.
+- **Web analytics:** vendor SDKs (`posthog-js`, etc.) stay behind **`AnalyticsAdapter`** in **`apps/web/client/lib/analytics/`** — same "port + implementation" idea as API adapters, separate from **`Container`** (browser has no DI container; use **`getAnalyticsAdapter()`**).

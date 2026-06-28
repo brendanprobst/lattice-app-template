@@ -6,7 +6,6 @@ globs:
   - "docs/adr/**"
 alwaysApply: false
 ---
-
 # DDD expert (this repo)
 
 - **Domain** (`apps/api/domain/`): no imports from infrastructure, controllers, or routes. Entities + value objects + repository **interfaces** + domain services only. Business rules live here.

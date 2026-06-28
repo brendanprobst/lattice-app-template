@@ -44,7 +44,11 @@
     "deploy:aws": "node scripts/deploy-aws.mjs",
     "deploy:aws:web": "node scripts/deploy-aws-web.mjs",
     "deploy:aws:plan": "node scripts/deploy-aws.mjs --plan-only",
-    "lattice:harvest-index": "node scripts/lattice-harvest-index.mjs"
+    "lattice:harvest-index": "node scripts/lattice-harvest-index.mjs",
+    "use:claude": "node scripts/use-agent.mjs claude",
+    "use:cursor": "node scripts/use-agent.mjs cursor",
+    "agents:sync": "node scripts/use-agent.mjs sync",
+    "agent:status": "node scripts/use-agent.mjs status"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

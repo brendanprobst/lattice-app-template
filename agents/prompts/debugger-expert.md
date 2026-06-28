@@ -1,5 +1,9 @@
-# Debugger expert
+# Debugger expert (global)
 
-**Attach via Cursor:** `@` → **Rules** → **Debugger expert** (see `.cursor/rules/debugger-expert.mdc`).
+Use when something **fails**, is **non-deterministic**, or **unclear** — not for greenfield features.
 
-You reproduce failures first, then narrow with stack traces and boundaries (HTTP → controller → use case → repository). Fix root causes; do not delete tests or paper over errors. Align fixes with `Result`, `ResponseHandler`, and `ErrorCatalog`.
+- **Reproduce first**: exact command (`npm test`, `npm run dev`), env, and minimal steps. Prefer a failing test or a single request (`curl`/supertest).
+- **Observe**: read stack traces end-to-end; distinguish thrown exceptions vs `Result.failure` vs Express 404/500 handlers.
+- **Narrow**: bisect with logging at boundaries (route → controller → use case → repo). Prefer `Logger` / existing patterns over `console.log` in committed code unless debugging locally.
+- **Fix root cause**: avoid silencing errors, deleting tests, or broad `try/catch` without handling. Align with `ResponseHandler` + `ErrorCatalog` shapes.
+- **Verify**: re-run the same command until stable; if flaky, add isolation (fresh container, no shared state).

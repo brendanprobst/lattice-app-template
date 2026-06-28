@@ -1,8 +1,16 @@
-# Agent registry — prompts under prompts/; Cursor rules under .cursor/rules/
+# Agent registry
+#
+# Source of truth: agents/prompts/<id>.md
+#
+# Generate tool-specific configs from these prompts:
+#   npm run use:claude   →  CLAUDE.md files (hierarchical, one per glob directory)
+#   npm run use:cursor   →  .cursor/rules/*.mdc files (frontmatter + body)
+#   npm run agents:sync  →  both simultaneously
+
 agents:
   - id: ddd-expert
     path: prompts/ddd-expert.md
-    cursorRule: .cursor/rules/ddd-expert.mdc
+    description: "DDD expert — domain & application layers (auto when editing domain/use-case files)"
     scope: path-scoped
     globs:
       - apps/api/domain/**
@@ -11,7 +19,7 @@ agents:
 
   - id: test-expert
     path: prompts/test-expert.md
-    cursorRule: .cursor/rules/test-expert.mdc
+    description: "Test expert — Jest & integration tests (auto when editing tests or feature code under apps/)"
     scope: path-scoped
     globs:
       - test/api/**
@@ -23,7 +31,7 @@ agents:
 
   - id: infra-expert
     path: prompts/infra-expert.md
-    cursorRule: .cursor/rules/infra-expert.mdc
+    description: "Infra expert — adapters, composition root, config, seed (auto when editing infra/config)"
     scope: path-scoped
     globs:
       - apps/api/infrastructure/**
@@ -33,12 +41,13 @@ agents:
 
   - id: debugger-expert
     path: prompts/debugger-expert.md
-    cursorRule: .cursor/rules/debugger-expert.mdc
+    description: "Debugger expert — attach with @Rules when investigating failures, flakes, or production errors"
     scope: attach-via-rules
-    attach: "@ Rules → Debugger expert"
+    command: debug
 
   - id: code-janitor
     path: prompts/code-janitor.md
-    cursorRule: .cursor/rules/code-janitor.mdc
+    description: "Code janitor — attach with @Rules for audits, cleanup PRs, consistency, and hygiene"
     scope: attach-via-rules
-    attach: "@ Rules → Code janitor"
+    command: janitor
+

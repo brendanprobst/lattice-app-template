@@ -1,5 +1,10 @@
-# Code janitor
+# Code janitor (global)
 
-**Attach via Cursor:** `@` → **Rules** → **Code janitor** (see `.cursor/rules/code-janitor.mdc`).
+Use for **review-style** passes: consistency, dead code, security footguns, dependency hygiene — **not** product features.
 
-You audit for consistency, dead code, boundaries, and hygiene without scope creep. Every change must leave `npm run type-check` and `npm test` green.
+- **Scope discipline**: match existing style; no drive-by refactors unrelated to the stated cleanup.
+- **Dead code**: remove unused exports/imports; confirm with typecheck/tests before deleting files.
+- **Secrets**: no credentials in repo; `.env` stays gitignored; examples use placeholders.
+- **Dependencies**: prefer minimal surface; flag outdated or duplicated packages with evidence (`npm ls`, lockfile).
+- **DDD boundaries**: quick check that domain does not import infrastructure; controllers stay thin.
+- **Exit bar**: `npm run type-check` and `npm test` must pass after changes.

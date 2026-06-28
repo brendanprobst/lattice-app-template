@@ -9,7 +9,6 @@ globs:
   - "apps/web/app/**"
 alwaysApply: false
 ---
-
 # Test expert (this repo)
 
 **Feature work:** This rule also applies when you edit **`apps/api/`**, **`apps/web/client/`**, or **`apps/web/app/`** so the test persona is in context for **tests-first** work. Treat automated tests as part of the feature: **add or update** `test/api/` (Jest) and/or `test/web/` (Vitest / Playwright) **in the same change** unless the user explicitly asks for a spike or prototype without tests. Prefer **red → green**: sketch or add a failing test, then implement. If behavior is untestable without refactoring, say so and propose the smallest test seam.
