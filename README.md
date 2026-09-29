@@ -1,8 +1,10 @@
 # Lattice
 
-**Lattice** is a **web app template** — a monorepo starter where pieces connect cleanly: a **domain-driven design** Express API (**`@lattice/api`**), **Turborepo**, and room to grow (Next.js app, Terraform, shared packages). The name suggests a **lattice**: a structured grid linking API, UI, and infrastructure.
+**Lattice** is a **web app template** built for ai-first development (call it vibe-coding if you must),that boostraps a modern REST API + client + IaC and connectors to supabase. It is a monorepo starter where pieces connect cleanly, and the scaffolding makes it easy to get started. The name suggests a **lattice**: a structured grid linking API, UI, and infrastructure.
 
-The **API** (`@lattice/api`) is a DDD Express app with Jest tests under **`test/api/`**. The **web** app (`@lattice/web`) is Next.js (App Router) under `apps/web/`; UI under `apps/web/client/` with the **`@client/`** alias; **Tailwind**, **shadcn/ui**, and **lucide-react** (see **`apps/web/docs/ui-and-styling.md`**); Vitest and Playwright under **`test/web/`**. The API listens on **port 3000**; the web dev server uses **3001** to avoid clashes.
+Getting started is easy: create a new repo, scaffold a fork of lattice with a CLI command, (then do some setup in supabase, aws, your domain provider, and google cloud services), set some .env vars, and you're ready to go - deploy a 'Under Construction' page to your desired URL, and now you're ready to start actually building the app, not wresting with infra and auth for the Nth time over the course of a few days.
+
+When you're ready to build a new app with Lattice, use the harvest command to pull in app agnostic utilities, components, and AI skills to enhance the next project's foundation. This does not support sharing functionality between apps for the sake of keeping things simple.
 
 ## Getting Started
 
