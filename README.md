@@ -2,7 +2,7 @@
 
 **Lattice** is a **web app template** built for ai-first development (call it vibe-coding if you must),that boostraps a modern REST API + client + IaC and connectors to supabase. It is a monorepo starter where pieces connect cleanly, and the scaffolding makes it easy to get started. The name suggests a **lattice**: a structured grid linking API, UI, and infrastructure.
 
-Getting started is easy: create a new repo, scaffold a fork of lattice with a CLI command, (then do some setup in supabase, aws, your domain provider, and google cloud services), set some .env vars, and you're ready to go - deploy a 'Under Construction' page to your desired URL, and now you're ready to start actually building the app, not wresting with infra and auth for the Nth time over the course of a few days.
+Getting started is easy: create a new repo, scaffold a fork of lattice with a CLI command, (then do some setup in supabase, aws, your domain provider, and google cloud services), set some .env vars, and you're ready to go - deploy a feature-flagged 'Under Construction' page on top of a fully-functional API and client to your desired URL within an hour or two of starting the fork! Now you're ready to start actually building the app, not wresting with infra and auth for the Nth time over the course of a few days. When you're done flip the construction-flag off and your site is live.
 
 When you're ready to build a new app with Lattice, use the harvest command to pull in app agnostic utilities, components, and AI skills to enhance the next project's foundation. This does not support sharing functionality between apps for the sake of keeping things simple.
 
