@@ -2,7 +2,7 @@
 
 Generic steps for every Lattice spawn. The template repo itself is **not** deployed and must not get an Infisical folder. After `npm run scaffold`, fill `<app-slug>` (same string as `.lattice/infisical.json` `appSlug` and GitHub `INFISICAL_APP_SLUG`).
 
-Automation of folders, the `github-<app>` identity, GitHub env/vars/secrets, the GHA role, and laptop `deploy:aws` (ACM wait) is `npm run standup -- --env <dev|prod>` ([standup playbook](standup-automation.md), [plan](../plans/standup-automation.plan.md)). Pass `--bootstrap-only` to skip the laptop apply. This playbook is still the manual path.
+Automation of folders, the `github-<app>` identity, GitHub env/vars/secrets, the GHA role, the per-spawn Route 53 zone, and laptop `deploy:aws` (ACM wait) is `npm run standup -- --env <dev|prod>` ([standup playbook](standup-automation.md), [plan](../plans/standup-automation.plan.md)). Pass `--bootstrap-only` to skip the laptop env apply. This playbook is still the manual path.
 
 **Default posture: two environments.** Day 1 stands up **dev** and leaves **prod** one dispatch away. Create both Infisical folders, both GitHub environments, both Terraform `tfvars`, and both web env files in the same sitting. Apply and smoke **dev** first. The first prod apply and **Deploy app** run should be a formality — same commands, prod values, prod approval — not a second architecture project.
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Spawn standup: Infisical folders + github-<app> identity + GitHub env/vars/secrets
- * + Phase 2 GHA role. Idempotent. Never prints secret values.
+ * + Phase 2 GHA role + Phase 5 per-spawn Route 53 zone. Idempotent. Never prints secret values.
  *
  *   npm run standup -- --env dev
  *   npm run standup -- --env prod
@@ -9,7 +9,7 @@
  *   npm run standup -- --help
  *
  * Laptop `deploy:aws` (ACM wait + apply) runs after bootstrap unless
- * `--bootstrap-only` is set.
+ * `--bootstrap-only` is set. dns-zone still runs with bootstrap.
  *
  * The template repo is not deployed and must not get an Infisical folder.
  */
@@ -36,6 +36,9 @@ const TEMPLATE_REPOS = new Set(["lattice-app-template"]);
 const FORBIDDEN_REPOS = new Set(["fosterfolio"]);
 const FORBIDDEN_ROLES = new Set(["fosterfolio-gha-arn"]);
 const PLACEHOLDER_SLUGS = new Set(["your-app"]);
+const PLACEHOLDER_ZONES = new Set(["app.example.com", "your-app.example.com"]);
+const RESERVED_APEX_ZONES = new Set(["brendanprobst.com", "fosterfolio.com"]);
+const FOSTERFOLIO_PROD_ZONE_ID = "Z086583512U74ZET8C9T8";
 const SECRET_KEYS = [
   "INFISICAL_CLIENT_ID",
   "INFISICAL_CLIENT_SECRET",
@@ -62,16 +65,20 @@ Steps:
      AWS_ROLE_ARN if missing. Prints "set" or "already present", never values.
   6. Apply infra/terraform/bootstrap (Phase 2 GHA role) and write AWS_ROLE_ARN
      when that secret is missing.
-  7. Call deploy:aws for --env (ACM wait, then CloudFront alias/cert + CORS)
-     unless --bootstrap-only.
+  7. Apply infra/terraform/dns-zone when zone_name is set (import if the zone
+     already exists). Print NS for the parent registrar. Path C
+     (manage_web_dns_in_route53 = false) skips this. Refuse
+     create_route53_hosted_zone in an env stack.
+  8. Call deploy:aws for --env (ACM wait, then CloudFront alias/cert + CORS)
+     unless --bootstrap-only. Path D does not print leftover ACM _hash CNAMEs.
 
 The template repo is refused. Do not run this against Fosterfolio.
 
 Flags:
   --env <dev|prod>   Required. Selects the laptop deploy env.
                      Infisical folders and GitHub environments are always both.
-  --bootstrap-only   Stop after identity, GitHub, and the GHA role. Skip
-                     deploy:aws.
+  --bootstrap-only   Stop after identity, GitHub, the GHA role, and dns-zone.
+                     Skip deploy:aws.
   --help, -h         Show this help.
 `;
 
@@ -180,6 +187,27 @@ function hclString(value) {
 function readHclString(raw, key) {
   const match = raw.match(new RegExp(`^\\s*${key}\\s*=\\s*"([^"]*)"`, "m"));
   return match ? match[1] : null;
+}
+
+function readHclBool(raw, key) {
+  const match = raw.match(new RegExp(`^\\s*${key}\\s*=\\s*(true|false)\\b`, "m"));
+  if (!match) return null;
+  return match[1] === "true";
+}
+
+export function normalizeZoneName(raw) {
+  return String(raw || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\.$/, "");
+}
+
+export function isReservedApexZoneName(zoneName) {
+  return RESERVED_APEX_ZONES.has(normalizeZoneName(zoneName));
+}
+
+export function isPlaceholderZoneName(zoneName) {
+  return PLACEHOLDER_ZONES.has(normalizeZoneName(zoneName));
 }
 
 function requireTool(name) {
@@ -748,6 +776,185 @@ function applyBootstrapRole({ appSlug, owner, repo, projectName, account, awsReg
   return arn;
 }
 
+function readEnvTfvars(env) {
+  const path = join(root, `infra/terraform/envs/${env}/terraform.tfvars`);
+  if (!existsSync(path)) return { path, raw: "", exists: false };
+  return { path, raw: readFileSync(path, "utf8"), exists: true };
+}
+
+function refuseEnvHostedZoneCreate(env) {
+  const { raw, exists } = readEnvTfvars(env);
+  if (!exists) return;
+  const create = readHclBool(raw, "create_route53_hosted_zone");
+  const allow = readHclBool(raw, "allow_create_route53_hosted_zone_in_env");
+  if (create && !allow) {
+    console.error(
+      `Refusing create_route53_hosted_zone = true in envs/${env} (a second zone). Use infra/terraform/dns-zone and set create_route53_hosted_zone = false plus the same route53_hosted_zone_id on both envs. Path A requires allow_create_route53_hosted_zone_in_env = true.`,
+    );
+    process.exit(1);
+  }
+}
+
+function writeDnsZoneTfvars({ appSlug, projectName, zoneName, awsRegion }) {
+  const path = join(root, "infra/terraform/dns-zone/terraform.tfvars");
+  const raw = existsSync(path) ? readFileSync(path, "utf8") : "";
+  const existingZone = normalizeZoneName(readHclString(raw, "zone_name"));
+  if (existingZone && existingZone !== zoneName) {
+    console.error(
+      `dns-zone terraform.tfvars zone_name is ${existingZone}, standup resolved ${zoneName}.`,
+    );
+    process.exit(1);
+  }
+  if (raw && isReservedApexZoneName(existingZone) && readHclBool(raw, "allow_reserved_apex") !== true) {
+    console.error(`Refusing reserved apex zone_name ${existingZone}.`);
+    process.exit(1);
+  }
+  const complete =
+    raw &&
+    readHclString(raw, "app_slug") === appSlug &&
+    readHclString(raw, "project_name") === projectName &&
+    existingZone === zoneName;
+  if (complete) {
+    console.log("→ infra/terraform/dns-zone/terraform.tfvars: already present");
+    return;
+  }
+  const lines = [
+    "# Written by npm run standup. Do not commit.",
+    `app_slug     = ${hclString(appSlug)}`,
+    `project_name = ${hclString(projectName)}`,
+    `zone_name    = ${hclString(zoneName)}`,
+    `aws_region   = ${hclString(awsRegion)}`,
+  ];
+  if (readHclBool(raw, "allow_reserved_apex") === true) {
+    lines.push("allow_reserved_apex = true");
+  }
+  writeFileSync(path, `${lines.join("\n")}\n`, "utf8");
+  console.log("→ wrote infra/terraform/dns-zone/terraform.tfvars");
+}
+
+function hostedZoneIdFromAws(zoneName) {
+  const dnsName = `${zoneName}.`;
+  const listed = capture(
+    "aws",
+    ["route53", "list-hosted-zones-by-name", "--dns-name", dnsName, "--output", "json"],
+    { allowFail: true },
+  );
+  if (!listed.ok) return null;
+  let parsed;
+  try {
+    parsed = JSON.parse(listed.stdout || "{}");
+  } catch {
+    return null;
+  }
+  const matches = (parsed.HostedZones || []).filter((z) => normalizeZoneName(z.Name) === zoneName);
+  if (matches.length > 1) {
+    console.error(
+      `Multiple Route 53 public zones named ${zoneName}. Import the correct id manually — do not create another.`,
+    );
+    process.exit(1);
+  }
+  const id = matches[0]?.Id ? String(matches[0].Id).replace(/^\/hostedzone\//, "") : null;
+  return id || null;
+}
+
+function printParentNsDelegation(zoneName, nameServers, zoneId) {
+  const ns = String(nameServers || "")
+    .split(/\s+/)
+    .map((s) => s.replace(/,$/, "").replace(/^"+|"+$/g, ""))
+    .filter((s) => s && s !== "[" && s !== "]");
+  console.log(`\nParent registrar: NS-delegate ${zoneName} only (do not change the parent apex nameservers):\n`);
+  for (const server of ns) console.log(`  ${server}`);
+  console.log("");
+  console.log(`  dig +short NS ${zoneName}`);
+  console.log("");
+  console.log("Set BOTH envs/dev and envs/prod to the same zone (path D):");
+  console.log("  manage_web_dns_in_route53  = true");
+  console.log("  create_route53_hosted_zone = false");
+  console.log(`  route53_hosted_zone_id     = ${hclString(zoneId)}`);
+  console.log("");
+}
+
+function applyDnsZone({ appSlug, projectName, awsRegion, env }) {
+  refuseEnvHostedZoneCreate("dev");
+  refuseEnvHostedZoneCreate("prod");
+
+  const dnsTfPath = join(root, "infra/terraform/dns-zone/terraform.tfvars");
+  const dnsRaw = existsSync(dnsTfPath) ? readFileSync(dnsTfPath, "utf8") : "";
+  let zoneName = normalizeZoneName(readHclString(dnsRaw, "zone_name"));
+  if (isPlaceholderZoneName(zoneName)) zoneName = "";
+
+  const envTf = readEnvTfvars(env);
+  const manageDns = envTf.exists ? readHclBool(envTf.raw, "manage_web_dns_in_route53") : null;
+  const customDomain = envTf.exists ? readHclString(envTf.raw, "web_custom_domain") : null;
+  const existingEnvZoneId = envTf.exists ? readHclString(envTf.raw, "route53_hosted_zone_id") : null;
+
+  if (!zoneName) {
+    if (manageDns === false) {
+      console.log("→ skip dns-zone (path C: manage_web_dns_in_route53 = false)");
+      return null;
+    }
+    if (existingEnvZoneId) {
+      console.log(`→ skip dns-zone (envs/${env} already has route53_hosted_zone_id)`);
+      return existingEnvZoneId;
+    }
+    if (customDomain) {
+      console.error(
+        "web_custom_domain is set and Route 53 DNS is on, but infra/terraform/dns-zone/terraform.tfvars has no zone_name. Copy terraform.tfvars.example and set this app's island (e.g. lattice.brendanprobst.com), not the parent apex. Or set manage_web_dns_in_route53 = false for path C.",
+      );
+      process.exit(1);
+    }
+    console.log("→ skip dns-zone (no zone_name and no custom domain)");
+    return null;
+  }
+
+  if (isReservedApexZoneName(zoneName) && readHclBool(dnsRaw, "allow_reserved_apex") !== true) {
+    console.error(
+      `Refusing reserved apex zone_name ${zoneName}. Use a child island. Do not apply against fosterfolio.com (${FOSTERFOLIO_PROD_ZONE_ID}).`,
+    );
+    process.exit(1);
+  }
+
+  writeDnsZoneTfvars({ appSlug, projectName, zoneName, awsRegion });
+
+  const existingId = hostedZoneIdFromAws(zoneName);
+  if (existingId === FOSTERFOLIO_PROD_ZONE_ID || zoneName === "fosterfolio.com") {
+    console.error(
+      `Refusing Fosterfolio zone ${FOSTERFOLIO_PROD_ZONE_ID} / fosterfolio.com. Do not apply dns-zone against that name.`,
+    );
+    process.exit(1);
+  }
+
+  const dnsDir = join(root, "infra/terraform/dns-zone");
+  const chdir = `-chdir=${dnsDir}`;
+  console.log("→ terraform init (dns-zone)\n");
+  run("terraform", [chdir, "init", "-input=false"]);
+
+  const state = capture("terraform", [chdir, "state", "list"], { allowFail: true });
+  const hasZone = state.ok && state.stdout.split("\n").includes("aws_route53_zone.this");
+  if (!hasZone && existingId) {
+    console.log(`→ terraform import aws_route53_zone.this ${existingId} (will not create a second zone)`);
+    run("terraform", [chdir, "import", "-input=false", "aws_route53_zone.this", existingId]);
+  }
+
+  console.log("→ terraform apply (dns-zone)\n");
+  run("terraform", [chdir, "apply", "-input=false", "-auto-approve"]);
+  const zoneId = capture("terraform", [chdir, "output", "-raw", "route53_hosted_zone_id"]).stdout;
+  const nameServers = capture("terraform", [chdir, "output", "-json", "name_servers"]).stdout;
+  if (!zoneId || zoneId === FOSTERFOLIO_PROD_ZONE_ID) {
+    console.error("terraform output route53_hosted_zone_id was empty or is Fosterfolio's zone.");
+    process.exit(1);
+  }
+  let nsList = nameServers;
+  try {
+    const parsed = JSON.parse(nameServers);
+    if (Array.isArray(parsed)) nsList = parsed.join("\n");
+  } catch {
+    /* use raw */
+  }
+  printParentNsDelegation(zoneName, nsList, zoneId);
+  return zoneId;
+}
+
 function maybeDeployAws(env, bootstrapOnly) {
   if (bootstrapOnly) {
     console.log("→ skip deploy:aws (--bootstrap-only)");
@@ -840,6 +1047,13 @@ async function main() {
     INFISICAL_CLIENT_ID: creds.clientId,
     INFISICAL_CLIENT_SECRET: creds.clientSecret,
     AWS_ROLE_ARN: roleArn,
+  });
+
+  applyDnsZone({
+    appSlug,
+    projectName: resolvedProject,
+    awsRegion,
+    env: opts.env,
   });
 
   maybeDeployAws(opts.env, opts.bootstrapOnly);

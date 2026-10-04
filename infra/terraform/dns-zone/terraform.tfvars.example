@@ -1,0 +1,14 @@
+# Copy to terraform.tfvars (gitignored). This stack is not envs/dev, envs/prod,
+# or the GHA bootstrap state. Apply from a spawn checkout only.
+# zone_name is this app's island, not the parent personal apex.
+# smoke-test: lattice.brendanprobst.com
+# later spawn: runout.brendanprobst.com
+# Do not set brendanprobst.com or fosterfolio.com. Do not apply against
+# Fosterfolio's existing zone Z086583512U74ZET8C9T8.
+
+app_slug     = "your-app"
+project_name = "my-lattice-app"
+zone_name    = "app.example.com"
+aws_region   = "us-east-1"
+
+# allow_reserved_apex = true

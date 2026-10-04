@@ -34,18 +34,24 @@ api_resume_schedule_expression = "cron(0 13 * * ? *)"
 api_schedule_timezone         = "UTC"
 
 # --- Optional: custom HTTPS hostname (Route 53 + ACM + CloudFront alias) ---
-# See docs/playbooks/route53-custom-domain.md for registrar nameserver delegation.
+# See docs/playbooks/route53-custom-domain.md. Lattice default is path D:
+# one zone in infra/terraform/dns-zone, then the same zone id on BOTH envs.
 #
-# web_custom_domain            = "app.example.com"
-# create_route53_hosted_zone   = true
-# route53_zone_name            = "example.com"
+# web_custom_domain            = "dev.app.example.com"
+# manage_web_dns_in_route53    = true
+# create_route53_hosted_zone   = false
+# route53_hosted_zone_id       = "Z..."  # terraform -chdir=infra/terraform/dns-zone output -raw route53_hosted_zone_id
 #
-# Or use an existing Route 53 zone in the same account:
-# web_custom_domain          = "app.example.com"
-# route53_hosted_zone_id     = "Z1234567890ABC"
-#
-# If DNS stays at third-party provider (e.g. Squarespace), disable Route 53 DNS management:
+# Path C — DNS stays at the registrar (no Route 53 zone):
 # web_custom_domain          = "app.example.com"
 # manage_web_dns_in_route53  = false
 # Then create the CNAME pair from terraform output acm_validation_record_name /
 # acm_validation_record_value (this cert only — never copy another hostname's _hash).
+#
+# Path B — reuse a zone you already own (not created in this env):
+# web_custom_domain          = "app.example.com"
+# create_route53_hosted_zone = false
+# route53_hosted_zone_id     = "Z1234567890ABC"
+#
+# Path A — do not use. create_route53_hosted_zone = true here is a second zone.
+# Requires allow_create_route53_hosted_zone_in_env = true.

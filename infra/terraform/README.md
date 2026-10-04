@@ -9,7 +9,8 @@ Modular layout for **AWS** plus optional **Supabase credentials in config**: you
 - `modules/supabase_ssm` — Writes Supabase URL/keys from tfvars into SSM (SecureString where appropriate).
 - `modules/gha-deploy-role` — One GitHub OIDC deploy role per spawn (looks up `token.actions.githubusercontent.com`; does not create a provider).
 - `bootstrap` — Thin root for that role (own state, not `envs/dev` or `envs/prod`). See [`bootstrap/README.md`](bootstrap/README.md).
-- `envs/dev` / `envs/prod` — App stacks: `locals` for tags + `name_prefix`.
+- `dns-zone` — One public Route 53 hosted zone per spawn (own state, not `envs/` and not bootstrap). See [`dns-zone/README.md`](dns-zone/README.md).
+- `envs/dev` / `envs/prod` — App stacks: `locals` for tags + `name_prefix`. They do not create the per-spawn zone (`create_route53_hosted_zone` is refused unless you opt into legacy path A).
 
 Extract shared **tag** or **naming** logic into new modules under `modules/` when you add a second environment or stack.
 
@@ -89,14 +90,14 @@ Use a **remote S3 backend** for anything shared or production; see commented blo
 
 ## CI
 
-Root `npm run infra:fmt` and `npm run infra:validate` (no AWS credentials required; validate uses `-backend=false` on `envs/dev` and `bootstrap`).
+Root `npm run infra:fmt` and `npm run infra:validate` (no AWS credentials required; validate uses `-backend=false` on `envs/dev`, `bootstrap`, and `dns-zone`).
 
 ## Apps
 
 - **API**: Lambda hosts the Express app via `@vendia/serverless-express`; API Gateway invokes Lambda.
 - **API secrets**: Lambda resolves Supabase parameter names from SSM at runtime (`SUPABASE_URL_PARAM`, `SUPABASE_SERVICE_ROLE_KEY_PARAM`) with IAM-scoped `ssm:GetParameter`.
 - **Web**: `apps/web` builds as static export (`out/`) and is served from S3 + CloudFront.
-- **Custom domain (optional)**: Set `web_custom_domain` and either create a Route 53 hosted zone, pass `route53_hosted_zone_id`, or set `manage_web_dns_in_route53 = false` and create the ACM CNAME from `acm_validation_record_name` / `acm_validation_record_value`. CloudFront gets the hostname and certificate only after ACM is **ISSUED**. Registrar steps are documented in **[`docs/playbooks/route53-custom-domain.md`](../../docs/playbooks/route53-custom-domain.md)**.
+- **Custom domain (optional)**: Lattice default is **path D** — apply `infra/terraform/dns-zone`, then set `manage_web_dns_in_route53 = true`, `create_route53_hosted_zone = false`, and the same `route53_hosted_zone_id` on both envs. Path C (`manage_web_dns_in_route53 = false`) still works. Do not create a zone in an env stack. CloudFront gets the hostname and certificate only after ACM is **ISSUED**. Registrar steps: **[`docs/playbooks/route53-custom-domain.md`](../../docs/playbooks/route53-custom-domain.md)**.
 - **Never** commit `terraform.tfvars` with real secrets.
 
 

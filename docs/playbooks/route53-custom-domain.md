@@ -1,63 +1,82 @@
 # Route 53 and a custom web URL (HTTPS)
 
-This playbook explains how to point a **real hostname** (for example `app.example.com`) at the **CloudFront** distribution that serves the static Next.js export, using **Route 53** for DNS and **ACM** (in `us-east-1`) for TLS. Terraform in `infra/terraform/envs/dev` can manage the hosted zone, certificate validation records, CloudFront alias, and API **CORS** for that origin.
+This playbook explains how to point a **real hostname** (for example `dev.app.example.com`) at the **CloudFront** distribution that serves the static Next.js export, using **Route 53** for DNS and **ACM** (in `us-east-1`) for TLS.
+
+The **Lattice default** is **path D**: one public hosted zone **per spawn** in `infra/terraform/dns-zone` (not `envs/dev`, not `envs/prod`, not the GHA bootstrap state). Both env stacks set `create_route53_hosted_zone = false` and the **same** `route53_hosted_zone_id`. Path A (creating a zone inside an env stack) is **not** the recommended default — that is a second zone for the same name.
 
 ## What Terraform does
 
 When you set a custom web domain in `terraform.tfvars`:
 
 - **ACM** issues a certificate for that hostname in **`us-east-1`** (required for CloudFront).
-- **Route 53** holds **DNS validation** records for ACM and an **alias A** record from your hostname to CloudFront.
-- **CloudFront** uses that certificate and lists the hostname in **aliases**.
+- **Route 53** (paths B and D) holds **DNS validation** records for ACM and an **alias A** record from your hostname to CloudFront.
+- **CloudFront** uses that certificate and lists the hostname in **aliases** only after ACM is **`ISSUED`**.
 - The **API** Lambda CORS allowlist includes `https://<your-hostname>` as well as the default CloudFront URL.
 
 The **API** URL stays the API Gateway URL unless you add a separate custom domain for API Gateway (not covered here). Set `NEXT_PUBLIC_API_URL` in your web build to that API URL as today.
 
 ## Choose how DNS is hosted
 
-### A. New hosted zone in Route 53 (recommended for a clean split)
+### D. Per-spawn hosted zone + NS delegation (Lattice default)
 
-Use this when the domain is registered somewhere else (GoDaddy, Namecheap, Google Domains, Cloudflare Registrar, etc.) and you want **AWS to be authoritative** for DNS.
+Use this when the spawn sits under a parent domain you do **not** want to move into AWS (for example a personal apex at Google Domains). Each spawn gets its **own** island: smoke-test is `lattice.brendanprobst.com`, not `brendanprobst.com`. A later spawn gets `runout.brendanprobst.com`, not a record in the smoke-test zone.
 
-1. In `terraform.tfvars`, set:
-   - `web_custom_domain` — e.g. `app.example.com`
-   - `create_route53_hosted_zone = true`
-   - `route53_zone_name` — the **apex** domain for the zone, e.g. `example.com` (must be the zone that contains `web_custom_domain`, or the parent zone you are delegating).
+1. In `infra/terraform/dns-zone/terraform.tfvars`, set:
+   - `zone_name` — this app’s island FQDN (e.g. `lattice.brendanprobst.com`)
+   - `app_slug` / `project_name` for tags
 
-2. **Registrar (manual): DNS delegation**
+   Do not set `brendanprobst.com` or `fosterfolio.com`. Do not apply this stack against Fosterfolio’s existing `fosterfolio.com` zone (`Z086583512U74ZET8C9T8`). If a zone for `zone_name` already exists, **import** it — AWS allows a second public zone with the same name.
 
-   After the first Terraform apply that creates the hosted zone, read `terraform output route53_zone_name_servers` (or the AWS console: Route 53 → Hosted zones → your zone → **NS** record).
+2. Apply with **`npm run standup -- --env <env>`** (or `terraform apply` in `infra/terraform/dns-zone`). The script imports an existing zone of that name, then prints **`name_servers`** and `route53_hosted_zone_id`.
 
-   At your **domain registrar**, replace the domain’s nameservers with those four Route 53 NS values. This is **not** done in Terraform at the registrar; each registrar has a “DNS / Nameservers” page.
+3. **Parent registrar (manual): NS for the child only**
 
-   - **TTL / propagation**: allow minutes to **48 hours** for global resolvers to use the new NS. Until then, ACM **DNS validation** may stay pending because public DNS does not yet see the validation CNAME in your Route 53 zone.
+   At the registrar that owns the **parent** (e.g. Google Domains for `brendanprobst.com`), add **NS** records for `zone_name` that match `terraform output name_servers`. Do **not** change nameservers on the parent apex.
 
-3. **Second apply (if needed)**
+   ```bash
+   dig +short NS lattice.brendanprobst.com
+   ```
 
-   If the first full apply failed or timed out on `aws_acm_certificate_validation` because NS were not delegated yet, run `terraform apply` again after delegation propagates.
+   The answer must match the four Route 53 nameservers. TTL can be minutes to 48 hours.
+
+4. In **both** `envs/dev` and `envs/prod` `terraform.tfvars` (twins):
+
+   ```hcl
+   manage_web_dns_in_route53  = true
+   create_route53_hosted_zone = false
+   route53_hosted_zone_id     = "<dns-zone output>"
+   ```
+
+   Dev and prod use different `web_custom_domain` values under the same island (`dev.lattice.brendanprobst.com` vs `lattice.brendanprobst.com`). **Never** set `create_route53_hosted_zone = true` in an env stack for this zone.
+
+5. Re-run standup / `deploy:aws` for the env. ACM validation and the site alias land in that zone. The script does **not** print leftover ACM `_hash` CNAMEs when Route 53 manages DNS.
+
+See [`infra/terraform/dns-zone/README.md`](../../infra/terraform/dns-zone/README.md).
 
 ### B. Hosted zone already exists in Route 53
 
-If you already have a public hosted zone for `example.com` in the same AWS account:
+If you already have a public hosted zone for this app’s island (or a domain the spawn already owns) in the same AWS account:
 
 1. Set:
    - `web_custom_domain` — e.g. `app.example.com`
    - `create_route53_hosted_zone = false`
    - `route53_hosted_zone_id` — the zone ID (e.g. `Z1234567890ABC`)
 
-2. Do **not** set `route53_zone_name` for this path (only used when creating a zone).
+2. Do **not** set `route53_zone_name` for this path (only used when creating a zone in the env stack).
 
 3. Apply Terraform. ACM validation and the alias record are created in that zone; no registrar change is required if the zone is already delegated.
 
+Path D produces a zone you then consume here. Both envs must share that id.
+
 ### C. DNS stays at a third party (not Route 53)
 
-Use this when the hostname stays at Google Domains, Squarespace, Cloudflare DNS, or another registrar **without** a Route 53 zone.
+Use this when the hostname stays at Google Domains, Squarespace, Cloudflare DNS, or another registrar **without** a delegated Route 53 zone. This is still a valid escape hatch.
 
 1. In `terraform.tfvars`, set:
    - `web_custom_domain` — e.g. `app.example.com`
    - `manage_web_dns_in_route53 = false`
 
-   Do not set `create_route53_hosted_zone` or `route53_hosted_zone_id`.
+   Do not set `create_route53_hosted_zone` or `route53_hosted_zone_id`. `npm run standup` skips `dns-zone` when there is no `zone_name`.
 
 2. Apply with **`npm run deploy:aws`** (or `npm run standup -- --env <env>`). ACM still creates a certificate in **`us-east-1`**. CloudFront does **not** get that hostname or certificate until ACM status is **`ISSUED`**. A pending cert fails CloudFront with `InvalidViewerCertificate`. The script prints **this certificate’s** records (never another hostname’s `_hash`):
 
@@ -84,34 +103,50 @@ dig +short CNAME '_paste-acm_validation_record_name'
 
 The site `dig` should show the CloudFront domain. The validation `dig` should show a target ending in `acm-validations.aws.` When ACM is Issued, re-run `terraform apply` so CloudFront gets the alias and certificate.
 
-For a predictable AWS-hosted DNS flow, use **A** or **B** above.
+### A. New hosted zone inside `envs/dev` or `envs/prod` (not recommended)
+
+Creating `aws_route53_zone` in an **env** stack is how you get a **second** zone for the same name (the Fosterfolio-dev footgun: registrar NS will not match). Prefer **D**.
+
+The env modules **refuse** `create_route53_hosted_zone = true` unless you also set `allow_create_route53_hosted_zone_in_env = true`.
+
+If you must use this legacy path:
+
+1. In that env’s `terraform.tfvars`, set:
+   - `web_custom_domain` — e.g. `app.example.com`
+   - `create_route53_hosted_zone = true`
+   - `allow_create_route53_hosted_zone_in_env = true`
+   - `route53_zone_name` — the apex for the zone
+
+2. After apply, read `terraform output route53_zone_name_servers` and replace the domain’s nameservers at the registrar.
+
+3. Do **not** also apply `infra/terraform/dns-zone` for the same name.
 
 ## Two-phase apply when creating a new zone
 
 Because ACM validates using **public** DNS, a **brand-new** hosted zone must be **delegated** at the registrar before validation can succeed end-to-end.
 
-Practical sequence:
+Practical sequence (path D):
 
-1. `terraform apply` with `create_route53_hosted_zone = true` (creates the zone; you may also create the certificate in `PENDING_VALIDATION`).
-2. At the registrar, set **nameservers** to `route53_zone_name_servers`.
-3. Wait until a public DNS check (e.g. `dig NS example.com`) shows Route 53.
-4. `terraform apply` again until `aws_acm_certificate_validation` completes and CloudFront deploys with the custom certificate.
+1. `npm run standup -- --env <env> --bootstrap-only` (or `terraform apply` in `infra/terraform/dns-zone`) creates or imports the zone.
+2. At the parent registrar, set **NS** for `zone_name` to `name_servers`.
+3. Wait until a public DNS check (e.g. `dig NS lattice.brendanprobst.com`) shows Route 53.
+4. Point both env tfvars at `route53_hosted_zone_id` and run `npm run standup -- --env <env>` until ACM validation completes and CloudFront deploys with the custom certificate.
 
-Alternatively, use `terraform apply -target=aws_route53_zone.web` first, delegate NS, then run a full apply (see Terraform docs for `-target` caveats).
+Alternatively, `terraform apply -target=aws_route53_zone.this` in `dns-zone` first, delegate NS, then run a full env apply (see Terraform docs for `-target` caveats).
 
 ## ACM validation stuck for 30+ minutes
 
-Seeing the **hosted zone** in Route 53 does **not** mean ACM can validate yet. Validation uses **public** resolvers. If your **registrar still points to old nameservers**, the ACM validation CNAME exists only inside Route 53 but is **not visible on the public internet**, so the certificate stays `PENDING_VALIDATION` and `terraform apply` can sit on `aws_acm_certificate_validation` for a very long time.
+Seeing the **hosted zone** in Route 53 does **not** mean ACM can validate yet. Validation uses **public** resolvers. If the **parent registrar still has no NS** for the child (path D) or still points the apex at old nameservers (path A), the ACM validation CNAME exists only inside Route 53 but is **not visible on the public internet**, so the certificate stays `PENDING_VALIDATION` and `terraform apply` can sit on `aws_acm_certificate_validation` for a very long time.
 
-**Check delegation** (replace `example.com` with your apex / `route53_zone_name`):
+**Check delegation** (replace with your `zone_name`):
 
 ```bash
-dig +short NS example.com
+dig +short NS lattice.brendanprobst.com
 ```
 
-The answer must match the four **Route 53** nameservers from `terraform output route53_zone_name_servers` (same as the zone’s **NS** record in the console). If you see your old registrar or parking DNS, update nameservers at the registrar, wait for propagation, then re-run `terraform apply`.
+The answer must match the four **Route 53** nameservers from `terraform -chdir=infra/terraform/dns-zone output name_servers` (or `route53_zone_name_servers` on legacy path A). If you see your old registrar or parking DNS, update NS at the registrar, wait for propagation, then re-run `terraform apply`.
 
-**Check that the validation record is publicly visible** — prefer `terraform output acm_validation_record_name` (this certificate only). Or in ACM (us-east-1) open the certificate → **Domains** → copy the **CNAME name** (often under `_*.example.com`). Never paste another hostname’s `_hash`. Then:
+**Check that the validation record is publicly visible** — prefer `terraform output acm_validation_record_name` (this certificate only). Never paste another hostname’s `_hash`. Then:
 
 ```bash
 dig +short CNAME '_paste-the-full-cname-name.example.com.'
@@ -134,4 +169,6 @@ Route 53 charges per hosted zone (roughly **$0.50/month** per zone at current AW
 ## See also
 
 - [`docs/deploy-aws.md`](../deploy-aws.md) — deploy script and GitHub Actions
+- [`docs/playbooks/standup-automation.md`](standup-automation.md) — standup applies `dns-zone` and prints NS
+- [`infra/terraform/dns-zone/README.md`](../../infra/terraform/dns-zone/README.md) — import if the zone already exists
 - [`infra/terraform/README.md`](../../infra/terraform/README.md) — Terraform layout and first run

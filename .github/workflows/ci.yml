@@ -127,3 +127,7 @@ jobs:
       - name: Terraform validate (GHA role bootstrap)
         working-directory: infra/terraform/bootstrap
         run: terraform init -backend=false -input=false && terraform validate
+
+      - name: Terraform validate (per-spawn DNS zone)
+        working-directory: infra/terraform/dns-zone
+        run: terraform init -backend=false -input=false && terraform validate

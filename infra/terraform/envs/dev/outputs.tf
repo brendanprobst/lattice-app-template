@@ -74,7 +74,7 @@ output "route53_hosted_zone_id" {
 }
 
 output "route53_zone_name_servers" {
-  description = "Nameservers to set at your registrar when create_route53_hosted_zone is true. After delegation propagates, ACM validation and HTTPS can complete."
+  description = "Nameservers when this env created a zone (legacy path A only). Path D uses terraform -chdir=infra/terraform/dns-zone output name_servers."
   value       = var.create_route53_hosted_zone ? aws_route53_zone.web[0].name_servers : null
 }
 

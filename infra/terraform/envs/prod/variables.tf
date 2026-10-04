@@ -183,7 +183,23 @@ variable "web_custom_domain" {
 }
 
 variable "create_route53_hosted_zone" {
-  description = "When true, create a new public Route 53 hosted zone for route53_zone_name. You must delegate nameservers at your registrar before ACM DNS validation can succeed."
+  description = <<-EOT
+    When true, this env stack creates a public hosted zone (path A). That is a
+    second zone if infra/terraform/dns-zone already exists for the same name.
+    Lattice default is path D: create the zone once in dns-zone, then set
+    create_route53_hosted_zone = false and the same route53_hosted_zone_id on
+    both envs. Requires allow_create_route53_hosted_zone_in_env = true.
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "allow_create_route53_hosted_zone_in_env" {
+  description = <<-EOT
+    Required to set create_route53_hosted_zone = true in this env stack.
+    Creating a zone here is the Fosterfolio-dev footgun (registrar NS will not
+    match the other zone). Prefer infra/terraform/dns-zone (path D).
+  EOT
   type        = bool
   default     = false
 }

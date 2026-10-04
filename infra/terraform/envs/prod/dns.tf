@@ -36,6 +36,13 @@ EOT
 resource "aws_route53_zone" "web" {
   count = var.create_route53_hosted_zone ? 1 : 0
   name  = trimspace(var.route53_zone_name)
+
+  lifecycle {
+    precondition {
+      condition     = var.allow_create_route53_hosted_zone_in_env
+      error_message = "create_route53_hosted_zone = true in an env stack creates a second zone. Use infra/terraform/dns-zone (path D) or set allow_create_route53_hosted_zone_in_env = true for legacy path A."
+    }
+  }
 }
 
 resource "aws_acm_certificate" "web" {

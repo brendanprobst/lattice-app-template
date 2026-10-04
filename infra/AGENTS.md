@@ -17,7 +17,7 @@
 ## Commands (from repo root)
 
 - `npm run infra:fmt` — `terraform fmt -recursive`
-- `npm run infra:validate` — `init -backend=false` + `validate` for `envs/dev` and `bootstrap` (GHA OIDC role)
+- `npm run infra:validate` — `init -backend=false` + `validate` for `envs/dev`, `bootstrap` (GHA OIDC role), and `dns-zone` (per-spawn Route 53 zone)
 - `npm run deploy:aws` — Lambda bundle + **`terraform apply`** + static web + **`aws s3 sync`** (see **[`docs/deploy-aws.md`](../docs/deploy-aws.md)**)
 
 CI runs **`terraform fmt -check`** and **`validate`** as the standard low-overhead baseline. For stricter static analysis later, **tflint** is a common add-on (not wired in this template by default).

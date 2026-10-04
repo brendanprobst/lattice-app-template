@@ -16,7 +16,7 @@ todos:
     status: completed
   - id: per-spawn-dns-zone
     content: "Phase 5 — One Route 53 zone per spawn (not envs/dev or envs/prod): create once, print NS, both envs set route53_hosted_zone_id; never create_route53_hosted_zone in env state"
-    status: pending
+    status: completed
   - id: refresh-smoke-dev
     content: "Phase 6 — refresh template into lattice-app-smoke-test, delegate lattice.brendanprobst.com, standup --env dev, confirm Deploy app + https://dev.lattice.brendanprobst.com"
     status: pending
