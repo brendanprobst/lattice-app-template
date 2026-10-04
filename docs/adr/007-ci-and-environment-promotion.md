@@ -31,7 +31,7 @@ Downstream apps need a **dev** stack they can break and a **prod** stack they ca
 
 ### Environment promotion policy
 
-- Ship **`dev` and `prod`** in the template (`infra/terraform/envs/dev` and `envs/prod`). Day 1 fills both `terraform.tfvars`, both Infisical folder trees, both GitHub environments, and both web env files. Apply and smoke **dev**. The first prod apply and **Deploy app** dispatch should be the same commands with prod values and a reviewer click.
+- Ship **`dev` and `prod`** in the template (`infra/terraform/envs/dev` and `envs/prod`). Day 1 fills both `terraform.tfvars`, both Infisical folder trees, both web env files, and GitHub environments `dev` / `prod` (prod reviewer only). Identity, role, and slugs are **repository** Actions secrets, not copied onto each environment. Apply and smoke **dev**. The first prod apply and **Deploy app** dispatch should be the same commands with prod values and a reviewer click.
 - Keep Terraform and naming **environment-parameterized** (`${project_name}-${environment}`) so a later `envs/stage` is a copy, not a rewrite.
 - Do **not** “promote” by changing `environment` on an existing state. That recreates AWS resources. Prod is always a separate state directory.
 - A third environment is optional. Two is the default.

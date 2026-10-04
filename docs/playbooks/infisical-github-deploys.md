@@ -2,6 +2,8 @@
 
 Generic steps for every Lattice spawn. The template repo itself is **not** deployed and must not get an Infisical folder. After `npm run scaffold`, fill `<app-slug>` (same string as `.lattice/infisical.json` `appSlug` and GitHub `INFISICAL_APP_SLUG`).
 
+Automation of the human steps below (GitHub secrets, GHA role, ACM wait, one laptop command) is [standup automation](standup-automation.md) — implement in this order: [`docs/plans/standup-automation.plan.md`](../plans/standup-automation.plan.md). Until that ships, this playbook is still the manual path.
+
 **Default posture: two environments.** Day 1 stands up **dev** and leaves **prod** one dispatch away. Create both Infisical folders, both GitHub environments, both Terraform `tfvars`, and both web env files in the same sitting. Apply and smoke **dev** first. The first prod apply and **Deploy app** run should be a formality — same commands, prod values, prod approval — not a second architecture project.
 
 One Infisical organization holds **one project** named `lattice`. Apps are not separate Infisical projects. Isolate an app under `/<app-slug>/**`. GitHub **Deploy app** points at the **`lattice` project slug** and reads only `/<app-slug>/shared` (required) and `/<app-slug>/flags` (optional). It never reads `/sensitive`.
@@ -15,7 +17,7 @@ One Infisical organization holds **one project** named `lattice`. Apps are not s
 | App folders | `/<app-slug>/shared`, `/<app-slug>/flags`, `/<app-slug>/sensitive` |
 | Environments | `dev` and `prod` (same names in Infisical, GitHub, and `infra/terraform/envs/<env>`) |
 | Laptop app slug | `.lattice/infisical.json` → `{ "appSlug": "<app-slug>" }` (copy from `.lattice/infisical.json.example`) |
-| GitHub variables | `INFISICAL_PROJECT_SLUG` (shared project slug) and `INFISICAL_APP_SLUG` (the same `<app-slug>`) |
+| GitHub (repo, once) | `INFISICAL_PROJECT_SLUG`, `INFISICAL_APP_SLUG`, plus `INFISICAL_CLIENT_ID` / `INFISICAL_CLIENT_SECRET` / `AWS_ROLE_ARN`. Not copied onto each environment. |
 | Prod GitHub deploys from | `main` |
 
 `dev` and `prod` both have the same key names, with different values. Inside one environment, put this app’s keys only under `/<app-slug>/**`:
@@ -40,8 +42,8 @@ Do this once per spawn. **Apply and browse dev** before you apply prod.
 | Paste Supabase URL/anon (and flags) for **both** Infisical envs | `npm run infisical:sync-outputs -- --env dev` |
 | `apps/web/.env.local` (or `.env.dev`) **and** `apps/web/.env.prod` | GitHub **Deploy app** → `dev` |
 | `infra/terraform/envs/dev/terraform.tfvars` **and** `envs/prod/terraform.tfvars` | When you are ready: apply `envs/prod`, sync `--env prod`, **Deploy app** → `prod` from `main` |
-| GitHub environments `dev` and `prod` (prod requires a reviewer) | Prod approval click is the remaining human step |
-| Machine identity + AWS OIDC role that can update **both** stacks’ buckets, distributions, and Lambdas | |
+| GitHub environments `dev` and `prod` (prod requires a reviewer; secrets live on the repo) | Prod approval click is the remaining human step |
+| **This spawn’s** Infisical machine identity + **this spawn’s** AWS OIDC role (`<app-slug>-gha`) for both stacks | |
 
 `envs/prod` ships in the template. Fill `terraform.tfvars` and `.env.prod` on day 1 even if you do not apply prod until later. Changing `environment` on an existing state from `dev` to `prod` recreates AWS resources (`name_prefix` includes the env name). Always use a **new** `envs/prod` state for the prod stack.
 
@@ -89,32 +91,38 @@ infisical secrets --projectId=<project id> --env=dev --path=/<app-slug>/shared
 
 ### 4. Create the machine identity GitHub will use
 
-1. `lattice` project → Access Control → Machine Identities → create one identity per spawn (read-only).
-2. Grant read on `dev` and `prod` for `/<app-slug>/shared` and `/<app-slug>/flags` only.
-3. Do not grant `/<app-slug>/sensitive`.
+1. `lattice` project → Access Control → Machine Identities → create **one identity per spawn** (read-only), named like `github-<app-slug>`.
+2. Grant that identity read on `dev` and `prod` for **this app only**: `/<app-slug>/shared` and `/<app-slug>/flags`.
+3. Do not grant `/<app-slug>/sensitive`. Do not add this app’s folders onto Fosterfolio’s (or any other) identity. Identities are cheap; folder ACLs on one token are not.
 4. Turn on universal auth and save the client id and client secret in a password manager.
 
 ### 5. Create the AWS role
 
-1. IAM → Identity providers. Add `token.actions.githubusercontent.com` with audience `sts.amazonaws.com` if it is not already there.
-2. Create a deploy role that can assume via GitHub OIDC for this repo only (`repo:<org>/<spawn>:*`).
-3. Allow only S3 sync, CloudFront invalidation, and Lambda `UpdateFunctionCode` / `GetFunction` on **this app’s dev and prod** buckets and function names (`<project>-dev-*` and `<project>-prod-*`).
-4. This role cannot apply Terraform.
+1. IAM → Identity providers. Add `token.actions.githubusercontent.com` with audience `sts.amazonaws.com` if it is not already there. The **provider** is the only account-wide piece. Reuse it.
+2. Create a **new** role per spawn, named `<app-slug>-gha` (e.g. `lattice-smoke-test-gha`). Trust GitHub OIDC for **this repo only** (`repo:<org>/<spawn>:*`). Do not reuse or rename `fosterfolio-gha-arn`. Do not make a `lattice-ecosystem-gha` role that every repo assumes.
+3. Allow only S3 sync, CloudFront invalidation, and Lambda `UpdateFunctionCode` / `GetFunction` / `GetFunctionConfiguration` on **this app’s** `*-dev-*` and `*-prod-*` names.
+4. This role cannot apply Terraform. Console create is day-1. Terraform for per-spawn roles is backlog **F2c**.
 
-### 6. GitHub environments
+### 6. GitHub repository secrets (once) and environments (approval only)
 
-Repo → Settings → Environments.
+The identity, role, and slugs are the same for `dev` and `prod`. Put them **once** on the repo. Do not paste the same values onto each environment.
 
-1. Create `dev` and `prod` on day 1.
-2. On `prod`, require a reviewer.
-3. In both environments, add secrets:
+Repo → Settings → Secrets and variables → **Actions**:
+
+1. Repository secrets:
    - `INFISICAL_CLIENT_ID`
    - `INFISICAL_CLIENT_SECRET`
    - `AWS_ROLE_ARN`
-4. In both environments, add variables:
-   - `INFISICAL_PROJECT_SLUG` (slug of the **lattice** project. Same on `dev` and `prod`. Not the org name. Not the project UUID.)
-   - `INFISICAL_APP_SLUG` (lowercase slug, e.g. `your-app`. Same on `dev` and `prod`.)
-5. Leave the Supabase keys, `TERRAFORM_TFVARS`, and the Terraform outputs out of GitHub. `AWS_REGION` is optional. The workflow uses `us-east-1` when it is unset.
+   - `INFISICAL_PROJECT_SLUG` (slug of the **lattice** project from `…/project/<slug>/…`. Not the org name. Not the project UUID.)
+   - `INFISICAL_APP_SLUG` (lowercase slug, e.g. `your-app`)
+2. Or put the two slugs as repository **variables** instead. The workflow accepts either (`secrets.*` then `vars.*`).
+3. Leave the Supabase keys, `TERRAFORM_TFVARS`, and the Terraform outputs out of GitHub. `AWS_REGION` is an optional repository variable; default is `us-east-1`.
+
+Repo → Settings → Environments:
+
+1. Create `dev` and `prod` on day 1. The job still selects one so Infisical `env-slug` matches.
+2. On `prod`, require a reviewer. That is the only reason `prod` is an environment.
+3. Do not add the secrets or slugs here unless you need a one-off override.
 
 ### 7. Laptop deploy (dev first)
 
@@ -142,10 +150,10 @@ Keep `terraform.tfvars` on disk; Terraform still reads the service role from tha
 
 ## What you run after the steps above
 
-`.github/workflows/deploy-app.yml` is the GitHub path. Do not dispatch it until the GitHub environment exists and `/<app-slug>/shared` has the four Terraform outputs for **that** Infisical environment.
+`.github/workflows/deploy-app.yml` is the GitHub path. Do not dispatch it until the matching GitHub environment exists (empty is fine) and `/<app-slug>/shared` has the four Terraform outputs for **that** Infisical environment.
 
 1. Actions → **Deploy app** → Run workflow. Any branch can deploy **dev**. **Prod** only runs from **`main`**.
-2. The job uses the GitHub environment of the same name, assumes `AWS_ROLE_ARN`, loads `/<app-slug>/shared` (required) and `/<app-slug>/flags` (optional) from Infisical, uploads the static site, invalidates CloudFront, and updates the Lambda zip.
+2. The job selects the GitHub environment of the same name (prod reviewer). It assumes the **repository** `AWS_ROLE_ARN`, loads `/<app-slug>/shared` (required) and `/<app-slug>/flags` (optional) from Infisical, uploads the static site, invalidates CloudFront, and updates the Lambda zip.
 3. It does not run Terraform and does not read `terraform.tfstate`.
 4. The log prints the Supabase host and the API host. Confirm the host before the first prod run.
 5. Terraform apply stays on the laptop (`npm run deploy:aws`). GitHub only runs **Deploy app**.

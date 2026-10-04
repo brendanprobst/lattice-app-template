@@ -1,7 +1,8 @@
 # Manual deploy of the static site and the API Lambda zip.
 # Does not run on push. Does not run Terraform and does not read terraform.tfstate.
 # Dev: any branch. Prod: main only.
-# Requires a GitHub environment named dev or prod. See docs/playbooks/infisical-github-deploys.md.
+# GitHub environments `dev` / `prod` are approval + Infisical env-slug only.
+# Identity, role, and slugs are repository Actions secrets (or vars). See docs/playbooks/infisical-github-deploys.md.
 # This is the GitHub path to run. The older Deploy (AWS) workflow is unused.
 
 name: Deploy app
@@ -32,6 +33,8 @@ jobs:
     environment: ${{ inputs.environment }}
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      INFISICAL_PROJECT_SLUG: ${{ secrets.INFISICAL_PROJECT_SLUG || vars.INFISICAL_PROJECT_SLUG }}
+      INFISICAL_APP_SLUG: ${{ secrets.INFISICAL_APP_SLUG || vars.INFISICAL_APP_SLUG }}
 
     steps:
       - name: Restrict prod to main
@@ -52,19 +55,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check GitHub environment variables
+      - name: Check GitHub repository secrets
         run: |
           set -euo pipefail
-          if [ -z "${{ vars.INFISICAL_PROJECT_SLUG }}" ]; then
-            echo "Missing GitHub environment variable INFISICAL_PROJECT_SLUG on environment '${{ inputs.environment }}'."
+          if [ -z "${INFISICAL_PROJECT_SLUG}" ]; then
+            echo "Missing INFISICAL_PROJECT_SLUG. Set it once under Settings → Secrets and variables → Actions (repository secret or variable). Do not copy it onto each environment."
             exit 1
           fi
-          if [ -z "${{ vars.INFISICAL_APP_SLUG }}" ]; then
-            echo "Missing GitHub environment variable INFISICAL_APP_SLUG on environment '${{ inputs.environment }}'."
+          if [ -z "${INFISICAL_APP_SLUG}" ]; then
+            echo "Missing INFISICAL_APP_SLUG. Set it once under Settings → Secrets and variables → Actions (repository secret or variable)."
             exit 1
           fi
-          if ! [[ "${{ vars.INFISICAL_APP_SLUG }}" =~ ^[a-z][a-z0-9-]*$ ]]; then
-            echo "INFISICAL_APP_SLUG must be a lowercase slug (e.g. your-app), got '${{ vars.INFISICAL_APP_SLUG }}'."
+          if ! [[ "${INFISICAL_APP_SLUG}" =~ ^[a-z][a-z0-9-]*$ ]]; then
+            echo "INFISICAL_APP_SLUG must be a lowercase slug (e.g. your-app), got '${INFISICAL_APP_SLUG}'."
             exit 1
           fi
 
@@ -74,9 +77,9 @@ jobs:
           method: universal
           client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
           client-secret: ${{ secrets.INFISICAL_CLIENT_SECRET }}
-          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+          project-slug: ${{ env.INFISICAL_PROJECT_SLUG }}
           env-slug: ${{ inputs.environment }}
-          secret-path: /${{ vars.INFISICAL_APP_SLUG }}/shared
+          secret-path: /${{ env.INFISICAL_APP_SLUG }}/shared
           include-imports: "false"
           recursive: "false"
 
@@ -87,9 +90,9 @@ jobs:
           method: universal
           client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
           client-secret: ${{ secrets.INFISICAL_CLIENT_SECRET }}
-          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+          project-slug: ${{ env.INFISICAL_PROJECT_SLUG }}
           env-slug: ${{ inputs.environment }}
-          secret-path: /${{ vars.INFISICAL_APP_SLUG }}/flags
+          secret-path: /${{ env.INFISICAL_APP_SLUG }}/flags
           include-imports: "false"
           recursive: "false"
 
@@ -99,7 +102,7 @@ jobs:
           missing=0
           for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY WEB_BUCKET CLOUDFRONT_DISTRIBUTION_ID LAMBDA_FUNCTION_NAME NEXT_PUBLIC_API_URL; do
             if [ -z "${!name}" ]; then
-              echo "Infisical /${{ vars.INFISICAL_APP_SLUG }}/shared did not provide ${name}. Run npm run infisical:sync-outputs -- --env ${{ inputs.environment }} after terraform apply."
+              echo "Infisical /${INFISICAL_APP_SLUG}/shared did not provide ${name}. Run npm run infisical:sync-outputs -- --env ${{ inputs.environment }} after terraform apply."
               missing=1
             fi
           done

@@ -75,6 +75,9 @@ function loadRefreshManifest(targetRoot) {
       ? data.preservePaths.filter((p) => typeof p === "string" && p.trim())
       : [],
     notes: typeof data.notes === "string" ? data.notes.trim() : "",
+    postRefreshPrompts: Array.isArray(data.postRefreshPrompts)
+      ? data.postRefreshPrompts.filter((p) => typeof p === "string" && p.trim())
+      : [],
   };
 }
 
@@ -115,15 +118,22 @@ function restorePreserve(targetRoot, rels, snapDir) {
   }
 }
 
-function printPostRefreshChecklist(targetRoot, templateSha) {
+function printPostRefreshChecklist(targetRoot, templateSha, postRefreshPrompts) {
   const rel = relative(process.cwd(), targetRoot) || targetRoot;
+  let promptsBlock = "";
+  if (postRefreshPrompts.length > 0) {
+    promptsBlock = `\nPost-refresh prompts (from .lattice/refresh.json "postRefreshPrompts"):\n\n`;
+    postRefreshPrompts.forEach((prompt, i) => {
+      promptsBlock += `  ${i + 1}. ${prompt}\n\n`;
+    });
+  }
   console.log(`
 Post-refresh checklist — from the spawn repo:
 
   cd ${JSON.stringify(rel)}
   npm ci
   npm run ci
-
+${promptsBlock}
 Then if needed since your last deploy:
   • Supabase Auth redirect URLs (/auth/sign-in, etc.) — see docs/playbooks/supabase-migrations.md
   • Apply new SQL under apps/api/supabase/migrations/
@@ -185,7 +195,7 @@ function main() {
         console.log(`  - ${p}`);
       }
     }
-    printPostRefreshChecklist(targetRoot, templateSha);
+    printPostRefreshChecklist(targetRoot, templateSha, manifest.postRefreshPrompts);
     return;
   }
 
@@ -242,7 +252,7 @@ function main() {
   }
   rmSync(snapDir, { recursive: true, force: true });
 
-  printPostRefreshChecklist(targetRoot, templateSha);
+  printPostRefreshChecklist(targetRoot, templateSha, manifest.postRefreshPrompts);
 }
 
 main();

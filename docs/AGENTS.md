@@ -7,7 +7,8 @@
 - **[Scaffold workflow](scaffold-workflow.md)** — New repo + clone + `npm run scaffold`; **[refresh an existing spawn](scaffold-workflow.md#refresh-an-existing-spawn-re-sync-from-template)** re-syncs a long-lived fork from a local template checkout (`.lattice/refresh.json` in the target repo).
 - **[Repo feature flags](repo-features.md)** — `config/repo-features.json`: enable/disable CI jobs and Dependabot from the start.
 - **[Deploy to AWS](deploy-aws.md)** — `npm run deploy:aws` on a laptop (Terraform + site + Lambda) and the manual **Deploy app** workflow (site and Lambda, no Terraform). The older **Deploy (AWS)** workflow is unused.
-- **[Infisical and GitHub deploys](playbooks/infisical-github-deploys.md)** — Dual-env by default (`dev` + `prod`). One Infisical project; apps are folders `/<app-slug>/**`. GitHub variables are `INFISICAL_PROJECT_SLUG` and `INFISICAL_APP_SLUG`.
+- **[Infisical and GitHub deploys](playbooks/infisical-github-deploys.md)** — Dual-env by default (`dev` + `prod`). One Infisical project; apps are folders `/<app-slug>/**`. GitHub repository secrets (or variables) are `INFISICAL_PROJECT_SLUG` and `INFISICAL_APP_SLUG`.
+- **[Standup automation](playbooks/standup-automation.md)** — Follow-along to harvest smoke-test day-1 failures, add `npm run standup`, refresh the canary, then stand up prod. Plan: [`plans/standup-automation.plan.md`](plans/standup-automation.plan.md).
 - **[Route 53 custom domain](playbooks/route53-custom-domain.md)** — Optional HTTPS hostname, ACM, registrar nameservers.
 - **[PostHog analytics](playbooks/posthog-analytics.md)** — Optional, feature-flagged web analytics (`@lattice/web`).
 - **[Email allowlist](playbooks/email-allowlist.md)** — Optional private-app signup and API gate.
@@ -17,5 +18,7 @@
 - **`research/`** — Exploratory notes (not ADRs), e.g. [Supabase access patterns](research/supabase-access-patterns.md) (client SDK vs API vs ORM) and the canonical [security-first Supabase Auth default](research/supabase-auth-security-first.md) for API/client separation.
 
 ## For agents
+
+**This file is overwritten on `npm run scaffold:refresh`.** Spawn-specific names and hostnames do not belong here. See the root `AGENTS.md` refresh note.
 
 Read ADRs when changing layering, `Result` usage, repositories, use case shape, **persistence adapters**, or **deployment / full-stack** layout. Keep ADRs accurate when you make deliberate architectural changes; see [ADR-006](adr/006-full-stack-and-deployment.md) for hosting/Terraform decisions and [ADR-007](adr/007-ci-and-environment-promotion.md) for CI/deployment promotion policy. Use **`research/`** for onboarding tradeoffs that do not yet rise to a recorded ADR.

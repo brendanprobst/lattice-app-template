@@ -136,7 +136,8 @@ Each spawn that you intend to re-sync should commit a manifest at **`.lattice/re
 | `repo` | yes | Git remote URL for `package.json` → `repository.url` |
 | `preservePaths` | no | Extra spawn-owned paths to restore after copy (on top of the defaults below) |
 | `prunePaths` | no | Paths **relative to repo root** to delete after copy. Preserved paths are never pruned. |
-| `notes` | no | Operator reminders only; tooling ignores |
+| `notes` | no | Short operator reminder printed at the start of refresh |
+| `postRefreshPrompts` | no | Array of prompts printed after refresh. Use this for spawn-specific doc repair (git-history check, rename Lattice → this app) without stuffing names into `AGENTS.md`. |
 
 Example (smoke-test canary):
 
@@ -150,6 +151,11 @@ Example (smoke-test canary):
   "prunePaths": [
     "apps/web/app/login",
     "apps/web/client/pages/login"
+  ],
+  "postRefreshPrompts": [
+    "After refresh, look only at overwritten documentation (AGENTS.md, README, generic playbooks).",
+    "Overwrites are expected. Substantial spawn-only edits go into a preservePaths doc, not back into the template file.",
+    "Rename leftover Lattice / lattice-app-template branding to this spawn's name."
   ]
 }
 ```

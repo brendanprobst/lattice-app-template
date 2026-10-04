@@ -59,7 +59,7 @@ This repo’s default **CI** job does **not** deploy to AWS (`terraform validate
 
 The older **Deploy (AWS)** workflow still exists and still applies Terraform from a `TERRAFORM_TFVARS` secret. Do not run it.
 
-In AWS, create an **IAM role** whose **trust policy** allows `sts:AssumeRoleWithWebIdentity` for your **repository**, with S3 / CloudFront / Lambda update on **both** the `*-dev-*` and `*-prod-*` names. References: [GitHub OIDC with AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services), [AWS IAM OIDC provider for GitHub](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html).
+In AWS, create **one IAM role per spawn** (`<app-slug>-gha`) whose **trust policy** allows `sts:AssumeRoleWithWebIdentity` for **that repository only**, with S3 / CloudFront / Lambda update on **that app’s** `*-dev-*` and `*-prod-*` names. Reuse the account GitHub OIDC provider; do not share one role across apps. References: [GitHub OIDC with AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services), [AWS IAM OIDC provider for GitHub](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html).
 
 Keep **Terraform state**, **tfvars**, and **AWS account IDs** out of public logs; mask outputs in Actions.
 

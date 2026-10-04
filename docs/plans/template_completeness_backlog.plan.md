@@ -26,6 +26,12 @@ todos:
   - id: gha-default-deploy-dx
     content: Deploy app is the GitHub path for site and Lambda (OIDC + Infisical). Dual-env by default (dev + prod folders, GitHub envs, Infisical paths). Terraform apply stays on the laptop until F5 remote state. The older Deploy (AWS) workflow remains unused.
     status: in_progress
+  - id: terraform-github-oidc-deploy-role
+    content: Terraform one GitHub OIDC deploy role per spawn (name like <app-slug>-gha). Reuse only the account-level token.actions.githubusercontent.com provider. Do not widen Fosterfolio’s role into a lattice-ecosystem mega-role. Each role trusts only repo:<org>/<spawn>:* and this app’s *-dev-* / *-prod-* names. Bootstrap stack, not envs/dev or envs/prod. Day-1 still pastes that spawn’s AWS_ROLE_ARN into GitHub. Implementation order: docs/plans/standup-automation.plan.md Phase 2.
+    status: pending
+  - id: spawn-standup-script
+    content: npm run standup (Infisical folders + identity + gh env/vars/secrets + deploy:aws ACM wait). Follow docs/playbooks/standup-automation.md; prove on smoke-test dev then prod.
+    status: pending
   - id: prod-swagger-and-lambda-logging
     content: Harden or disable /api-docs on public stacks; tune morgan/structured logging in Lambda
     status: pending
@@ -43,6 +49,9 @@ todos:
     status: pending
   - id: tighten-supabase-rls
     content: Tighten RLS/policies before real production data (service-role patterns)—see smoke guide SQL section
+    status: pending
+  - id: docker-local-dev
+    content: Ship a Docker (Compose) local-dev stack so a clone can run without matching the author's host Node/tooling versions
     status: pending
 isProject: false
 ---
@@ -110,12 +119,15 @@ High value, small scope—work in roughly this order:
 | F0b | **Supabase CLI layout** | Root `supabase/migrations/`, `npm run supabase:push` — [Supabase migrations playbook](../playbooks/supabase-migrations.md). |
 | F1 | **`scripts/smoke`** | Deployed HTTPS checks with `API_BASE_URL` + `BEARER_TOKEN`; no secret logging. |
 | F2 | **Deploy + smoke GitHub workflow** | AWS OIDC; masked outputs. |
-| F2b | **GitHub Deploy app + Infisical** | **In progress.** Files and dual-env playbook are in the template. Remaining work is human setup on a spawn (vault keys, GitHub env secrets, first **Deploy app** on `dev`). **Deploy app** is the GitHub path. One Infisical project (`INFISICAL_PROJECT_SLUG`) with per-app folders (`INFISICAL_APP_SLUG` → `/<app>/{shared,flags}`). Terraform apply stays on the laptop until F5. Setup: [`docs/playbooks/infisical-github-deploys.md`](../playbooks/infisical-github-deploys.md). |
+| F2b | **GitHub Deploy app + Infisical** | **In progress.** Files and dual-env playbook are in the template. Remaining work is human setup on a spawn (vault keys, **repository** Actions secrets, first **Deploy app** on `dev`). GitHub environments are approval + Infisical env-slug only. **Deploy app** is the GitHub path. One Infisical project (`INFISICAL_PROJECT_SLUG`) with per-app folders (`INFISICAL_APP_SLUG` → `/<app>/{shared,flags}`). Terraform apply stays on the laptop until F5. Setup: [`docs/playbooks/infisical-github-deploys.md`](../playbooks/infisical-github-deploys.md). Automation slice: [`standup-automation.plan.md`](./standup-automation.plan.md). |
+| F2c | **Terraform one GitHub OIDC role per spawn** | Day-1 still creates `<app-slug>-gha` in the console and pastes that spawn’s `AWS_ROLE_ARN`. Later: a **bootstrap** stack (not `envs/dev` / `envs/prod`) looks up the account OIDC provider and creates **one role per spawn**. Trust `repo:<org>/<spawn>:*` only. Permissions only that app’s `*-dev-*` and `*-prod-*` buckets / distributions / Lambdas. Do **not** rename `fosterfolio-gha-arn` into a shared `lattice-ecosystem-gha` role, and do **not** add another repo to an existing role’s trust policy. Roles are free; a compromised workflow should not be able to deploy a sibling app. **Do this as Phase 2** of [`standup-automation.plan.md`](./standup-automation.plan.md). |
+| F2d | **`npm run standup`** | One laptop command for Infisical folders/identity, GitHub env/vars/secrets, F2c role, ACM wait, `deploy:aws`. Prove idempotent on smoke-test **dev**, then `--env prod`. Playbook: [`standup-automation.md`](../playbooks/standup-automation.md). |
 | F3 | **Prod hardening** | Restrict or disable `/api-docs` on public API URLs; Lambda logging verbosity (`morgan` vs structured). |
 | F4 | **`tflint` in CI** | Stricter Terraform static analysis (`infra/AGENTS.md`). |
 | F5 | **Remote Terraform state** | Before the first apply, create the S3 bucket and DynamoDB lock table (Terraform does not create them), uncomment the backend in `envs/dev/versions.tf`, and give each environment its own key (`lattice/dev/terraform.tfstate`, later `lattice/prod/terraform.tfstate`). Local state is fine only for a throwaway smoke; moving it later is `terraform init -migrate-state`. |
 | F6 | **SSR / non-static Next.js** | Only when the product needs it—larger change from static export. |
 | F7 | **Always-on API (e.g. App Runner)** | Higher baseline cost; simpler ops if you outgrow Lambda cold starts. |
 | F8 | **Supabase RLS / policies** | Tighten before real production data; align with service-role usage. |
+| F9 | **Docker local-dev stack** | Dockerfile + Compose (or equivalent) so anyone can `docker compose up` after clone instead of matching the author's host Node 22, npm, and tooling. Goal is environment parity for contributors, not a production container deploy (that stays F7 / App Runner). |
 
 The **YAML `todos`** at the top of this file mirror these items for tooling and agents; update statuses there when work completes.

@@ -18,6 +18,8 @@
 
 Each major directory contains **`AGENTS.md`**. Use that name so humans and automation can rely on a single predictable filename when opening a folder for the first time. **`README.md`** is better for human-only onboarding in libraries; here **`AGENTS.md`** doubles as developer notes and agent context.
 
+**Refresh overwrites these files.** `npm run scaffold:refresh` copies `AGENTS.md`, `docs/AGENTS.md`, `agents/**`, and `.cursor/rules/**` from the template. Do not put spawn-only names, hostnames, or Infisical slugs here — they will disappear on the next refresh. Keep those in `.lattice/infisical.json` and any path listed in `.lattice/refresh.json` `preservePaths`.
+
 ## CI parity
 
 - **`npm run ci`** — `turbo run build lint type-check` plus **`//#test:coverage`** (Jest + coverage) and **`//#test:web:unit`** (Vitest). Matches the `test` job in `.github/workflows/ci.yml`. Playwright E2E runs in the **`web-e2e`** job; Terraform in **`terraform`**. Jobs are gated by **`config/repo-features.json`** (see **[`docs/repo-features.md`](docs/repo-features.md)**). **Dependabot** reads `.github/dependabot.yml`; use **`npm run repo-features:apply`** after toggling **`dependabot.enabled`**. Prefer **required status checks** on `main` so PRs cannot merge without green CI — update rules if you disable jobs.

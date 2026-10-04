@@ -9,5 +9,10 @@
     "apps/web/client/pages/login",
     "test/api/auth/supabaseAuthMidleware.test.ts"
   ],
-  "notes": "Optional free-form reminder for operators (not read by tooling). Example: update Supabase redirect URLs from /login to /auth/sign-in after refresh."
+  "notes": "Optional free-form reminder for operators (not read by tooling). Example: update Supabase redirect URLs from /login to /auth/sign-in after refresh.",
+  "postRefreshPrompts": [
+    "After refresh, look only at overwritten documentation (AGENTS.md files, README, generic playbooks). Skip application code for this pass.",
+    "Overwrites are expected. If git history shows a substantial spawn-only edit, append it to a preservePaths doc instead of fighting the template file.",
+    "If the only drift is the product name (Lattice / lattice-app-template), rename it to this spawn's name from the refresh.json name field."
+  ]
 }
