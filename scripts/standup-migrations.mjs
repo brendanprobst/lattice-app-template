@@ -68,26 +68,61 @@ export function resolveMigrationFiles(root, relPaths) {
   return files;
 }
 
-export function redactDbUrl(text, dbUrl) {
+export function redactDbUrl(text, secrets = []) {
   if (!text) return "";
   let out = String(text);
-  if (dbUrl) out = out.split(dbUrl).join("[SUPABASE_DB_URL]");
-  try {
-    const pw = dbUrl ? decodeURIComponent(new URL(dbUrl).password || "") : "";
-    if (pw) out = out.split(pw).join("***");
-  } catch {
-    /* ignore */
+  for (const secret of secrets.filter(Boolean)) {
+    out = out.split(secret).join("***");
   }
   return out.replace(/postgresql:\/\/[^:\s]+:[^@\s]+@/g, "postgresql://***:***@");
 }
 
-function isDirectPostgresUrl(value) {
-  try {
-    const u = new URL(value);
-    return u.protocol === "postgresql:" || u.protocol === "postgres:";
-  } catch {
-    return false;
+/**
+ * Parse a Postgres URI. Uses the last `@` as the host separator so an
+ * unencoded `@` or `!` in the password is not treated as the hostname.
+ */
+export function parsePostgresConn(url) {
+  const trimmed = typeof url === "string" ? url.trim() : "";
+  const m = trimmed.match(/^(postgres(?:ql)?):\/\/(.+)$/i);
+  if (!m) return null;
+  const rest = m[2];
+  const at = rest.lastIndexOf("@");
+  if (at <= 0) return null;
+  const userinfo = rest.slice(0, at);
+  let hostpart = rest.slice(at + 1);
+  if (!hostpart || hostpart.includes("@")) return null;
+  let database = "postgres";
+  const slash = hostpart.indexOf("/");
+  if (slash !== -1) {
+    const after = hostpart.slice(slash + 1);
+    hostpart = hostpart.slice(0, slash);
+    const q = after.indexOf("?");
+    const dbRaw = q === -1 ? after : after.slice(0, q);
+    if (dbRaw) database = decodeURIComponent(dbRaw);
   }
+  let host = hostpart;
+  let port = "5432";
+  const colon = hostpart.lastIndexOf(":");
+  if (colon !== -1 && /^\d+$/.test(hostpart.slice(colon + 1))) {
+    host = hostpart.slice(0, colon);
+    port = hostpart.slice(colon + 1);
+  }
+  if (!host || host.startsWith("!")) return null;
+  const userColon = userinfo.indexOf(":");
+  let user = userinfo;
+  let password = "";
+  if (userColon === -1) {
+    user = decodeURIComponent(userinfo);
+  } else {
+    user = decodeURIComponent(userinfo.slice(0, userColon));
+    try {
+      password = decodeURIComponent(userinfo.slice(userColon + 1));
+    } catch {
+      password = userinfo.slice(userColon + 1);
+    }
+  }
+  if (!user) return null;
+  return { host, port, user, password, database };
 }
 
 export function supabaseEnvDir(root) {
@@ -104,12 +139,29 @@ export function resolveDbUrl(root, envName, env = process.env) {
   return { url, source: relative(root, full) };
 }
 
-function requirePsql() {
-  const r = spawnSync("psql", ["--version"], { encoding: "utf8", shell: false });
-  if (r.error || r.status !== 0) {
-    console.error("psql is required to apply standup migrations. Install the PostgreSQL client.");
-    process.exit(1);
+export function resolvePsqlBin() {
+  const candidates = [
+    process.env.PSQL?.trim(),
+    "psql",
+    "/opt/homebrew/opt/libpq/bin/psql",
+    "/usr/local/opt/libpq/bin/psql",
+  ].filter(Boolean);
+  for (const bin of candidates) {
+    if (bin !== "psql" && !existsSync(bin)) continue;
+    const r = spawnSync(bin, ["--version"], { encoding: "utf8", shell: false });
+    if (!r.error && r.status === 0) return bin;
   }
+  return "";
+}
+
+function requirePsql() {
+  const bin = resolvePsqlBin();
+  if (bin) return bin;
+  console.error(
+    "psql is required to apply standup migrations.\n" +
+      "On macOS: brew install libpq && export PATH=\"/opt/homebrew/opt/libpq/bin:$PATH\"",
+  );
+  process.exit(1);
 }
 
 export function applyStandupMigrations(root, envName) {
@@ -144,10 +196,12 @@ export function applyStandupMigrations(root, envName) {
     process.exit(1);
   }
   const { url: dbUrl, source } = resolveDbUrl(root, envName);
-  if (!dbUrl || !isDirectPostgresUrl(dbUrl)) {
+  const conn = parsePostgresConn(dbUrl);
+  if (!conn) {
     console.error(
-      `Standup migrations for ${envName} need SUPABASE_DB_URL.\n` +
+      `Standup migrations for ${envName} need a usable SUPABASE_DB_URL.\n` +
         `Add it to ${envFileLabel("supabase", envName)} (copy supabase/.env.example).\n` +
+        `If the password has @ or !, URL-encode them (%40 / %21) or keep the raw password — standup uses the last @ as the host.\n` +
         `Use the session pooler or direct host on port 5432, not the transaction pooler (6543).`,
     );
     process.exit(1);
@@ -155,17 +209,40 @@ export function applyStandupMigrations(root, envName) {
   if (source && source !== "SUPABASE_DB_URL") {
     console.log(`→ standup migrations: ${source}`);
   }
-  requirePsql();
+  const psql = requirePsql();
+  const secrets = [dbUrl, conn.password];
   for (const { rel, abs } of files) {
-    console.log(`→ psql -f ${rel} (${envName})`);
-    const r = spawnSync("psql", [dbUrl, "-v", "ON_ERROR_STOP=1", "-f", abs], {
-      cwd: root,
-      encoding: "utf8",
-      shell: false,
-    });
+    console.log(`→ psql -h ${conn.host} -f ${rel} (${envName})`);
+    const r = spawnSync(
+      psql,
+      [
+        "-h",
+        conn.host,
+        "-p",
+        conn.port,
+        "-U",
+        conn.user,
+        "-d",
+        conn.database,
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-f",
+        abs,
+      ],
+      {
+        cwd: root,
+        encoding: "utf8",
+        shell: false,
+        env: {
+          ...process.env,
+          PGPASSWORD: conn.password,
+          PGSSLMODE: "require",
+        },
+      },
+    );
     const combined = `${r.stdout || ""}\n${r.stderr || ""}`;
     if (r.error || r.status !== 0) {
-      console.error(redactDbUrl(combined, dbUrl).trim() || `psql failed on ${rel}`);
+      console.error(redactDbUrl(combined, secrets).trim() || `psql failed on ${rel}`);
       process.exit(r.status ?? 1);
     }
   }

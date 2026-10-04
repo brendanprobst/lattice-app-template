@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import {
+  parsePostgresConn,
   parseStandupMigrations,
   redactDbUrl,
   resolveDbUrl,
@@ -55,9 +56,20 @@ test("resolveDbUrl prefers the shell, then supabase/.env.prod", () => {
   assert.match(fromShell.url, /shell-secret/);
 });
 
+test("parsePostgresConn keeps @ and ! inside the password", () => {
+  const conn = parsePostgresConn(
+    "postgresql://postgres.myref:p@ss!word@aws-0-us-east-1.pooler.supabase.com:5432/postgres",
+  );
+  assert.equal(conn.host, "aws-0-us-east-1.pooler.supabase.com");
+  assert.equal(conn.port, "5432");
+  assert.equal(conn.user, "postgres.myref");
+  assert.equal(conn.password, "p@ss!word");
+  assert.equal(conn.database, "postgres");
+});
+
 test("redactDbUrl strips the password", () => {
   const url = "postgresql://postgres:super-secret@db.example.com:5432/postgres";
-  const out = redactDbUrl(`connected ${url} as postgres:super-secret`, url);
+  const out = redactDbUrl(`connected ${url} as postgres:super-secret`, [url, "super-secret"]);
   assert.equal(out.includes("super-secret"), false);
   assert.equal(out.includes(url), false);
 });
