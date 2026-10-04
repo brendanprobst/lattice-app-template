@@ -2,7 +2,7 @@
 
 Run database schema changes from the terminal and keep **one Supabase project per spawn repo** (smoke-test, runout, each new app). The API uses Supabase via PostgREST with the **service role**; this playbook is only for **DDL/migrations**, not runtime auth.
 
-**Status:** The template ships SQL under `apps/api/supabase/migrations/` for documentation and manual apply. Full **Supabase CLI** wiring (`supabase/` at repo root, `npm run supabase:push`) is **planned** — follow this playbook manually until that lands (see [Template backlog](../plans/template_completeness_backlog.plan.md)).
+**Status:** Laptop **`npm run deploy:aws`** / **`npm run standup -- --env <env>`** apply the SQL list in **`.lattice/standup.json`** after terraform apply (see [Standup apply](#standup-apply)). Full **Supabase CLI** wiring (`supabase/` at repo root, `npm run supabase:push`) is still **planned** (see [Template backlog](../plans/template_completeness_backlog.plan.md)).
 
 ---
 
@@ -17,6 +17,31 @@ Run database schema changes from the terminal and keep **one Supabase project pe
 Linking is **per git clone**, not global. `NEXT_PUBLIC_SUPABASE_URL` in env does **not** replace `supabase link` — the CLI needs an explicit link or database URL to apply migrations.
 
 ---
+
+## Standup apply
+
+After a successful env `terraform apply`, `deploy:aws` runs `psql -f` for each path in `.lattice/standup.json` for that `--env`. Copy [`.lattice/standup.json.example`](../../.lattice/standup.json.example). Refresh preserves `.lattice/standup.json`.
+
+```json
+{
+  "migrations": {
+    "dev": [
+      "apps/api/supabase/migrations/allowed_emails_signup_gate.sql",
+      "apps/api/supabase/migrations/things.sql"
+    ],
+    "prod": [
+      "apps/api/supabase/migrations/allowed_emails_signup_gate.sql",
+      "apps/api/supabase/migrations/things.sql"
+    ]
+  }
+}
+```
+
+A top-level `"migrations": ["…"]` array applies to every env. Missing file or empty list is a skip, not a failure.
+
+**Connection** (laptop only, never committed): `SUPABASE_DB_URL` in the shell, else `supabase/.env.<env>` (`supabase/.env.prod` for prod; first of `.env.dev` / `.env.local` / `.env` for dev). Copy `supabase/.env.example`. Session pooler on port 5432 is fine; do not use the transaction pooler (6543). `psql` must be on `PATH`. Failures stop the deploy; the URL is never printed.
+
+`--bootstrap-only` and `--plan-only` do not run SQL. GitHub **Deploy app** does not run SQL.
 
 ## Prerequisites
 

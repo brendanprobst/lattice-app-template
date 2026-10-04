@@ -1,3 +1,6 @@
+# Older unused Terraform-in-GHA path. Prefer Actions → Deploy app
+# (.github/workflows/deploy-app.yml) for site and Lambda. This workflow
+# still applies Terraform from a GitHub secret and is not the path to run.
 # Manual deploy: Terraform (AWS) + API Lambda bundle + static web + S3 sync.
 # Does not run on push — only workflow_dispatch on main. Requires OIDC + secrets (see docs/deploy-aws.md).
 

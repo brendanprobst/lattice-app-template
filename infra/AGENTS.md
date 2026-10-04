@@ -2,21 +2,22 @@
 
 ## Purpose
 
-**AWS** infrastructure as code under [`terraform/`](terraform/). Supabase remains hosted; **credentials and URL** are defined in **`terraform.tfvars`** (per environment) and optionally **replicated to SSM** for hybrid AWS workloads.
+**AWS** infrastructure as code under [`terraform/`](terraform/). Supabase remains hosted; **credentials and URL** are defined in **`terraform.tfvars`** (per environment) and **written to SSM** (`/<project>-<env>/supabase/…`) for Lambda. That is the secret store — not Infisical `/sensitive`.
 
 ## Conventions
 
 - **Modules** in `terraform/modules/` stay generic; **project-specific** values live in `terraform/envs/<env>/terraform.tfvars`.
 - Do not commit real **`terraform.tfvars`**; use **`terraform.tfvars.example`** as the template.
 - **Email allowlist on AWS:** defaults to **off** (`email_allowlist_enabled` defaults to `false`). Set `email_allowlist_enabled = true` in `terraform/envs/dev/terraform.tfvars` when the DB gate and allowlist rows are ready (see **[`docs/playbooks/email-allowlist.md`](../docs/playbooks/email-allowlist.md)**).
-- Commit **`terraform/envs/dev/.terraform.lock.hcl`** when it changes (provider parity for CI and laptops).
-- Prefer **remote state** (S3 + DynamoDB lock) before team or production use.
-- Keep environment naming and variables portable so new `envs/stage` and `envs/prod` can be added later without changing module behavior (see `docs/adr/007-ci-and-environment-promotion.md`).
+- Commit **`terraform/envs/dev/.terraform.lock.hcl`** (and `envs/prod` when that lock changes) for provider parity.
+- Prefer **remote state** (S3 + DynamoDB lock) before team or production use. Each env needs its own state key.
+- Dual-environment by default: fill `envs/dev` and `envs/prod` `terraform.tfvars` on day 1; apply **dev** first. Do not rename `environment` on a live state to promote it (see `docs/adr/007-ci-and-environment-promotion.md`).
+- GitHub **Deploy app** (site + Lambda, no Terraform): [`docs/playbooks/infisical-github-deploys.md`](../docs/playbooks/infisical-github-deploys.md).
 
 ## Commands (from repo root)
 
 - `npm run infra:fmt` — `terraform fmt -recursive`
-- `npm run infra:validate` — `init -backend=false` + `validate` for `envs/dev`
+- `npm run infra:validate` — `init -backend=false` + `validate` for `envs/dev`, `bootstrap` (GHA OIDC role), and `dns-zone` (per-spawn Route 53 zone)
 - `npm run deploy:aws` — Lambda bundle + **`terraform apply`** + static web + **`aws s3 sync`** (see **[`docs/deploy-aws.md`](../docs/deploy-aws.md)**)
 
 CI runs **`terraform fmt -check`** and **`validate`** as the standard low-overhead baseline. For stricter static analysis later, **tflint** is a common add-on (not wired in this template by default).

@@ -11,7 +11,7 @@ We want this repository to remain a low-friction **template source** while still
 - Strong quality gates on every change.
 - No accidental cloud deployment from the template repository itself.
 
-We also expect many downstream projects to eventually require multi-environment promotion (`dev/stage/prod`), but enforcing that complexity in the template from day one increases setup overhead for every fork.
+Downstream apps need a **dev** stack they can break and a **prod** stack they can ship. Standing up only `dev` and treating prod as a later architecture project is how first prod deploys become a full day of work.
 
 ## Decision
 
@@ -24,14 +24,17 @@ We also expect many downstream projects to eventually require multi-environment 
 
 - Deployment is **manual by command**, not automatic by push to `main`.
 - The template ships **`npm run deploy:aws`** (API Lambda bundle, Terraform apply, static web build with `NEXT_PUBLIC_API_URL` from Terraform output, `aws s3 sync`) — see [`docs/deploy-aws.md`](../deploy-aws.md).
-- An optional **GitHub Actions** workflow **Deploy (AWS)** runs only via **workflow_dispatch** (never on every commit); it uses OIDC and the same deploy script.
+- **Deploy app** (`.github/workflows/deploy-app.yml`) is the GitHub path. It is `workflow_dispatch` only, chooses `dev` or `prod`, and does not run Terraform. Any branch may deploy `dev`; `prod` runs from `main` only. Setup is [`docs/playbooks/infisical-github-deploys.md`](../playbooks/infisical-github-deploys.md).
+- Terraform apply stays on a laptop (`npm run deploy:aws`). GitHub does not receive `TERRAFORM_TFVARS`.
+- The older **Deploy (AWS)** workflow remains in-repo and is unused.
 - Support remains for **per-layer** steps if you do not use the single command.
 
 ### Environment promotion policy
 
-- Do **not** enforce `dev/stage/prod` in the template by default.
-- Keep Terraform and naming **environment-parameterized out of the box** so forks can add `envs/stage` and `envs/prod` without architectural rewrites.
-- Multi-environment rollout is a **post-fork responsibility** to match each project’s risk profile, approvals, and budget model.
+- Ship **`dev` and `prod`** in the template (`infra/terraform/envs/dev` and `envs/prod`). Day 1 fills both `terraform.tfvars`, both Infisical folder trees, both web env files, and GitHub environments `dev` / `prod` (prod reviewer only). Identity, role, and slugs are **repository** Actions secrets, not copied onto each environment. Apply and smoke **dev**. The first prod apply and **Deploy app** dispatch should be the same commands with prod values and a reviewer click.
+- Keep Terraform and naming **environment-parameterized** (`${project_name}-${environment}`) so a later `envs/stage` is a copy, not a rewrite.
+- Do **not** “promote” by changing `environment` on an existing state. That recreates AWS resources. Prod is always a separate state directory.
+- A third environment is optional. Two is the default.
 
 ## Consequences
 
@@ -39,8 +42,8 @@ We also expect many downstream projects to eventually require multi-environment 
 
 - Every commit still gets immediate quality feedback.
 - Reduced risk of accidental spend or secret misuse from template CI.
-- Faster onboarding for new forks, with a clear maturity path to promotion environments.
-- Environment-ready naming and variable patterns reduce rework later.
+- Faster onboarding: fill both environments on day 1; first prod ship is a formality, not a second architecture project.
+- Environment-parameterized naming still allows a later `stage` without rewriting modules.
 
 ### Negative
 
@@ -51,12 +54,15 @@ We also expect many downstream projects to eventually require multi-environment 
 ## Alternatives Considered
 
 - **Auto-deploy on every push from template**: Rejected due to cost/security risk and mismatch with template purpose.
-- **Force `dev/stage/prod` from day one**: Rejected due to setup complexity and higher baseline effort for simple projects.
+- **Dev-only until you “need” prod**: Rejected. The missing folders, GitHub environment, `tfvars`, and `.env.prod` are what make the first prod ship daunting. Two environments on day 1; apply prod when you choose.
+- **Force `dev/stage/prod` from day one**: Rejected. A third env is optional. Two is the default.
 - **Disable CI entirely**: Rejected because quality drift in templates propagates to every fork.
 
 ## Implementation notes
 
 - Existing Terraform already parameterizes resource naming by `${project_name}-${environment}` and keeps environment-specific values in `infra/terraform/envs/<env>/terraform.tfvars`.
+- The template ships `infra/terraform/envs/prod` as a copy of `envs/dev`. CI still validates only `envs/dev`. Fill both `tfvars` on day 1; apply prod when the values exist.
+- One Infisical project (`lattice`) holds every Lattice app. Apps are folders `/<app-slug>/{shared,flags,sensitive}`. Laptop sync reads `.lattice/infisical.json` `appSlug`. GitHub **Deploy app** reads `INFISICAL_PROJECT_SLUG` and `INFISICAL_APP_SLUG`.
 - Keep infrastructure modules generic and avoid hard-coded environment assumptions.
 - Add deployment automation in forks using manual dispatch + protected environments when ready.
 

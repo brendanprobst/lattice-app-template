@@ -67,12 +67,12 @@ npm run scaffold -- --into ../my-app --name my-app --repo https://github.com/you
 
 Without `--yes`, the script requires an interactive terminal so it can prompt; otherwise it exits with an error.
 
-### 5. Install, verify, and commit from the app repo
+### 5. Env files and commit from the app repo
+
+Scaffold already ran post-scaffold prompts and `npm ci` / `npm run ci` unless you passed `--skip-prompts` / `--skip-tests`.
 
 ```bash
 cd ../my-app
-npm ci
-npm run ci
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 cp infra/terraform/envs/dev/terraform.tfvars.example infra/terraform/envs/dev/terraform.tfvars
@@ -134,8 +134,10 @@ Each spawn that you intend to re-sync should commit a manifest at **`.lattice/re
 |-------|----------|---------|
 | `name` | yes | npm package name passed to `fork:init` (usually matches repo name) |
 | `repo` | yes | Git remote URL for `package.json` → `repository.url` |
-| `prunePaths` | no | Paths **relative to repo root** to delete after copy (orphans removed in template, e.g. legacy `/login` after `/auth/*` migration) |
-| `notes` | no | Operator reminders only; tooling ignores |
+| `preservePaths` | no | Extra spawn-owned paths to restore after copy (on top of the defaults below) |
+| `prunePaths` | no | Paths **relative to repo root** to delete after copy. Preserved paths are never pruned. |
+| `notes` | no | Short operator reminder printed at the start of refresh |
+| `postRefreshPrompts` | no | Array of prompts the pipeline runs via `agent` / `cursor agent` after copy + restore (docs repair, branding). `--skip-prompts` skips. |
 
 Example (smoke-test canary):
 
@@ -143,9 +145,17 @@ Example (smoke-test canary):
 {
   "name": "lattice-app-smoke-test",
   "repo": "https://github.com/your-org/lattice-app-smoke-test.git",
+  "preservePaths": [
+    "docs/playbooks/lattice-smoke-test-deploys.md"
+  ],
   "prunePaths": [
     "apps/web/app/login",
     "apps/web/client/pages/login"
+  ],
+  "postRefreshPrompts": [
+    "After refresh, look only at overwritten documentation (AGENTS.md, README, generic playbooks).",
+    "Overwrites are expected. Substantial spawn-only edits go into a preservePaths doc, not back into the template file.",
+    "Rename leftover Lattice / lattice-app-template branding to this spawn's name."
   ]
 }
 ```
@@ -167,54 +177,49 @@ Behavior (spec):
 
 1. Resolve `--into` to an existing directory (required).
 2. Read **`<target>/.lattice/refresh.json`**; fail with a clear message if missing.
-3. Run existing **`scaffold.mjs`** with `--into`, `--name`, `--repo` from the manifest, plus **`--force --yes`** (non-interactive merge into a non-empty tree).
-4. Delete each path in `prunePaths` under the target if it exists.
-5. Print a **post-refresh checklist** (below); do **not** run `npm ci`, deploy, or Supabase.
+3. Snapshot spawn-owned paths (defaults + `preservePaths`).
+4. Run **`scaffold.mjs`** with `--into`, `--name`, `--repo` from the manifest, plus **`--force --yes`**.
+5. Delete each path in `prunePaths` (never a preserved path).
+6. Restore the snapshot so spawn config wins over anything the copy wrote.
+7. Run `postRefreshPrompts` in the spawn via `agent` / `cursor agent` (docs only, as written).
+8. Run **`npm ci`** then **`npm run ci`** in the spawn (build, lint, type-check, Jest, Vitest).
+9. Print leftover human steps (Supabase, Terraform, Infisical). Do **not** deploy.
 
-Optional flags (planned): `--dry-run` (scaffold dry-run + list prunes), `--skip-prune`.
+Optional flags: `--dry-run` (scaffold dry-run + list prunes + print prompts/tests), `--skip-prune`, `--skip-prompts`, `--skip-tests`.
 
 ### What refresh preserves vs overwrites
 
-**`scaffold.mjs` copy-over** (same as manual `scaffold --force --yes`):
+Refresh **must** keep spawn-owned config. It snapshots these paths before copy and writes them back after:
 
-| Typically preserved in target | Why |
-|-------------------------------|-----|
-| `.git/` | Never copied from template |
-| `infra/terraform/envs/dev/terraform.tfvars` | Real tfvars excluded from template source; target file kept |
-| `infra/terraform/envs/dev/.terraform/` | Local state; not in template tree |
-| `apps/api/.env` | Target-only secrets |
-| `apps/web/.env.production.local`, `.env.local`, etc. | Target-only (deploy scripts load these) |
-| GitHub Actions secrets | Not in repo |
+**Always preserved** (if they exist): `.lattice/refresh.json`, `.lattice/infisical.json`, `.lattice/standup.json`, `.infisical.json`.
 
-| Overwritten when path exists in template | Examples |
-|------------------------------------------|----------|
-| Tracked source, scripts, tests, workflows | `apps/`, `infra/` (except tfvars), `test/`, `.github/` |
-| Root `package.json`, lockfile, `.nvmrc`, `.npmrc` | Run **`npm ci`** in target after refresh |
+**Also preserved** if listed in `preservePaths`: any other spawn-owned file (hostnames, filled playbooks, product notes). Fosterfolio would list `docs/playbooks/infisical-github-deploys.md` here if it keeps names in that file — it will then stop receiving template edits to that path.
+
+**Not copied from the template** (already excluded by `scaffold.mjs`): `.git/`, real `*.tfvars`, `terraform.tfstate`, `.terraform/`, `.env` / `.env.*` except `*.env.example`.
+
+| Overwritten when the path exists in the template | Examples |
+|--------------------------------------------------|----------|
+| Platform source, scripts, tests, workflows | `apps/`, `infra/` (except tfvars), `test/`, `.github/` |
+| Generic playbooks | `docs/playbooks/infisical-github-deploys.md` unless listed in `preservePaths` |
+| Root `package.json`, lockfile, `.nvmrc`, `.npmrc` | Run **`npm ci`** in the target after refresh |
 
 | Removed only via `prunePaths` | Example |
 |-------------------------------|---------|
-| Legacy paths dropped by template | Old `apps/web/app/login/` after `/auth/sign-in` migration |
+| Legacy paths dropped by the template | Old `apps/web/app/login/` after `/auth/sign-in` migration |
 
 Refresh is **not** a git merge from template remote — it copies from your **local** template working tree. Check out the template branch/commit you trust before running refresh.
 
 ### Post-refresh checklist (spawn repo)
 
-From the **target** folder after refresh:
-
-```bash
-cd ../lattice-app-smoke-test   # or your spawn path
-npm ci
-npm run ci
-```
-
-Then, only if something below changed since your last deploy:
+Refresh already ran `postRefreshPrompts` and `npm ci` / `npm run ci` unless you passed `--skip-prompts` / `--skip-tests`. Then, only if something below changed since your last deploy:
 
 | Step | When needed |
 |------|-------------|
 | **Supabase → Auth → URL configuration** | Auth routes changed (e.g. `/login` → `/auth/sign-in`, forgot/reset password). Add redirect URLs for new paths. |
 | **Supabase SQL** | New files under `apps/api/supabase/migrations/` — apply per [Supabase migrations playbook](playbooks/supabase-migrations.md) |
-| **Terraform** | Merge new keys from `terraform.tfvars.example` into existing `terraform.tfvars`; `npm run deploy:aws -- --auto-approve` or `npm run deploy:aws:web` if only static web changed |
-| **Browser smoke** | Sign-in, profile, Things against deployed URLs ([smoke test deployment guide](plans/smoke_test_deployment_guide.plan.md)) |
+| **Terraform** | Merge new keys from each env’s `terraform.tfvars.example` into that env’s `terraform.tfvars`. Default is dual-env: fill **dev and prod** on day 1; apply **dev** first. |
+| **Infisical / Deploy app** | `.lattice/infisical.json` is restored automatically. List any filled-in playbook in `preservePaths`. Generic steps: [Infisical and GitHub deploys](playbooks/infisical-github-deploys.md). |
+| **Browser smoke** | Sign-in, profile, Things against the **dev** URL ([smoke test deployment guide](plans/smoke_test_deployment_guide.plan.md)). Prod is the same check after the first `--env prod` apply. |
 
 Commit in the spawn: `chore: refresh from lattice-app-template @ <short-sha>`.
 

@@ -7,7 +7,10 @@ Modular layout for **AWS** plus optional **Supabase credentials in config**: you
 ## Layout
 
 - `modules/supabase_ssm` — Writes Supabase URL/keys from tfvars into SSM (SecureString where appropriate).
-- `envs/dev` — Example root: `locals` for tags + `name_prefix`; add more modules or `envs/prod` as needed.
+- `modules/gha-deploy-role` — One GitHub OIDC deploy role per spawn (looks up `token.actions.githubusercontent.com`; does not create a provider).
+- `bootstrap` — Thin root for that role (own state, not `envs/dev` or `envs/prod`). See [`bootstrap/README.md`](bootstrap/README.md).
+- `dns-zone` — One public Route 53 hosted zone per spawn (own state, not `envs/` and not bootstrap). See [`dns-zone/README.md`](dns-zone/README.md).
+- `envs/dev` / `envs/prod` — App stacks: `locals` for tags + `name_prefix`. They do not create the per-spawn zone (`create_route53_hosted_zone` is refused unless you opt into legacy path A).
 
 Extract shared **tag** or **naming** logic into new modules under `modules/` when you add a second environment or stack.
 
@@ -44,20 +47,17 @@ Terraform needs permission to create/update everything this stack defines (Lambd
 
 **Never** commit access keys, session tokens, or `terraform.tfvars` with secrets.
 
-### 4. Remote Terraform state (S3 backend) — optional but recommended for teams
+### 4. Remote Terraform state (S3 backend)
 
-If you uncomment the **`backend "s3"`** block in `envs/dev/versions.tf`, the **same** credentials (or a narrower **state** role) must be allowed to:
+Stacks use a partial `backend "s3" { encrypt = true }`. Bucket, table, and key come from `.lattice/terraform-backend.json` (gitignored). `npm run terraform:state` creates `lattice-tfstate-<account>` (private, versioned, encrypted) and `lattice-tfstate-locks`, then migrates each local `terraform.tfstate` to `<appSlug>/<stack>/terraform.tfstate`. Without that JSON, laptop scripts pass `-backend=false` (local state). CI validate stays `-backend=false`. Do not grant the GHA Deploy app role this bucket.
 
-- Read/write the **state object** in S3
-- **Lock** state via the **DynamoDB** table you name in `backend`
+### 5. GitHub Actions: site and Lambda (no Terraform)
 
-Create the bucket and table **once** (often manually or a tiny bootstrap stack), then configure the backend and run `terraform init -migrate-state` when moving from local state.
+This repo’s default **CI** job does **not** deploy to AWS (`terraform validate` uses `-backend=false` and needs no cloud credentials). **Terraform apply stays on your laptop** (`npm run deploy:aws`, default `envs/dev`; `--env prod` for `envs/prod`). After apply, **Actions → Deploy app** updates the static site and Lambda zip using Infisical + OIDC. It does not apply Terraform and does not read `terraform.tfstate`. Setup: **[`docs/playbooks/infisical-github-deploys.md`](../../docs/playbooks/infisical-github-deploys.md)** and **[`docs/deploy-aws.md`](../../docs/deploy-aws.md)**.
 
-### 5. GitHub Actions (optional): deploy from CI without long-lived keys
+The older **Deploy (AWS)** workflow still exists and still applies Terraform from a `TERRAFORM_TFVARS` secret. Do not run it.
 
-This repo’s default **CI** job does **not** deploy to AWS (`terraform validate` uses `-backend=false` and needs no cloud credentials). For a **manual** deploy from GitHub (OIDC, no long-lived keys in secrets), use the **Deploy (AWS)** workflow and **`npm run deploy:aws`** — see **[`docs/deploy-aws.md`](../../docs/deploy-aws.md)**.
-
-In AWS, create an **IAM role** whose **trust policy** allows `sts:AssumeRoleWithWebIdentity` for your **repository** (narrow by `sub` / environment as needed). References: [GitHub OIDC with AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services), [AWS IAM OIDC provider for GitHub](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html).
+In AWS, create **one IAM role per spawn** (`<app-slug>-gha`) with `infra/terraform/bootstrap` (not `envs/dev` / `envs/prod`). Trust is `repo:<owner>/<repo>:*` only (URLs are rejected). Permissions are that app’s `<project>-dev-web` / `-prod-web` and `<project>-dev-api` / `-prod-api`. Reuse the account GitHub OIDC provider; do not share one role across apps. Smoke-test already has `lattice-smoke-test-gha-arn` — **import** it (`bootstrap/README.md`). Do not apply this stack against `fosterfolio-gha-arn`. References: [GitHub OIDC with AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services), [AWS IAM OIDC provider for GitHub](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html).
 
 Keep **Terraform state**, **tfvars**, and **AWS account IDs** out of public logs; mask outputs in Actions.
 
@@ -85,14 +85,14 @@ Use a **remote S3 backend** for anything shared or production; see commented blo
 
 ## CI
 
-Root `npm run infra:fmt` and `npm run infra:validate` (no AWS credentials required; validate uses `-backend=false`).
+Root `npm run infra:fmt` and `npm run infra:validate` (no AWS credentials required; validate uses `-backend=false` on `envs/dev`, `bootstrap`, and `dns-zone`).
 
 ## Apps
 
 - **API**: Lambda hosts the Express app via `@vendia/serverless-express`; API Gateway invokes Lambda.
 - **API secrets**: Lambda resolves Supabase parameter names from SSM at runtime (`SUPABASE_URL_PARAM`, `SUPABASE_SERVICE_ROLE_KEY_PARAM`) with IAM-scoped `ssm:GetParameter`.
 - **Web**: `apps/web` builds as static export (`out/`) and is served from S3 + CloudFront.
-- **Custom domain (optional)**: Set `web_custom_domain` and either create a Route 53 hosted zone or pass `route53_hosted_zone_id`. ACM (in `us-east-1`), CloudFront aliases, and API CORS are wired in Terraform. Registrar steps (nameserver delegation) are documented in **[`docs/playbooks/route53-custom-domain.md`](../../docs/playbooks/route53-custom-domain.md)**.
+- **Custom domain (optional)**: Lattice default is **path D** — apply `infra/terraform/dns-zone`, then set `manage_web_dns_in_route53 = true`, `create_route53_hosted_zone = false`, and the same `route53_hosted_zone_id` on both envs. Path C (`manage_web_dns_in_route53 = false`) still works. Do not create a zone in an env stack. CloudFront gets the hostname and certificate only after ACM is **ISSUED**. Registrar steps: **[`docs/playbooks/route53-custom-domain.md`](../../docs/playbooks/route53-custom-domain.md)**.
 - **Never** commit `terraform.tfvars` with real secrets.
 
 

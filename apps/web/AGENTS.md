@@ -22,7 +22,7 @@ The **`app/`** directory is for Next.js routing and layout only — thin files t
 
 ## Environment
 
-- Copy **`.env.example`** to **`.env.local`** at the app root (`apps/web/`). **`NEXT_PUBLIC_API_URL`** is the browser-visible API base. **`NEXT_PUBLIC_SUPABASE_URL`** and **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** power Auth (flows under **`/auth/*`**). Optional **`NEXT_PUBLIC_TEMPLATE_REPO_URL`** overrides GitHub CTA links on the home page.
+- Copy **`.env.example`** to **`.env.local`** (dev) and **`.env.prod`** (prod) at the app root (`apps/web/`). Laptop **`dev`** loads the first of `.env.dev`, `.env.local`, `.env` and does not overwrite a `NEXT_PUBLIC_*` already set in the shell. Laptop **`prod`** reads **only** `.env.prod`. **`NEXT_PUBLIC_API_URL`** is the browser-visible API base. **`NEXT_PUBLIC_SUPABASE_URL`** and **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** power Auth (flows under **`/auth/*`**). Optional **`NEXT_PUBLIC_TEMPLATE_REPO_URL`** overrides GitHub CTA links on the home page. GitHub **Deploy app** reads these keys from Infisical, not from these files.
 - **PostHog** (optional product analytics) is **off by default**. Enable with **`NEXT_PUBLIC_LATTICE_POSTHOG_ENABLED=1`** plus a project token; implementation lives behind **`AnalyticsAdapter`** in **`client/lib/analytics/`** (see **`client/lib/analytics/AGENTS.md`**). Playbook: **[`docs/playbooks/posthog-analytics.md`](../../docs/playbooks/posthog-analytics.md)**.
 - **Static export** (`npm run web:build:static`): set the same **`NEXT_PUBLIC_*`** values to **deployed** URLs/keys before building — they are embedded in `out/`. See **[`docs/plans/smoke_test_deployment_guide.plan.md`](../../docs/plans/smoke_test_deployment_guide.plan.md)**.
 

@@ -63,3 +63,9 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+# Infisical CLI project link from `infisical init` (workspace id, not a token)
+**/.infisical.json
+
+# S3 backend names (not secrets). Copy from terraform-backend.json.example via npm run terraform:state
+.lattice/terraform-backend.json

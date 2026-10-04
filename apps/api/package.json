@@ -6,7 +6,7 @@
     "build": "tsc",
     "build:lambda": "esbuild lambda.ts --bundle --platform=node --target=node22 --format=cjs --tsconfig=tsconfig.json --outfile=dist-lambda/index.js",
     "start": "node ./dist/bin/www.js",
-    "dev": "ts-node-dev --respawn --transpile-only ./bin/www.ts",
+    "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register ./bin/www.ts",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -40,6 +40,7 @@
     "esbuild": "^0.27.4",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3"
   }
 }

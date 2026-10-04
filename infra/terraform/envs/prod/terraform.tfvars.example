@@ -1,0 +1,57 @@
+# Copy to terraform.tfvars (gitignored) and fill with real values.
+# Supabase: Project Settings → API (URL, anon, service_role); JWT secret under JWT Settings if needed.
+
+project_name  = "my-lattice-app"
+environment   = "prod"
+aws_region    = "us-east-1"
+# extra_tags = { Owner = "you@example.com" }
+
+supabase_url                = "https://YOUR_PROJECT_REF.supabase.co"
+supabase_anon_key           = "YOUR_ANON_KEY"
+supabase_service_role_key   = "YOUR_SERVICE_ROLE_KEY"
+# supabase_jwt_secret       = "YOUR_JWT_SECRET" # optional
+
+manage_supabase_credentials_in_ssm = true
+things_table_name                  = "things"
+
+# API allowlist middleware (EMAIL_ALLOWLIST_ENABLED on Lambda). Defaults to true in variables.tf;
+# set explicitly only when you need to turn it off: email_allowlist_enabled = false
+# email_allowlist_enabled = true
+
+# Phase 3 cost controls
+# api_lambda_reserved_concurrency = 5 # optional; only if account has spare regional concurrency, so copying the example does not force reservation
+api_gateway_throttling_rate_limit = 10
+api_gateway_throttling_burst_limit = 20
+
+enable_budget_alerts         = true
+monthly_cost_budget_limit_usd = 10
+budget_alert_email_addresses = ["you@example.com"]
+
+# Optional scheduled pause/resume to minimize idle cost
+enable_api_schedule_controls  = false
+api_pause_schedule_expression = "cron(0 2 * * ? *)"
+api_resume_schedule_expression = "cron(0 13 * * ? *)"
+api_schedule_timezone         = "UTC"
+
+# --- Optional: custom HTTPS hostname (Route 53 + ACM + CloudFront alias) ---
+# See docs/playbooks/route53-custom-domain.md. Lattice default is path D:
+# one zone in infra/terraform/dns-zone, then the same zone id on BOTH envs.
+#
+# web_custom_domain            = "app.example.com"
+# manage_web_dns_in_route53    = true
+# create_route53_hosted_zone   = false
+# route53_hosted_zone_id       = "Z..."  # same id as envs/dev — terraform -chdir=infra/terraform/dns-zone output -raw route53_hosted_zone_id
+#
+# Path C — DNS stays at the registrar (no Route 53 zone):
+# web_custom_domain          = "app.example.com"
+# manage_web_dns_in_route53  = false
+# Then create the CNAME pair from terraform output acm_validation_record_name /
+# acm_validation_record_value (this cert only — never copy another hostname's _hash).
+#
+# Path B — reuse a zone you already own (not created in this env):
+# web_custom_domain          = "app.example.com"
+# create_route53_hosted_zone = false
+# route53_hosted_zone_id     = "Z1234567890ABC"
+#
+# Path A — do not use. create_route53_hosted_zone = true here is a second zone.
+# Requires allow_create_route53_hosted_zone_in_env = true.

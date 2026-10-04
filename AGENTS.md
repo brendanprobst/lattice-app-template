@@ -10,13 +10,15 @@
 - **`apps/web/`** — Next.js `app/` routes; feature code under `client/` (see `apps/web/AGENTS.md`).
 - **`test/`** — Automated tests: **`test/api/`** (Jest), **`test/web/`** (Vitest + Playwright). See [`test/AGENTS.md`](test/AGENTS.md).
 - **`config/`** — **`repo-features.json`**: CI / Dependabot toggles (see [`docs/repo-features.md`](docs/repo-features.md)).
-- **Deploy** — **`npm run deploy:aws`** and **[`docs/deploy-aws.md`](docs/deploy-aws.md)** (Terraform + Lambda + static web + S3); optional GitHub Actions workflow **Deploy (AWS)**.
+- **Deploy** — Dual-env by default (`envs/dev` + `envs/prod`). **`npm run standup -- --env <dev|prod>`** for Infisical folders, the GitHub identity, repo vars/secrets, and the GHA role. **`npm run deploy:aws`** on a laptop (Terraform + Lambda + static web + S3; `--env prod` for prod). GitHub **Deploy app** for site and Lambda (`INFISICAL_PROJECT_SLUG` + `INFISICAL_APP_SLUG`). See [`docs/playbooks/infisical-github-deploys.md`](docs/playbooks/infisical-github-deploys.md). The older **Deploy (AWS)** workflow is unused.
 - **`docs/`** — Architecture decision records (ADRs).
 - **`infra/terraform/`** — AWS Terraform; Supabase URL/keys from **`terraform.tfvars`** → optional **SSM** (see [`infra/AGENTS.md`](infra/AGENTS.md)).
 
 ## Documentation files in subfolders
 
 Each major directory contains **`AGENTS.md`**. Use that name so humans and automation can rely on a single predictable filename when opening a folder for the first time. **`README.md`** is better for human-only onboarding in libraries; here **`AGENTS.md`** doubles as developer notes and agent context.
+
+**Refresh overwrites these files.** `npm run scaffold:refresh` copies `AGENTS.md`, `docs/AGENTS.md`, `agents/**`, and `.cursor/rules/**` from the template. Do not put spawn-only names, hostnames, or Infisical slugs here — they will disappear on the next refresh. Keep those in `.lattice/infisical.json` and any path listed in `.lattice/refresh.json` `preservePaths`.
 
 ## CI parity
 

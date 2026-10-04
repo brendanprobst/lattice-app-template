@@ -37,7 +37,7 @@ The **web client is intentionally thin** today: mostly default Next.js App Route
 
 ### Infrastructure as code
 
-- **Terraform** under `infra/terraform/` defines dev-oriented resources: SSM parameters for Supabase (optional module), Lambda, API Gateway, S3, CloudFront, and **cost guardrails** (budgets, API/Lambda throttling and concurrency caps, optional EventBridge Scheduler pause/resume for the API Lambda).
+- **Terraform** under `infra/terraform/` defines **dev and prod** env folders (`envs/dev`, `envs/prod`): SSM parameters for Supabase (optional module), Lambda, API Gateway, S3, CloudFront, and **cost guardrails** (budgets, API/Lambda throttling and concurrency caps, optional EventBridge Scheduler pause/resume for the API Lambda). See [ADR-007](./007-ci-and-environment-promotion.md).
 
 ### Cost and safety posture (non-prod default)
 

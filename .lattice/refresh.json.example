@@ -1,10 +1,19 @@
 {
   "name": "lattice-app-smoke-test",
   "repo": "https://github.com/your-org/lattice-app-smoke-test.git",
+  "preservePaths": [
+    "docs/playbooks/lattice-smoke-test-deploys.md",
+    ".lattice/terraform-backend.json"
+  ],
   "prunePaths": [
     "apps/web/app/login",
     "apps/web/client/pages/login",
     "test/api/auth/supabaseAuthMidleware.test.ts"
   ],
-  "notes": "Optional free-form reminder for operators (not read by tooling). Example: update Supabase redirect URLs from /login to /auth/sign-in after refresh."
+  "notes": "postRefreshPrompts run automatically on scaffold:refresh (then npm ci / npm run ci). This notes field is printed only. Example: update Supabase redirect URLs from /login to /auth/sign-in after refresh.",
+  "postRefreshPrompts": [
+    "After refresh, look only at overwritten documentation (AGENTS.md files, README, generic playbooks). Skip application code for this pass.",
+    "Overwrites are expected. If git history shows a substantial spawn-only edit, append it to a preservePaths doc instead of fighting the template file.",
+    "If the only drift is the product name (Lattice / lattice-app-template), rename it to this spawn's name from the refresh.json name field."
+  ]
 }

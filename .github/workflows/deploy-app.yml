@@ -1,0 +1,187 @@
+# Manual deploy of the static site and the API Lambda zip.
+# Does not run on push. Does not run Terraform and does not read terraform.tfstate.
+# Dev: any branch. Prod: main only.
+# GitHub environments `dev` / `prod` are approval + Infisical env-slug only.
+# Identity and role are repository secrets. Slugs are repository variables
+# (secrets still accepted as fallback). Set them once on the repo, not on each
+# environment. See docs/playbooks/infisical-github-deploys.md.
+# This is the GitHub path to run. The older Deploy (AWS) workflow is unused.
+
+name: Deploy app
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy
+        type: choice
+        required: true
+        options:
+          - dev
+          - prod
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-app-${{ github.repository }}-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      INFISICAL_PROJECT_SLUG: ${{ vars.INFISICAL_PROJECT_SLUG || secrets.INFISICAL_PROJECT_SLUG }}
+      INFISICAL_APP_SLUG: ${{ vars.INFISICAL_APP_SLUG || secrets.INFISICAL_APP_SLUG }}
+
+    steps:
+      - name: Restrict prod to main
+        if: ${{ inputs.environment == 'prod' && github.ref != 'refs/heads/main' }}
+        run: |
+          echo "Prod deploys must run from main (got ${{ github.ref }})."
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Preflight repository Actions config
+        env:
+          INFISICAL_CLIENT_ID: ${{ secrets.INFISICAL_CLIENT_ID }}
+          INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+        run: |
+          set -euo pipefail
+          # Lengths and shape only — never print secret values.
+          id_len=${#INFISICAL_CLIENT_ID}
+          secret_len=${#INFISICAL_CLIENT_SECRET}
+          role_len=${#AWS_ROLE_ARN}
+          uuid_re='^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+          if [[ "${INFISICAL_CLIENT_ID}" =~ $uuid_re ]]; then
+            id_uuid="yes"
+          else
+            id_uuid="no"
+          fi
+          echo "INFISICAL_CLIENT_ID length=${id_len} looks_like_uuid=${id_uuid}"
+          echo "INFISICAL_CLIENT_SECRET length=${secret_len}"
+          echo "AWS_ROLE_ARN length=${role_len}"
+
+          missing=0
+          if [ -z "${INFISICAL_CLIENT_ID}" ]; then
+            echo "Missing INFISICAL_CLIENT_ID. Set it once under Settings → Secrets and variables → Actions (repository secret). Do not copy it onto each environment."
+            missing=1
+          fi
+          if [ -z "${INFISICAL_CLIENT_SECRET}" ]; then
+            echo "Missing INFISICAL_CLIENT_SECRET. Set it once under Settings → Secrets and variables → Actions (repository secret). Do not copy it onto each environment."
+            missing=1
+          fi
+          if [ -z "${AWS_ROLE_ARN}" ]; then
+            echo "Missing AWS_ROLE_ARN. Set it once under Settings → Secrets and variables → Actions (repository secret). Do not copy it onto each environment."
+            missing=1
+          fi
+          if [ -z "${INFISICAL_PROJECT_SLUG}" ]; then
+            echo "Missing INFISICAL_PROJECT_SLUG. Set it once under Settings → Secrets and variables → Actions (repository variable; secret still accepted as fallback). Do not copy it onto each environment."
+            missing=1
+          fi
+          if [ -z "${INFISICAL_APP_SLUG}" ]; then
+            echo "Missing INFISICAL_APP_SLUG. Set it once under Settings → Secrets and variables → Actions (repository variable; secret still accepted as fallback). Do not copy it onto each environment."
+            missing=1
+          fi
+          if [ -n "${INFISICAL_APP_SLUG}" ] && ! [[ "${INFISICAL_APP_SLUG}" =~ ^[a-z][a-z0-9-]*$ ]]; then
+            echo "INFISICAL_APP_SLUG must be a lowercase slug (e.g. your-app), got '${INFISICAL_APP_SLUG}'."
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Read Infisical /<app>/shared
+        uses: Infisical/secrets-action@a663da43e1541832614bfd9dcf9ab67381ea2b98 # v1.0.12
+        with:
+          method: universal
+          client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
+          client-secret: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+          project-slug: ${{ env.INFISICAL_PROJECT_SLUG }}
+          env-slug: ${{ inputs.environment }}
+          secret-path: /${{ env.INFISICAL_APP_SLUG }}/shared
+          include-imports: "false"
+          recursive: "false"
+
+      - name: Read Infisical /<app>/flags
+        continue-on-error: true
+        uses: Infisical/secrets-action@a663da43e1541832614bfd9dcf9ab67381ea2b98 # v1.0.12
+        with:
+          method: universal
+          client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
+          client-secret: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+          project-slug: ${{ env.INFISICAL_PROJECT_SLUG }}
+          env-slug: ${{ inputs.environment }}
+          secret-path: /${{ env.INFISICAL_APP_SLUG }}/flags
+          include-imports: "false"
+          recursive: "false"
+
+      - name: Confirm public hosts
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY WEB_BUCKET CLOUDFRONT_DISTRIBUTION_ID LAMBDA_FUNCTION_NAME NEXT_PUBLIC_API_URL; do
+            if [ -z "${!name}" ]; then
+              echo "Infisical /${INFISICAL_APP_SLUG}/shared did not provide ${name}. Run npm run infisical:sync-outputs -- --env ${{ inputs.environment }} after terraform apply."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+          node --input-type=module <<'EOF'
+          const supabase = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL);
+          const api = new URL(process.env.NEXT_PUBLIC_API_URL);
+          console.log(`Supabase host: ${supabase.host}`);
+          console.log(`API host: ${api.host}`);
+          EOF
+
+      - name: Build static web
+        run: npm run web:build:static
+
+      - name: Build Lambda bundle
+        run: npm run api:build:lambda
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sync static site
+        run: |
+          set -euo pipefail
+          test -d apps/web/out
+          aws s3 sync apps/web/out "s3://${WEB_BUCKET}" --delete
+
+      - name: Invalidate CloudFront
+        run: |
+          set -euo pipefail
+          aws cloudfront create-invalidation \
+            --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" \
+            --paths "/*"
+
+      - name: Update Lambda code
+        run: |
+          set -euo pipefail
+          zip -j /tmp/api-lambda.zip apps/api/dist-lambda/index.js
+          aws lambda update-function-code \
+            --function-name "${LAMBDA_FUNCTION_NAME}" \
+            --zip-file fileb:///tmp/api-lambda.zip
+          aws lambda wait function-updated --function-name "${LAMBDA_FUNCTION_NAME}"

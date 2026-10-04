@@ -6,8 +6,8 @@ todos:
     content: Add scripts/smoke (API_BASE_URL + BEARER_TOKEN) for CRUD/assertions; no secret logging
     status: pending
   - id: optional-deploy-workflow
-    content: Optional GitHub Actions deploy + smoke with OIDC; mask outputs; no echo of keys
-    status: pending
+    content: Deploy app (OIDC + Infisical) updates site and Lambda; Terraform apply stays on the laptop. Dual-env (dev + prod) from day 1.
+    status: in_progress
 isProject: false
 ---
 
@@ -38,7 +38,7 @@ A consolidated **template completeness** backlog (v1 “done” line, quick wins
 | Item | Notes |
 |------|--------|
 | **`scripts/smoke/`** (optional) | For deployed HTTPS smoke only: `API_BASE_URL` + `BEARER_TOKEN`. Local/CI already cover stack behavior with **Playwright** (`test/web/AGENTS.md`). |
-| Optional **deploy + smoke** GitHub workflow | OIDC / masked secrets; see § *CI vs manual smoke*. |
+| **Deploy app** human setup on the canary | Infisical `/<app-slug>/**`, GitHub `dev`/`prod` environments, first dispatch. See [Infisical and GitHub deploys](../playbooks/infisical-github-deploys.md). |
 | **Swagger** hardening for public stacks | Disable or protect `/api-docs` when you care about enumeration. |
 | **`morgan`** mode in Lambda | Consider `combined` or structured logging vs `dev` verbosity. |
 | **Commit `infra/terraform/envs/dev/.terraform.lock.hcl`** | After `terraform init`, for provider parity (see `infra/terraform/README.md`). |
@@ -64,9 +64,9 @@ Goal: from a clean clone of **your fork**, reach a **known-good deployed smoke**
 1. **API** — `cp apps/api/.env.example apps/api/.env`  
    Fill Supabase **service role**, URL, **`SUPABASE_JWT_ISSUER`** / **`SUPABASE_JWT_AUDIENCE`** (and optional **`SUPABASE_JWT_SECRET`** for HS256 tests). Set **`CORS_ORIGINS`** to every browser origin that will call the API (comma-separated, no wildcards in the template default).
 
-2. **Web** — `cp apps/web/.env.example apps/web/.env.local`  
-   Set **`NEXT_PUBLIC_SUPABASE_URL`**, **`NEXT_PUBLIC_SUPABASE_ANON_KEY`**, **`NEXT_PUBLIC_API_URL`**.  
-   **Local dev:** API base is usually `http://localhost:3000` (web on `3001`).
+2. **Web** — `cp apps/web/.env.example apps/web/.env.local` and again to **`apps/web/.env.prod`**.  
+   Set **`NEXT_PUBLIC_SUPABASE_URL`**, **`NEXT_PUBLIC_SUPABASE_ANON_KEY`**, **`NEXT_PUBLIC_API_URL`** for **that** environment (prod is a different Supabase project).  
+   **Local dev:** API base is usually `http://localhost:3000` (web on `3001`). Laptop **`--env prod`** reads only `.env.prod`.
 
 3. **Supabase dashboard (Auth)**  
    Under **Authentication → URL configuration**, add redirect URLs for **local** (`http://localhost:3001`, `http://127.0.0.1:3001`) and, after you know it, your **CloudFront HTTPS origin**. Without this, OAuth / email redirects fail mysteriously.
@@ -198,7 +198,7 @@ Aligned with `.cursor/rules/code-janitor.mdc`: no credentials in repo, minimal l
 
 ### Terraform variables
 
-- `terraform.tfvars` gitignored; copy from `terraform.tfvars.example`.
+- `terraform.tfvars` gitignored; copy from each env’s `terraform.tfvars.example` (`envs/dev` and `envs/prod`) on day 1.
 
 ### Build artifacts (not committed)
 
@@ -207,18 +207,16 @@ Aligned with `.cursor/rules/code-janitor.mdc`: no credentials in repo, minimal l
 
 ---
 
+Fill **`infra/terraform/envs/dev/terraform.tfvars` and `envs/prod/terraform.tfvars`** on day 1 (copy each `terraform.tfvars.example`). Apply **dev** first. Prod apply is the same command with `--env prod` when those values exist. Vault and GitHub setup: [Infisical and GitHub deploys](../playbooks/infisical-github-deploys.md).
+
 ## Commands: deploy (from repo root) — reference
 
 ```bash
 cd /path/to/repo
 npm ci
-npm run api:build:lambda
-npm run web:build:static
-
-cd infra/terraform/envs/dev
-terraform init
-terraform plan
-terraform apply
+npm run deploy:aws
+# later, same sitting’s prod tfvars:
+# npm run deploy:aws -- --env prod
 ```
 
 Outputs:
@@ -244,6 +242,8 @@ aws s3 sync /path/to/repo/apps/web/out "s3://$(cd /path/to/repo/infra/terraform/
 ```bash
 cd infra/terraform/envs/dev
 terraform destroy
+# if prod was applied:
+# cd ../prod && terraform destroy
 ```
 
 **Pause API only** (if `enable_api_schedule_controls = true`): EventBridge schedules adjust Lambda concurrency; verify in AWS Console.
@@ -253,14 +253,16 @@ terraform destroy
 ## CI vs manual smoke
 
 - **`.github/workflows/ci.yml`** does **not** deploy or call live AWS (avoids accidental spend and secret exposure).
-- A future **deploy + smoke** workflow should use **OIDC** or short-lived keys, masked outputs, and optionally the future `scripts/smoke/` runner with a throwaway test user token.
+- **Deploy app** (`.github/workflows/deploy-app.yml`) updates the site and Lambda from Infisical + OIDC. It does not apply Terraform. Dispatch **dev** after `npm run infisical:sync-outputs -- --env dev`. Prod is the same from `main` after the prod apply and a reviewer click.
 
 ---
 
 ## Related docs
 
 - [README.md](../../README.md) — fork workflow, `npm run ci`, env files.
+- [Infisical and GitHub deploys](../playbooks/infisical-github-deploys.md) — dual-env vault + **Deploy app**.
 - [ADR-006: Full-stack and deployment](../adr/006-full-stack-and-deployment.md)
+- [ADR-007: CI and environment promotion](../adr/007-ci-and-environment-promotion.md)
 - [infra/terraform/README.md](../../infra/terraform/README.md)
 - [docs/plans/zero-cost-first_e2e_deployment_plan_cd815a81.plan.md](./zero-cost-first_e2e_deployment_plan_cd815a81.plan.md)
 
