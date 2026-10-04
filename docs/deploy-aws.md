@@ -13,7 +13,7 @@ The template repo itself is not deployed. After `npm run scaffold`, the spawn ow
 
 - **AWS CLI** and credentials that can run Terraform and S3 sync (`aws sts get-caller-identity`).
 - **Terraform** `>= 1.6`.
-- **`terraform.tfvars`** in `infra/terraform/envs/<env>/` (copy from `terraform.tfvars.example`). Do not commit secrets. Default env is **`dev`**. `envs/prod` ships so `--env prod` works; CI still validates only `envs/dev`.
+- **`terraform.tfvars`** in `infra/terraform/envs/<env>/` (copy from `terraform.tfvars.example`). Do not commit secrets. Default env is **`dev`**. `envs/prod` ships so `--env prod` works. CI validates `envs/dev` and the GHA role stack `infra/terraform/bootstrap` (not an `--env` for `deploy:aws`).
 - For a laptop **web** build: **`NEXT_PUBLIC_SUPABASE_URL`** and **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** must be in the env file. **`dev`** loads the first of **`apps/web/.env.dev`**, **`.env.local`**, **`.env`** and does **not** overwrite a `NEXT_PUBLIC_*` already set in the shell. Any other **`--env`** loads only **`apps/web/.env.<env>`** and overwrites those keys. `infisical run` needs **`--path=/<app-slug>/shared`** or it does not see vault keys. GitHub **Deploy app** reads those keys from Infisical instead.
 
 ## Commands

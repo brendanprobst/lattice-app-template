@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars (gitignored). This stack is not envs/dev or envs/prod.
+# Apply from a spawn checkout only. Do not apply against Fosterfolio’s role.
+
+app_slug       = "your-app"
+github_owner   = "your-github-org"
+github_repo    = "your-spawn-repo"
+project_name   = "my-lattice-app"
+aws_account_id = "123456789012"
+aws_region     = "us-east-1"
+
+# Default role name is <app_slug>-gha. Uncomment only when importing an
+# existing console-created role so Terraform does not create a second one.
+# role_name = "lattice-smoke-test-gha-arn"

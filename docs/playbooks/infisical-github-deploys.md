@@ -98,10 +98,11 @@ infisical secrets --projectId=<project id> --env=dev --path=/<app-slug>/shared
 
 ### 5. Create the AWS role
 
-1. IAM → Identity providers. Add `token.actions.githubusercontent.com` with audience `sts.amazonaws.com` if it is not already there. The **provider** is the only account-wide piece. Reuse it.
-2. Create a **new** role per spawn, named `<app-slug>-gha` (e.g. `lattice-smoke-test-gha`). Trust GitHub OIDC for **this repo only** (`repo:<org>/<spawn>:*`). Do not reuse or rename `fosterfolio-gha-arn`. Do not make a `lattice-ecosystem-gha` role that every repo assumes.
-3. Allow only S3 sync, CloudFront invalidation, and Lambda `UpdateFunctionCode` / `GetFunction` / `GetFunctionConfiguration` on **this app’s** `*-dev-*` and `*-prod-*` names.
-4. This role cannot apply Terraform. Console create is day-1. Terraform for per-spawn roles is backlog **F2c**.
+1. IAM → Identity providers. Add `token.actions.githubusercontent.com` with audience `sts.amazonaws.com` if it is not already there. The **provider** is the only account-wide piece. Reuse it. Terraform looks it up; it does not create a second provider.
+2. From the spawn repo, apply `infra/terraform/bootstrap` (own state — not `envs/dev` or `envs/prod`). That creates **one** role named `<app-slug>-gha`. Trust is `repo:<org>/<spawn>:*` only. Do not paste a GitHub URL into `github_owner` / `github_repo`. Do not reuse or rename `fosterfolio-gha-arn`. Do not make a `lattice-ecosystem-gha` role that every repo assumes.
+3. The role allows S3 sync on `<project>-dev-web` / `<project>-prod-web`, CloudFront invalidation, and Lambda `UpdateFunctionCode` / `GetFunction` / `GetFunctionConfiguration` on `<project>-dev-api` / `<project>-prod-api`.
+4. Output `aws_role_arn` is the repository secret `AWS_ROLE_ARN`. The role cannot apply Terraform.
+5. **Smoke-test:** the live role is already `lattice-smoke-test-gha-arn`. Set `role_name` and **import** it — do not create `lattice-smoke-test-gha`. Steps: [`infra/terraform/bootstrap/README.md`](../../infra/terraform/bootstrap/README.md).
 
 ### 6. GitHub repository variables and secrets (once) and environments (approval only)
 

@@ -45,7 +45,7 @@ infisical secrets --env=dev --path=/lattice-smoke-test/flags --projectId=<lattic
 
 `shared` needs `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`. `flags` needs `NEXT_PUBLIC_SUPABASE_OAUTH_PROVIDER`. Do not put `NEXT_PUBLIC_API_URL` or Terraform outputs here by hand.
 
-2. **GitHub:** create environments `dev` and `prod` (prod: required reviewer — that is all they hold). Put `INFISICAL_CLIENT_ID`, `INFISICAL_CLIENT_SECRET`, `AWS_ROLE_ARN`, `INFISICAL_PROJECT_SLUG`, and `INFISICAL_APP_SLUG=lattice-smoke-test` **once** under repo Actions secrets. New Infisical identity `github-lattice-smoke-test` (this app’s folders only). New AWS role `lattice-smoke-test-gha`. Terraform for per-spawn roles is **F2c**.
+2. **GitHub:** create environments `dev` and `prod` (prod: required reviewer — that is all they hold). Put `INFISICAL_CLIENT_ID`, `INFISICAL_CLIENT_SECRET`, `AWS_ROLE_ARN`, `INFISICAL_PROJECT_SLUG`, and `INFISICAL_APP_SLUG=lattice-smoke-test` **once** under repo Actions secrets. New Infisical identity `github-lattice-smoke-test` (this app’s folders only). AWS role is already `lattice-smoke-test-gha-arn` — import it with `infra/terraform/bootstrap` (`role_name` override). Do not create `lattice-smoke-test-gha`.
 
 3. **Retarget `envs/dev`** — set `web_custom_domain` to `dev.lattice.brendanprobst.com`, `terraform apply`, then registrar ACM + CNAME. Then:
 

@@ -97,8 +97,8 @@ Do not apply in the Fosterfolio account against Fosterfolio’s role. Do not wid
 
 ### You do
 
-1. From **smoke-test** (or a worktree), apply bootstrap **only** if the agent did not, after you review the plan.
-2. Prefer **import** of `lattice-smoke-test-gha-arn` over create.
+1. From **smoke-test** (after refresh, or a worktree of the template files), review `infra/terraform/bootstrap`. The agent must **not** apply this in the Fosterfolio account against `fosterfolio-gha-arn`.
+2. Prefer **import** of `lattice-smoke-test-gha-arn` over create. Set `role_name = "lattice-smoke-test-gha-arn"` and follow [`infra/terraform/bootstrap/README.md`](../../infra/terraform/bootstrap/README.md). Creating `lattice-smoke-test-gha` is a second role — do not do that.
 3. Confirm trust:
 
 ```bash

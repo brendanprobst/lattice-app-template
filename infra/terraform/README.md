@@ -7,7 +7,9 @@ Modular layout for **AWS** plus optional **Supabase credentials in config**: you
 ## Layout
 
 - `modules/supabase_ssm` — Writes Supabase URL/keys from tfvars into SSM (SecureString where appropriate).
-- `envs/dev` — Example root: `locals` for tags + `name_prefix`; add more modules or `envs/prod` as needed.
+- `modules/gha-deploy-role` — One GitHub OIDC deploy role per spawn (looks up `token.actions.githubusercontent.com`; does not create a provider).
+- `bootstrap` — Thin root for that role (own state, not `envs/dev` or `envs/prod`). See [`bootstrap/README.md`](bootstrap/README.md).
+- `envs/dev` / `envs/prod` — App stacks: `locals` for tags + `name_prefix`.
 
 Extract shared **tag** or **naming** logic into new modules under `modules/` when you add a second environment or stack.
 
@@ -59,7 +61,7 @@ This repo’s default **CI** job does **not** deploy to AWS (`terraform validate
 
 The older **Deploy (AWS)** workflow still exists and still applies Terraform from a `TERRAFORM_TFVARS` secret. Do not run it.
 
-In AWS, create **one IAM role per spawn** (`<app-slug>-gha`) whose **trust policy** allows `sts:AssumeRoleWithWebIdentity` for **that repository only**, with S3 / CloudFront / Lambda update on **that app’s** `*-dev-*` and `*-prod-*` names. Reuse the account GitHub OIDC provider; do not share one role across apps. References: [GitHub OIDC with AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services), [AWS IAM OIDC provider for GitHub](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html).
+In AWS, create **one IAM role per spawn** (`<app-slug>-gha`) with `infra/terraform/bootstrap` (not `envs/dev` / `envs/prod`). Trust is `repo:<owner>/<repo>:*` only (URLs are rejected). Permissions are that app’s `<project>-dev-web` / `-prod-web` and `<project>-dev-api` / `-prod-api`. Reuse the account GitHub OIDC provider; do not share one role across apps. Smoke-test already has `lattice-smoke-test-gha-arn` — **import** it (`bootstrap/README.md`). Do not apply this stack against `fosterfolio-gha-arn`. References: [GitHub OIDC with AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services), [AWS IAM OIDC provider for GitHub](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html).
 
 Keep **Terraform state**, **tfvars**, and **AWS account IDs** out of public logs; mask outputs in Actions.
 
@@ -87,7 +89,7 @@ Use a **remote S3 backend** for anything shared or production; see commented blo
 
 ## CI
 
-Root `npm run infra:fmt` and `npm run infra:validate` (no AWS credentials required; validate uses `-backend=false`).
+Root `npm run infra:fmt` and `npm run infra:validate` (no AWS credentials required; validate uses `-backend=false` on `envs/dev` and `bootstrap`).
 
 ## Apps
 

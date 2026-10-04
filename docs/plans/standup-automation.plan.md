@@ -7,7 +7,7 @@ todos:
     status: completed
   - id: terraform-gha-role
     content: "Phase 2 — F2c bootstrap stack: one <app-slug>-gha role, trust repo:owner/repo:*, permissions on this app’s *-dev-* and *-prod-* including lambda:GetFunctionConfiguration; write AWS_ROLE_ARN"
-    status: pending
+    status: completed
   - id: standup-script
     content: "Phase 3 — npm run standup: Infisical folders + github-<app> identity + gh environments/vars/secrets; idempotent; never grant /sensitive to GitHub"
     status: pending
@@ -101,7 +101,7 @@ New stack, **not** `envs/dev` or `envs/prod` state.
 
 ### Layout (suggested)
 
-- `infra/terraform/bootstrap/` or `infra/terraform/modules/gha-deploy-role/` + a thin `envs/bootstrap` (local state is OK until F5).
+- `infra/terraform/modules/gha-deploy-role/` + thin `infra/terraform/bootstrap/` (not `envs/bootstrap`, so `deploy:aws --env` cannot target it). Local state is OK until F5.
 - Inputs: `app_slug`, `github_owner`, `github_repo`, `aws_account_id`, `project_name` (for `*-dev-*` / `*-prod-*` ARNs).
 - Look up existing `token.actions.githubusercontent.com`. Do not create a second provider.
 - Role name: `<app-slug>-gha` (smoke-test live name is `lattice-smoke-test-gha-arn` — import or leave; do not create a duplicate).
@@ -119,7 +119,7 @@ Validate: `sub` must match `^repo:[^/]+/[^/:]+:\*` and must not contain `https:/
   - CloudFront invalidate / get on this account’s distributions (or the two known IDs once they exist)
   - Lambda `UpdateFunctionCode`, `GetFunction`, `GetFunctionConfiguration` on `<project>-dev-api` and `<project>-prod-api`
 
-- Output `aws_role_arn`. A helper or Phase 3 writes `gh secret set AWS_ROLE_ARN`.
+- Output `aws_role_arn`. A helper or Phase 3 writes `gh secret set AWS_ROLE_ARN`. Import steps for `lattice-smoke-test-gha-arn`: [`infra/terraform/bootstrap/README.md`](../../infra/terraform/bootstrap/README.md).
 
 ### Done when
 

@@ -28,7 +28,7 @@ todos:
     status: in_progress
   - id: terraform-github-oidc-deploy-role
     content: Terraform one GitHub OIDC deploy role per spawn (name like <app-slug>-gha). Reuse only the account-level token.actions.githubusercontent.com provider. Do not widen Fosterfolio’s role into a lattice-ecosystem mega-role. Each role trusts only repo:<org>/<spawn>:* and this app’s *-dev-* / *-prod-* names. Bootstrap stack, not envs/dev or envs/prod. Day-1 still pastes that spawn’s AWS_ROLE_ARN into GitHub. Implementation order: docs/plans/standup-automation.plan.md Phase 2.
-    status: pending
+    status: completed
   - id: spawn-standup-script
     content: npm run standup (Infisical folders + identity + gh env/vars/secrets + deploy:aws ACM wait). Follow docs/playbooks/standup-automation.md; prove on smoke-test dev then prod.
     status: pending
@@ -120,7 +120,7 @@ High value, small scope—work in roughly this order:
 | F1 | **`scripts/smoke`** | Deployed HTTPS checks with `API_BASE_URL` + `BEARER_TOKEN`; no secret logging. |
 | F2 | **Deploy + smoke GitHub workflow** | AWS OIDC; masked outputs. |
 | F2b | **GitHub Deploy app + Infisical** | **In progress.** Files and dual-env playbook are in the template. Remaining work is human setup on a spawn (vault keys, **repository** Actions secrets, first **Deploy app** on `dev`). GitHub environments are approval + Infisical env-slug only. **Deploy app** is the GitHub path. One Infisical project (`INFISICAL_PROJECT_SLUG`) with per-app folders (`INFISICAL_APP_SLUG` → `/<app>/{shared,flags}`). Terraform apply stays on the laptop until F5. Setup: [`docs/playbooks/infisical-github-deploys.md`](../playbooks/infisical-github-deploys.md). Automation slice: [`standup-automation.plan.md`](./standup-automation.plan.md). |
-| F2c | **Terraform one GitHub OIDC role per spawn** | Day-1 still creates `<app-slug>-gha` in the console and pastes that spawn’s `AWS_ROLE_ARN`. Later: a **bootstrap** stack (not `envs/dev` / `envs/prod`) looks up the account OIDC provider and creates **one role per spawn**. Trust `repo:<org>/<spawn>:*` only. Permissions only that app’s `*-dev-*` and `*-prod-*` buckets / distributions / Lambdas. Do **not** rename `fosterfolio-gha-arn` into a shared `lattice-ecosystem-gha` role, and do **not** add another repo to an existing role’s trust policy. Roles are free; a compromised workflow should not be able to deploy a sibling app. **Do this as Phase 2** of [`standup-automation.plan.md`](./standup-automation.plan.md). |
+| F2c | **Terraform one GitHub OIDC role per spawn** | **Done in template** (`infra/terraform/bootstrap` + `modules/gha-deploy-role`). Day-1 applies (or **imports**) `<app-slug>-gha` and pastes `aws_role_arn` as `AWS_ROLE_ARN` until Phase 3 standup. Trust `repo:<org>/<spawn>:*` only. Permissions only that app’s `<project>-dev-*` / `<project>-prod-*`. Smoke-test: import `lattice-smoke-test-gha-arn` — do not create a second role. Do **not** manage `fosterfolio-gha-arn`. |
 | F2d | **`npm run standup`** | One laptop command for Infisical folders/identity, GitHub env/vars/secrets, F2c role, ACM wait, `deploy:aws`. Prove idempotent on smoke-test **dev**, then `--env prod`. Playbook: [`standup-automation.md`](../playbooks/standup-automation.md). |
 | F3 | **Prod hardening** | Restrict or disable `/api-docs` on public API URLs; Lambda logging verbosity (`morgan` vs structured). |
 | F4 | **`tflint` in CI** | Stricter Terraform static analysis (`infra/AGENTS.md`). |
