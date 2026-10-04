@@ -26,6 +26,7 @@ import {
 const DEFAULT_PRESERVE_PATHS = [
   ".lattice/refresh.json",
   ".lattice/infisical.json",
+  ".lattice/standup.json",
   ".infisical.json",
 ];
 

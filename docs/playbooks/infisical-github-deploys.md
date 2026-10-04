@@ -92,8 +92,8 @@ infisical secrets --projectId=<project id> --env=dev --path=/<app-slug>/shared
 ### 4. Create the machine identity GitHub will use
 
 1. `lattice` project → Access Control → Machine Identities → create **one identity per spawn** (read-only), named like `github-<app-slug>`.
-2. Grant that identity read on `dev` and `prod` for **this app only**: `/<app-slug>/shared` and `/<app-slug>/flags`.
-3. Do not grant `/<app-slug>/sensitive`. Do not add this app’s folders onto Fosterfolio’s (or any other) identity. Identities are cheap; folder ACLs on one token are not.
+2. Grant that identity read on `dev` and `prod` for **this app only**: `/<app-slug>/shared` and `/<app-slug>/flags`. `npm run standup` tries additional privileges, then a custom project role. On plans where both are gated, it assigns built-in **viewer** (same as the live Fosterfolio identity) and prints that `/sensitive` cannot be scoped off.
+3. Do not grant `/<app-slug>/sensitive` when the plan allows path-scoped ACL. Do not add this app’s folders onto Fosterfolio’s (or any other) identity. Identities are cheap; folder ACLs on one token are not.
 4. Turn on universal auth and save the client id and client secret in a password manager.
 
 ### 5. Create the AWS role

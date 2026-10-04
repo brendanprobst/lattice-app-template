@@ -191,7 +191,7 @@ Optional flags: `--dry-run` (scaffold dry-run + list prunes + print prompts/test
 
 Refresh **must** keep spawn-owned config. It snapshots these paths before copy and writes them back after:
 
-**Always preserved** (if they exist): `.lattice/refresh.json`, `.lattice/infisical.json`, `.infisical.json`.
+**Always preserved** (if they exist): `.lattice/refresh.json`, `.lattice/infisical.json`, `.lattice/standup.json`, `.infisical.json`.
 
 **Also preserved** if listed in `preservePaths`: any other spawn-owned file (hostnames, filled playbooks, product notes). Fosterfolio would list `docs/playbooks/infisical-github-deploys.md` here if it keeps names in that file — it will then stop receiving template edits to that path.
 

@@ -69,8 +69,8 @@ Steps:
      already exists). Print NS for the parent registrar. Path C
      (manage_web_dns_in_route53 = false) skips this. Refuse
      create_route53_hosted_zone in an env stack.
-  8. Call deploy:aws for --env (ACM wait, then CloudFront alias/cert + CORS)
-     unless --bootstrap-only. Path D does not print leftover ACM _hash CNAMEs.
+  8. Call deploy:aws for --env (ACM wait, CloudFront alias/cert + CORS, then
+     SQL files from .lattice/standup.json). Skip with --bootstrap-only.
 
 The template repo is refused. Do not run this against Fosterfolio.
 
@@ -370,9 +370,28 @@ function createInfisicalClient(token) {
 }
 
 function apiMessage(res) {
-  const msg = res.json?.message;
-  if (typeof msg === "string") return msg;
-  return `Infisical API HTTP ${res.status}`;
+  const json = res.json;
+  if (!json || typeof json !== "object") return `Infisical API HTTP ${res.status}`;
+  const parts = [];
+  if (typeof json.message === "string") parts.push(json.message);
+  if (typeof json.error === "string") parts.push(json.error);
+  const details = json.details;
+  if (typeof details === "string") parts.push(details);
+  else if (Array.isArray(details)) {
+    for (const item of details) {
+      if (typeof item === "string") parts.push(item);
+      else if (item?.message) parts.push(item.message);
+    }
+  } else if (details && typeof details === "object") {
+    const issues = details.issues || details.formErrors;
+    if (Array.isArray(issues)) {
+      for (const issue of issues) {
+        if (typeof issue === "string") parts.push(issue);
+        else if (issue?.message) parts.push(issue.message);
+      }
+    }
+  }
+  return parts.filter(Boolean).join(" — ") || `Infisical API HTTP ${res.status}`;
 }
 
 function identityFromPayload(item) {
@@ -439,6 +458,140 @@ function privilegeSlug(appSlug) {
   return `github-${appSlug}-shared-flags`.slice(0, 60);
 }
 
+function additionalPrivilegesUnavailable(res) {
+  return /additional privileges are not available/i.test(apiMessage(res));
+}
+
+function collectRoles(json) {
+  if (!json) return [];
+  if (Array.isArray(json.roles)) return json.roles;
+  if (Array.isArray(json.data)) return json.data;
+  if (Array.isArray(json)) return json;
+  return [];
+}
+
+function customRolesUnavailable(res) {
+  return /plan RBAC restriction|custom role/i.test(apiMessage(res));
+}
+
+async function ensureProjectReadRole(infisical, { projectId, appSlug }) {
+  const slug = privilegeSlug(appSlug);
+  const listed = await infisical("GET", `/v1/projects/${projectId}/roles`);
+  const exists = collectRoles(listed.json).some((r) => r.slug === slug);
+  if (exists) {
+    console.log(`→ Infisical project role ${slug}: already present`);
+    return { ok: true, slug };
+  }
+  const created = await infisical("POST", `/v1/projects/${projectId}/roles`, {
+    slug,
+    name: slug,
+    description: "GitHub Deploy app: describeSecret + readValue on /shared and /flags only. Never /sensitive.",
+    permissions: readFolderPermissions(appSlug),
+  });
+  if (created.ok || created.status === 409 || /already/i.test(apiMessage(created))) {
+    console.log(`→ Infisical project role ${slug}: created (read /shared and /flags only)`);
+    return { ok: true, slug };
+  }
+  if (customRolesUnavailable(created)) {
+    return { ok: false, slug, unavailable: true, message: apiMessage(created) };
+  }
+  console.error(`Could not create Infisical project role ${slug}: ${apiMessage(created)}`);
+  process.exit(1);
+}
+
+async function assignIdentityRole(infisical, { projectId, identityId, roleSlug }) {
+  const bodies = [
+    { roles: [{ role: roleSlug, isTemporary: false }] },
+    { roles: [{ role: roleSlug }] },
+  ];
+  const paths = [
+    `/v1/projects/${projectId}/memberships/identities/${identityId}`,
+    `/v1/workspace/${projectId}/identity-memberships/${identityId}`,
+  ];
+  for (const path of paths) {
+    for (const body of bodies) {
+      const res = await infisical("PATCH", path, body);
+      if (res.ok) return true;
+    }
+  }
+  return false;
+}
+
+async function membershipRoleSlugs(infisical, { projectId, identityId }) {
+  const res = await infisical("GET", `/v1/projects/${projectId}/memberships/identities/${identityId}`);
+  const roles = res.json?.identityMembership?.roles || [];
+  return roles.map((r) => r.customRoleSlug || r.role).filter(Boolean);
+}
+
+async function ensureSecretReadAccess(infisical, { projectId, identityId, appSlug }) {
+  const slug = privilegeSlug(appSlug);
+  const currentRoles = await membershipRoleSlugs(infisical, { projectId, identityId });
+  if (currentRoles.includes(slug)) {
+    console.log(`→ Infisical role ${slug}: already assigned (never /sensitive)`);
+    return;
+  }
+  if (currentRoles.includes("viewer")) {
+    console.log("→ Infisical role viewer: already assigned (plan cannot scope /shared and /flags)");
+    return;
+  }
+  const listed = await infisical(
+    "GET",
+    `/v2/identity-project-additional-privilege?identityId=${encodeURIComponent(identityId)}&projectId=${encodeURIComponent(projectId)}`,
+  );
+  const existing =
+    listed.ok && Array.isArray(listed.json?.privileges)
+      ? listed.json.privileges.find((p) => p.slug === slug)
+      : null;
+  if (existing) {
+    console.log(`→ Infisical ACL ${slug}: already present (never /sensitive)`);
+    return;
+  }
+  const createdPriv = await infisical("POST", "/v2/identity-project-additional-privilege", {
+    identityId,
+    projectId,
+    slug,
+    type: { isTemporary: false },
+    permissions: readFolderPermissions(appSlug),
+  });
+  if (createdPriv.ok || createdPriv.status === 409) {
+    console.log(`→ Infisical ACL ${slug}: read /shared and /flags only (never /sensitive)`);
+    return;
+  }
+  if (!additionalPrivilegesUnavailable(createdPriv)) {
+    console.error(`Could not grant read ACL on /shared and /flags: ${apiMessage(createdPriv)}`);
+    process.exit(1);
+  }
+  console.log("→ Infisical additional privileges unavailable; using a project role instead");
+  const role = await ensureProjectReadRole(infisical, { projectId, appSlug });
+  if (role.ok) {
+    const assigned = await assignIdentityRole(infisical, {
+      projectId,
+      identityId,
+      roleSlug: role.slug,
+    });
+    if (!assigned) {
+      console.error(`Could not assign Infisical role ${role.slug} to the machine identity.`);
+      process.exit(1);
+    }
+    console.log(`→ Infisical role ${role.slug}: assigned (read /shared and /flags only, never /sensitive)`);
+    return;
+  }
+  // Non-Enterprise: path-scoped roles/privileges are gated. Built-in viewer
+  // is what github-fosterfolio and the first smoke-test identity already use.
+  const assignedViewer = await assignIdentityRole(infisical, {
+    projectId,
+    identityId,
+    roleSlug: "viewer",
+  });
+  if (!assignedViewer) {
+    console.error("Could not assign Infisical viewer to the machine identity.");
+    process.exit(1);
+  }
+  console.log(
+    "→ Infisical plan cannot scope /shared and /flags; assigned built-in viewer (Deploy app still reads only those paths; /sensitive is readable on this plan)",
+  );
+}
+
 function readFolderPermissions(appSlug) {
   const permissions = [];
   for (const envName of INFISICAL_FOLDER_ENVS) {
@@ -449,7 +602,7 @@ function readFolderPermissions(appSlug) {
       }
       permissions.push({
         subject: "secrets",
-        action: ["read", "readValue"],
+        action: ["describeSecret", "readValue"],
         conditions: {
           environment: { $eq: envName },
           secretPath: { $glob: secretPath },
@@ -508,29 +661,7 @@ async function ensureIdentity(infisical, { projectId, orgId, appSlug, needCreden
     console.log(`→ Infisical Universal Auth on ${name}: already present`);
   }
 
-  const listed = await infisical(
-    "GET",
-    `/v2/identity-project-additional-privilege?identityId=${encodeURIComponent(identity.id)}&projectId=${encodeURIComponent(projectId)}`,
-  );
-  const slug = privilegeSlug(appSlug);
-  const existing = listed.ok && Array.isArray(listed.json?.privileges)
-    ? listed.json.privileges.find((p) => p.slug === slug)
-    : null;
-  if (!existing) {
-    const createdPriv = await infisical("POST", "/v2/identity-project-additional-privilege", {
-      identityId: identity.id,
-      projectId,
-      slug,
-      permissions: readFolderPermissions(appSlug),
-    });
-    if (!createdPriv.ok && createdPriv.status !== 409) {
-      console.error(`Could not grant read ACL on /shared and /flags: ${apiMessage(createdPriv)}`);
-      process.exit(1);
-    }
-    console.log(`→ Infisical ACL ${slug}: read /shared and /flags only (never /sensitive)`);
-  } else {
-    console.log(`→ Infisical ACL ${slug}: already present (never /sensitive)`);
-  }
+  await ensureSecretReadAccess(infisical, { projectId, identityId: identity.id, appSlug });
 
   let clientSecret = null;
   if (needCredentials) {
@@ -625,11 +756,25 @@ function ensureGithubEnvironments(owner, repo) {
   }
 }
 
+function collectNamedRows(data, bagKey) {
+  const rows = [];
+  if (!data) return rows;
+  if (Array.isArray(data[bagKey])) rows.push(...data[bagKey]);
+  else if (Array.isArray(data)) {
+    for (const page of data) {
+      if (Array.isArray(page?.[bagKey])) rows.push(...page[bagKey]);
+      else if (page?.name) rows.push(page);
+    }
+  }
+  return rows;
+}
+
 function ensureGithubVars(owner, repo, values) {
-  const listed = ghJson(["variable", "list", "--repo", `${owner}/${repo}`, "--json", "name,value"]);
+  // REST API: older gh (e.g. 2.35) has no `variable list --json`.
+  const listed = ghJson(["api", `repos/${owner}/${repo}/actions/variables`, "--paginate"]);
   const current = new Map();
-  if (Array.isArray(listed.data)) {
-    for (const row of listed.data) current.set(row.name, row.value);
+  for (const row of collectNamedRows(listed.data, "variables")) {
+    if (row.name) current.set(row.name, row.value);
   }
   for (const key of VAR_KEYS) {
     const next = values[key];
@@ -643,8 +788,9 @@ function ensureGithubVars(owner, repo, values) {
 }
 
 function githubSecretNames(owner, repo) {
-  const listed = ghJson(["secret", "list", "--repo", `${owner}/${repo}`, "--json", "name"]);
-  return listNames(listed.data);
+  // REST API: older gh (e.g. 2.35) has no `secret list --json`.
+  const listed = ghJson(["api", `repos/${owner}/${repo}/actions/secrets`, "--paginate"]);
+  return listNames(collectNamedRows(listed.data, "secrets"));
 }
 
 function setGithubSecret(owner, repo, name, value) {

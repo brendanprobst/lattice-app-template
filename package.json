@@ -20,7 +20,7 @@
     "dev": "turbo run dev",
     "test": "jest --colors",
     "test:watch": "jest --watch --colors",
-    "test:coverage": "jest --coverage --colors",
+    "test:coverage": "jest --coverage --colors && node --test test/scripts/*.test.mjs",
     "test:verbose": "jest --verbose --colors",
     "test:web:unit": "vitest run --config test/web/vitest.config.ts",
     "test:web:unit:watch": "vitest --config test/web/vitest.config.ts",

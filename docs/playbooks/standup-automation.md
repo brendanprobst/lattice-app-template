@@ -21,7 +21,7 @@ Still typed by a human: Supabase URL/anon (once), **one NS delegation** at the p
 
 - Implement in the **template**. Refresh into smoke-test. Do not hand-port files.
 - One Infisical project (`lattice` / `lattice-ecosystem-7iyf`). One identity, one AWS role, and one Route 53 zone **per spawn**.
-- Do not put secrets on GitHub environments. Do not grant `/sensitive` to GitHub.
+- Do not put secrets on GitHub environments. Do not grant `/sensitive` to GitHub when Infisical allows path-scoped ACL. On the current lattice project plan, additional privileges and custom roles are gated; standup then assigns built-in viewer so Deploy app can read `/shared` and `/flags`.
 - Do not apply Terraform in GitHub. **Deploy app** = site + Lambda. Laptop = Terraform + first cert.
 - Do not change `environment` in live `envs/dev` tfvars to `prod`.
 - Do not touch `fosterfolio-gha-arn` or create a second `fosterfolio.com` zone.
@@ -260,7 +260,8 @@ Same command, new Terraform state.
 
 1. Fill `infra/terraform/envs/prod/terraform.tfvars` (copy from `terraform.tfvars.example`). `environment = "prod"`. `web_custom_domain = "lattice.brendanprobst.com"`. **Same** `route53_hosted_zone_id` as dev. `manage_web_dns_in_route53 = true`. `create_route53_hosted_zone = false`. **Different** Supabase project than dev.
 2. Fill `apps/web/.env.prod` (or `.env.production.local` if that is what this spawn uses) with that project’s URL/anon.
-3. Confirm GitHub `prod` environment exists and requires you as reviewer.
+3. Copy `.lattice/standup.json.example` → `.lattice/standup.json` if needed. Put the new project’s `SUPABASE_DB_URL` in **`supabase/.env.prod`** (gitignored). Standup apply runs those SQL files after terraform; it does not use `supabase db push`.
+4. Confirm GitHub `prod` environment exists and requires you as reviewer.
 
 ### Agent prompt (optional — standup should be enough)
 

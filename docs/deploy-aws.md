@@ -5,7 +5,7 @@ Two ways to deploy:
 1. **Laptop:** **`npm run deploy:aws`** (your AWS credentials and `infra/terraform/envs/<env>/terraform.tfvars`). **`--env`** defaults to **`dev`**. This is the path that runs Terraform.
 2. **GitHub Actions:** workflow **Deploy app** for site and Lambda updates. Manual only. It does not run Terraform.
 
-The laptop script order is: **build API Lambda bundle → `terraform apply` → ACM wait (registrar path) → second apply for CloudFront alias/cert + CORS when ISSUED → read `api_url` → build static web with `NEXT_PUBLIC_API_URL` → `aws s3 sync`**.
+The laptop script order is: **build API Lambda bundle → `terraform apply` → ACM wait (registrar path) → second apply for CloudFront alias/cert + CORS when ISSUED → SQL files in `.lattice/standup.json` for that env → read `api_url` → build static web with `NEXT_PUBLIC_API_URL` → `aws s3 sync`**. `--plan-only` and `deploy:aws:web` skip SQL. See [Supabase migrations](playbooks/supabase-migrations.md#standup-apply).
 
 When `web_custom_domain` is set and `manage_web_dns_in_route53 = false`, the script prints **this certificate’s** site CNAME (`<domain>` → `web_cloudfront_domain`) and ACM validation CNAME (`acm_validation_record_name` → `acm_validation_record_value`). It polls ACM in `us-east-1` until **ISSUED**, then applies the CloudFront alias/cert and Lambda `CORS_ORIGINS`. If the poll times out, it exits with those records and **re-run after Issued**. Do not copy another hostname’s `_hash`. Tune wait with `ACM_WAIT_INTERVAL_SEC` and `ACM_WAIT_TIMEOUT_SEC` (default 30s / 12 min).
 

@@ -3,7 +3,8 @@
  * Deploy API (Lambda bundle) + Terraform (AWS infra) + static web build + S3 sync.
  *
  * Order: build Lambda → terraform apply → ACM wait (path C) → second apply for
- * CloudFront alias/cert + CORS when ISSUED → read api_url → build web → s3 sync.
+ * CloudFront alias/cert + CORS when ISSUED → standup SQL migrations → read
+ * api_url → build web → s3 sync.
  *
  *   npm run deploy:aws
  *   npm run deploy:aws -- --env prod
@@ -27,6 +28,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { loadWebEnv, takeEnvArg, terraformDir } from "./deploy-env.mjs";
 import { appSharedPath, infisicalConfigPath, readAppSlug } from "./infisical-app.mjs";
+import { applyStandupMigrations } from "./standup-migrations.mjs";
 import {
   PHASE4_ACM_WAIT,
   pollAcmUntilIssued,
@@ -231,6 +233,7 @@ function main() {
   }
 
   waitForIssuedAcmThenAttach(chdir, opts.autoApprove);
+  applyStandupMigrations(root, opts.env);
   syncInfisicalOutputs(opts.env);
 
   if (opts.skipWeb) {
