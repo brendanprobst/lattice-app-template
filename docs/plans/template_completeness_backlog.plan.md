@@ -53,6 +53,9 @@ todos:
   - id: docker-local-dev
     content: Ship a Docker (Compose) local-dev stack so a clone can run without matching the author's host Node/tooling versions
     status: pending
+  - id: cli-throbber
+    content: Shared terminal throbber/spinner for long-running laptop CLIs (standup, deploy:aws, scaffold, refresh, npm ci / npm run ci). Do not implement until this item is picked up.
+    status: pending
 isProject: false
 ---
 
@@ -129,5 +132,6 @@ High value, small scope—work in roughly this order:
 | F7 | **Always-on API (e.g. App Runner)** | Higher baseline cost; simpler ops if you outgrow Lambda cold starts. |
 | F8 | **Supabase RLS / policies** | Tighten before real production data; align with service-role usage. |
 | F9 | **Docker local-dev stack** | Dockerfile + Compose (or equivalent) so anyone can `docker compose up` after clone instead of matching the author's host Node 22, npm, and tooling. Goal is environment parity for contributors, not a production container deploy (that stays F7 / App Runner). |
+| F10 | **CLI throbber** | Shared spinner for long-running laptop tasks (`standup`, `deploy:aws`, `scaffold`, `scaffold:refresh`, `npm ci` / `npm run ci`). One helper, TTY-aware, no spinner in CI logs. Do not implement until this item is picked up. |
 
 The **YAML `todos`** at the top of this file mirror these items for tooling and agents; update statuses there when work completes.
