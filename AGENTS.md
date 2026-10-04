@@ -10,7 +10,7 @@
 - **`apps/web/`** — Next.js `app/` routes; feature code under `client/` (see `apps/web/AGENTS.md`).
 - **`test/`** — Automated tests: **`test/api/`** (Jest), **`test/web/`** (Vitest + Playwright). See [`test/AGENTS.md`](test/AGENTS.md).
 - **`config/`** — **`repo-features.json`**: CI / Dependabot toggles (see [`docs/repo-features.md`](docs/repo-features.md)).
-- **Deploy** — Dual-env by default (`envs/dev` + `envs/prod`). **`npm run deploy:aws`** on a laptop (Terraform + Lambda + static web + S3; `--env prod` for prod). GitHub **Deploy app** for site and Lambda (`INFISICAL_PROJECT_SLUG` + `INFISICAL_APP_SLUG`). See [`docs/playbooks/infisical-github-deploys.md`](docs/playbooks/infisical-github-deploys.md). The older **Deploy (AWS)** workflow is unused.
+- **Deploy** — Dual-env by default (`envs/dev` + `envs/prod`). **`npm run standup -- --env <dev|prod>`** for Infisical folders, the GitHub identity, repo vars/secrets, and the GHA role. **`npm run deploy:aws`** on a laptop (Terraform + Lambda + static web + S3; `--env prod` for prod). GitHub **Deploy app** for site and Lambda (`INFISICAL_PROJECT_SLUG` + `INFISICAL_APP_SLUG`). See [`docs/playbooks/infisical-github-deploys.md`](docs/playbooks/infisical-github-deploys.md). The older **Deploy (AWS)** workflow is unused.
 - **`docs/`** — Architecture decision records (ADRs).
 - **`infra/terraform/`** — AWS Terraform; Supabase URL/keys from **`terraform.tfvars`** → optional **SSM** (see [`infra/AGENTS.md`](infra/AGENTS.md)).
 

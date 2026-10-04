@@ -51,6 +51,7 @@ export const FOUNDATION_PATH_PREFIXES = [
   "scripts/deploy-env",
   "scripts/env-files",
   "scripts/infisical-app",
+  "scripts/standup",
   "scripts/scaffold.mjs",
   "scripts/fork.mjs",
   "scripts/lattice-harvest",

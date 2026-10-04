@@ -10,7 +10,7 @@ Permissions are **this app only**:
 - CloudFront invalidate / get on this account’s distributions
 - Lambda `UpdateFunctionCode`, `GetFunction`, `GetFunctionConfiguration` on `<project_name>-dev-api` and `<project_name>-prod-api`
 
-The role cannot apply Terraform. Put `terraform output -raw aws_role_arn` in the repository secret `AWS_ROLE_ARN` (Phase 3 will do that).
+The role cannot apply Terraform. `npm run standup` applies this stack and sets the repository secret `AWS_ROLE_ARN` when it is missing. You can still `terraform output -raw aws_role_arn` yourself.
 
 Do **not** run `npm run deploy:aws -- --env bootstrap` — this directory is not under `envs/`. Do **not** point `role_name` at `fosterfolio-gha-arn` or widen trust to another repo.
 

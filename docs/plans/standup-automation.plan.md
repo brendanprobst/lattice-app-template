@@ -10,7 +10,7 @@ todos:
     status: completed
   - id: standup-script
     content: "Phase 3 — npm run standup: Infisical folders + github-<app> identity + gh environments/vars/secrets; idempotent; never grant /sensitive to GitHub"
-    status: pending
+    status: completed
   - id: deploy-aws-acm-wait
     content: "Phase 4 — deploy:aws prints registrar CNAMEs, polls ACM to ISSUED, then applies CloudFront alias/cert; skip Infisical sync when outputs unchanged"
     status: pending

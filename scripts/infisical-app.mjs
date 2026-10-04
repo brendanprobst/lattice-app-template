@@ -56,3 +56,43 @@ export function appFlagsPath(appSlug) {
 export function appSensitivePath(appSlug) {
   return `/${appSlug}/sensitive`;
 }
+
+export function readWorkspaceId(root) {
+  const file = join(root, ".infisical.json");
+  if (!existsSync(file)) {
+    console.error("No .infisical.json. Run `infisical login` and `infisical init` in the repo first.");
+    process.exit(1);
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    console.error(".infisical.json is not valid JSON.");
+    process.exit(1);
+  }
+  const id = parsed.workspaceId;
+  if (!id || typeof id !== "string") {
+    console.error(".infisical.json is missing workspaceId.");
+    process.exit(1);
+  }
+  return id;
+}
+
+/** Infisical API root, including `/api`. Never log tokens. */
+export function infisicalApiBase(root) {
+  let domain = process.env.INFISICAL_DOMAIN;
+  const file = join(root, ".infisical.json");
+  if (!domain && existsSync(file)) {
+    try {
+      const parsed = JSON.parse(readFileSync(file, "utf8"));
+      if (typeof parsed.domain === "string" && parsed.domain.trim()) {
+        domain = parsed.domain.trim();
+      }
+    } catch {
+      /* workspaceId is validated separately */
+    }
+  }
+  domain = (domain || "https://app.infisical.com").replace(/\/$/, "");
+  if (!domain.endsWith("/api")) domain = `${domain}/api`;
+  return domain;
+}

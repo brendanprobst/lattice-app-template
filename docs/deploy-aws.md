@@ -20,6 +20,7 @@ The template repo itself is not deployed. After `npm run scaffold`, the spawn ow
 
 | Command | Purpose |
 |---------|---------|
+| `npm run standup -- --env dev` | Infisical folders + `github-<app>` identity + GitHub env/vars/secrets + GHA role. Same with `--env prod`. Skips laptop `deploy:aws` until Phase 4 (or with `--bootstrap-only`). |
 | `npm run deploy:aws` | Full deploy of **`envs/dev`** (interactive `terraform apply` when in a TTY). |
 | `npm run deploy:aws -- --env prod` | Same pipeline against **`infra/terraform/envs/prod`**. Web build requires **`apps/web/.env.prod`**. |
 | `npm run deploy:aws -- --plan-only` | `terraform init` + `terraform plan` only. |

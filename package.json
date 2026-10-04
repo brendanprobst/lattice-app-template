@@ -41,6 +41,7 @@
     "scaffold": "node scripts/scaffold.mjs",
     "scaffold:refresh": "node scripts/refresh-spawn.mjs",
     "repo-features:apply": "node scripts/apply-repo-features.mjs",
+    "standup": "node scripts/standup.mjs",
     "deploy:aws": "node scripts/deploy-aws.mjs",
     "deploy:aws:web": "node scripts/deploy-aws-web.mjs",
     "deploy:aws:plan": "node scripts/deploy-aws.mjs --plan-only",
