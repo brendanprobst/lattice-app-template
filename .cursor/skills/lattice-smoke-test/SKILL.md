@@ -30,7 +30,7 @@ Read spawn names from `docs/playbooks/lattice-smoke-test-deploys.md` and `.latti
 | Planned prod host | `lattice.brendanprobst.com` (new `envs/prod` state — do not rename `environment` on live state) |
 | DNS | not Route 53 (`manage_web_dns_in_route53 = false`) |
 
-Refresh overwrites `AGENTS.md` and generic playbooks. Spawn names stay in `.lattice/infisical.json` and `preservePaths` (today: `docs/playbooks/lattice-smoke-test-deploys.md`). After refresh, run `.lattice/refresh.json` `postRefreshPrompts`.
+Refresh overwrites `AGENTS.md` and generic playbooks. Spawn names stay in `.lattice/infisical.json` and `preservePaths` (today: `docs/playbooks/lattice-smoke-test-deploys.md`). `scaffold:refresh` runs `postRefreshPrompts` and `npm run ci` unless `--skip-prompts` / `--skip-tests`.
 
 ## What’s next
 
@@ -61,4 +61,4 @@ Do not copy the current (same) Supabase project into Infisical `prod`. Leave `/l
 
 ## After refresh
 
-Follow `postRefreshPrompts` in `.lattice/refresh.json`: docs only, git history for overwritten files, append real spawn edits to a `preservePaths` doc, rename leftover “Lattice” / `lattice-app-template` branding to **lattice-app-smoke-test**.
+`postRefreshPrompts` in `.lattice/refresh.json` run automatically on refresh (docs only, git history for overwritten files, append real spawn edits to a `preservePaths` doc, rename leftover “Lattice” / `lattice-app-template` branding to **lattice-app-smoke-test**). Then `npm run ci` runs in the spawn.

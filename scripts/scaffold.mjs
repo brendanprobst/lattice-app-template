@@ -12,11 +12,19 @@
  *   npm run scaffold -- --folder my-app ...          # sibling ../my-app (no clone yet; creates/overwrites folder)
  *   npm run scaffold -- ... --yes                    # skip confirmation (CI / scripts)
  *   npm run scaffold -- ... --dry-run
+ *   npm run scaffold -- ... --skip-prompts           # skip Cursor agent post-scaffold prompts
+ *   npm run scaffold -- ... --skip-tests             # skip npm ci + npm run ci
  */
-import { cpSync, existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import {
+  DEFAULT_SCAFFOLD_PROMPTS,
+  parsePipelineFlags,
+  runPostRefreshPrompts,
+  runSpawnCi,
+} from "./run-post-refresh-prompts.mjs";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
@@ -49,21 +57,26 @@ function parseArgs(argv) {
     repo: null,
     displayName: null,
     scope: null,
+    skipPrompts: false,
+    skipTests: false,
   };
-  for (let i = 0; i < args.length; i++) {
-    const a = args[i];
+  const flags = parsePipelineFlags(args);
+  opts.skipPrompts = flags.skipPrompts;
+  opts.skipTests = flags.skipTests;
+  for (let i = 0; i < flags.rest.length; i++) {
+    const a = flags.rest[i];
     if (a === "--dry-run") opts.dryRun = true;
     else if (a === "--yes" || a === "-y") opts.yes = true;
     else if (a === "--force") opts.force = true;
     else if (a === "--reset-readme") opts.resetReadme = true;
     else if (a === "--no-git-init") opts.noGitInit = true;
-    else if (a === "--name" && args[i + 1]) opts.npmName = args[++i];
-    else if (a === "--npm-name" && args[i + 1]) opts.npmName = args[++i];
-    else if (a === "--folder" && args[i + 1]) opts.folder = args[++i];
-    else if (a === "--into" && args[i + 1]) opts.into = args[++i];
-    else if (a === "--repo" && args[i + 1]) opts.repo = args[++i];
-    else if (a === "--display-name" && args[i + 1]) opts.displayName = args[++i];
-    else if (a === "--scope" && args[i + 1]) opts.scope = args[++i].replace(/^@/, "");
+    else if (a === "--name" && flags.rest[i + 1]) opts.npmName = flags.rest[++i];
+    else if (a === "--npm-name" && flags.rest[i + 1]) opts.npmName = flags.rest[++i];
+    else if (a === "--folder" && flags.rest[i + 1]) opts.folder = flags.rest[++i];
+    else if (a === "--into" && flags.rest[i + 1]) opts.into = flags.rest[++i];
+    else if (a === "--repo" && flags.rest[i + 1]) opts.repo = flags.rest[++i];
+    else if (a === "--display-name" && flags.rest[i + 1]) opts.displayName = flags.rest[++i];
+    else if (a === "--scope" && flags.rest[i + 1]) opts.scope = flags.rest[++i].replace(/^@/, "");
     else if (a.startsWith("-")) {
       console.error(`Unknown flag: ${a}`);
       process.exit(1);
@@ -259,6 +272,12 @@ async function runScaffold(opts) {
     if (!opts.noGitInit && !hasGit) console.log("[dry-run] Would run: git init -b main");
     console.log("[dry-run] Would run: node scripts/fork.mjs init ...");
     if (!opts.yes) console.log("[dry-run] Would prompt for confirmation (use --yes to skip).");
+    if (!opts.skipPrompts) {
+      console.log("[dry-run] Would run post-scaffold prompts via agent/cursor agent.");
+    }
+    if (!opts.skipTests) {
+      console.log("[dry-run] Would run: npm ci && npm run ci");
+    }
     return;
   }
 
@@ -303,14 +322,43 @@ async function runScaffold(opts) {
     process.exit(fork.status ?? 1);
   }
 
+  const refreshPath = join(targetRoot, ".lattice", "refresh.json");
+  let prompts = DEFAULT_SCAFFOLD_PROMPTS;
+  let preservePaths = [];
+  let spawnName = opts.npmName;
+  if (existsSync(refreshPath)) {
+    try {
+      const data = JSON.parse(readFileSync(refreshPath, "utf8"));
+      const listed = Array.isArray(data.postRefreshPrompts)
+        ? data.postRefreshPrompts.filter((p) => typeof p === "string" && p.trim())
+        : [];
+      if (listed.length) prompts = listed;
+      if (Array.isArray(data.preservePaths)) {
+        preservePaths = data.preservePaths.filter((p) => typeof p === "string" && p.trim());
+      }
+      if (typeof data.name === "string" && data.name.trim()) spawnName = data.name.trim();
+    } catch {
+      /* keep defaults */
+    }
+  }
+
+  runPostRefreshPrompts({
+    targetRoot,
+    kind: "scaffold",
+    spawnName,
+    preservePaths,
+    prompts,
+    dryRun: false,
+    skip: opts.skipPrompts,
+  });
+  runSpawnCi({ targetRoot, dryRun: false, skip: opts.skipTests });
+
   const cdRel = relative(process.cwd(), targetRoot);
 
   console.log(`
 Done. Next — from your app folder:
   cd ${JSON.stringify(cdRel)}
 
-  npm ci
-  npm run ci
   cp apps/api/.env.example apps/api/.env
   cp apps/web/.env.example apps/web/.env.local
   cp infra/terraform/envs/dev/terraform.tfvars.example infra/terraform/envs/dev/terraform.tfvars

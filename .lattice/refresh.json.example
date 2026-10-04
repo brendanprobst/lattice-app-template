@@ -9,7 +9,7 @@
     "apps/web/client/pages/login",
     "test/api/auth/supabaseAuthMidleware.test.ts"
   ],
-  "notes": "Optional free-form reminder for operators (not read by tooling). Example: update Supabase redirect URLs from /login to /auth/sign-in after refresh.",
+  "notes": "postRefreshPrompts run automatically on scaffold:refresh (then npm ci / npm run ci). This notes field is printed only. Example: update Supabase redirect URLs from /login to /auth/sign-in after refresh.",
   "postRefreshPrompts": [
     "After refresh, look only at overwritten documentation (AGENTS.md files, README, generic playbooks). Skip application code for this pass.",
     "Overwrites are expected. If git history shows a substantial spawn-only edit, append it to a preservePaths doc instead of fighting the template file.",

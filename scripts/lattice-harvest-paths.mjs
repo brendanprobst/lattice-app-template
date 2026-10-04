@@ -54,6 +54,8 @@ export const FOUNDATION_PATH_PREFIXES = [
   "scripts/infisical-app",
   "scripts/standup",
   "scripts/scaffold.mjs",
+  "scripts/refresh-spawn",
+  "scripts/run-post-refresh-prompts",
   "scripts/fork.mjs",
   "scripts/lattice-harvest",
   "infra/terraform/",

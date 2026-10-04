@@ -67,12 +67,12 @@ npm run scaffold -- --into ../my-app --name my-app --repo https://github.com/you
 
 Without `--yes`, the script requires an interactive terminal so it can prompt; otherwise it exits with an error.
 
-### 5. Install, verify, and commit from the app repo
+### 5. Env files and commit from the app repo
+
+Scaffold already ran post-scaffold prompts and `npm ci` / `npm run ci` unless you passed `--skip-prompts` / `--skip-tests`.
 
 ```bash
 cd ../my-app
-npm ci
-npm run ci
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 cp infra/terraform/envs/dev/terraform.tfvars.example infra/terraform/envs/dev/terraform.tfvars
@@ -137,7 +137,7 @@ Each spawn that you intend to re-sync should commit a manifest at **`.lattice/re
 | `preservePaths` | no | Extra spawn-owned paths to restore after copy (on top of the defaults below) |
 | `prunePaths` | no | Paths **relative to repo root** to delete after copy. Preserved paths are never pruned. |
 | `notes` | no | Short operator reminder printed at the start of refresh |
-| `postRefreshPrompts` | no | Array of prompts printed after refresh. Use this for spawn-specific doc repair (git-history check, rename Lattice → this app) without stuffing names into `AGENTS.md`. |
+| `postRefreshPrompts` | no | Array of prompts the pipeline runs via `agent` / `cursor agent` after copy + restore (docs repair, branding). `--skip-prompts` skips. |
 
 Example (smoke-test canary):
 
@@ -181,9 +181,11 @@ Behavior (spec):
 4. Run **`scaffold.mjs`** with `--into`, `--name`, `--repo` from the manifest, plus **`--force --yes`**.
 5. Delete each path in `prunePaths` (never a preserved path).
 6. Restore the snapshot so spawn config wins over anything the copy wrote.
-7. Print a **post-refresh checklist**; do **not** run `npm ci`, deploy, or Supabase.
+7. Run `postRefreshPrompts` in the spawn via `agent` / `cursor agent` (docs only, as written).
+8. Run **`npm ci`** then **`npm run ci`** in the spawn (build, lint, type-check, Jest, Vitest).
+9. Print leftover human steps (Supabase, Terraform, Infisical). Do **not** deploy.
 
-Optional flags (planned): `--dry-run` (scaffold dry-run + list prunes), `--skip-prune`.
+Optional flags: `--dry-run` (scaffold dry-run + list prunes + print prompts/tests), `--skip-prune`, `--skip-prompts`, `--skip-tests`.
 
 ### What refresh preserves vs overwrites
 
@@ -209,15 +211,7 @@ Refresh is **not** a git merge from template remote — it copies from your **lo
 
 ### Post-refresh checklist (spawn repo)
 
-From the **target** folder after refresh:
-
-```bash
-cd ../lattice-app-smoke-test   # or your spawn path
-npm ci
-npm run ci
-```
-
-Then, only if something below changed since your last deploy:
+Refresh already ran `postRefreshPrompts` and `npm ci` / `npm run ci` unless you passed `--skip-prompts` / `--skip-tests`. Then, only if something below changed since your last deploy:
 
 | Step | When needed |
 |------|-------------|

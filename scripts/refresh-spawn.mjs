@@ -8,12 +8,19 @@
  *   npm run scaffold:refresh -- --into ../lattice-app-smoke-test
  *   npm run scaffold:refresh -- --into ../lattice-app-smoke-test --dry-run
  *   npm run scaffold:refresh -- --into ../lattice-app-smoke-test --skip-prune
+ *   npm run scaffold:refresh -- --into ../lattice-app-smoke-test --skip-prompts
+ *   npm run scaffold:refresh -- --into ../lattice-app-smoke-test --skip-tests
  */
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import {
+  parsePipelineFlags,
+  runPostRefreshPrompts,
+  runSpawnCi,
+} from "./run-post-refresh-prompts.mjs";
 
 /** Always restored after copy. Spawn-owned identity and secrets, not platform code. */
 const DEFAULT_PRESERVE_PATHS = [
@@ -29,13 +36,18 @@ function parseArgs(argv) {
   const opts = {
     dryRun: false,
     skipPrune: false,
+    skipPrompts: false,
+    skipTests: false,
     into: null,
   };
-  for (let i = 0; i < args.length; i++) {
-    const a = args[i];
+  const flags = parsePipelineFlags(args);
+  opts.skipPrompts = flags.skipPrompts;
+  opts.skipTests = flags.skipTests;
+  for (let i = 0; i < flags.rest.length; i++) {
+    const a = flags.rest[i];
     if (a === "--dry-run") opts.dryRun = true;
     else if (a === "--skip-prune") opts.skipPrune = true;
-    else if (a === "--into" && args[i + 1]) opts.into = args[++i];
+    else if (a === "--into" && flags.rest[i + 1]) opts.into = flags.rest[++i];
     else if (a.startsWith("-")) {
       console.error(`Unknown flag: ${a}`);
       process.exit(1);
@@ -118,22 +130,13 @@ function restorePreserve(targetRoot, rels, snapDir) {
   }
 }
 
-function printPostRefreshChecklist(targetRoot, templateSha, postRefreshPrompts) {
+function printPostRefreshChecklist(targetRoot, templateSha) {
   const rel = relative(process.cwd(), targetRoot) || targetRoot;
-  let promptsBlock = "";
-  if (postRefreshPrompts.length > 0) {
-    promptsBlock = `\nPost-refresh prompts (from .lattice/refresh.json "postRefreshPrompts"):\n\n`;
-    postRefreshPrompts.forEach((prompt, i) => {
-      promptsBlock += `  ${i + 1}. ${prompt}\n\n`;
-    });
-  }
   console.log(`
 Post-refresh checklist — from the spawn repo:
 
   cd ${JSON.stringify(rel)}
-  npm ci
-  npm run ci
-${promptsBlock}
+
 Then if needed since your last deploy:
   • Supabase Auth redirect URLs (/auth/sign-in, etc.) — see docs/playbooks/supabase-migrations.md
   • Apply new SQL under apps/api/supabase/migrations/
@@ -195,7 +198,17 @@ function main() {
         console.log(`  - ${p}`);
       }
     }
-    printPostRefreshChecklist(targetRoot, templateSha, manifest.postRefreshPrompts);
+    runPostRefreshPrompts({
+      targetRoot,
+      kind: "refresh",
+      spawnName: manifest.name,
+      preservePaths: manifest.preservePaths,
+      prompts: manifest.postRefreshPrompts,
+      dryRun: true,
+      skip: opts.skipPrompts,
+    });
+    runSpawnCi({ targetRoot, dryRun: true, skip: opts.skipTests });
+    printPostRefreshChecklist(targetRoot, templateSha);
     return;
   }
 
@@ -212,6 +225,8 @@ function main() {
     manifest.repo,
     "--force",
     "--yes",
+    "--skip-prompts",
+    "--skip-tests",
   ];
 
   const scaffold = spawnSync(process.execPath, scaffoldArgs, {
@@ -252,7 +267,18 @@ function main() {
   }
   rmSync(snapDir, { recursive: true, force: true });
 
-  printPostRefreshChecklist(targetRoot, templateSha, manifest.postRefreshPrompts);
+  runPostRefreshPrompts({
+    targetRoot,
+    kind: "refresh",
+    spawnName: manifest.name,
+    preservePaths: manifest.preservePaths,
+    prompts: manifest.postRefreshPrompts,
+    dryRun: false,
+    skip: opts.skipPrompts,
+  });
+  runSpawnCi({ targetRoot, dryRun: false, skip: opts.skipTests });
+
+  printPostRefreshChecklist(targetRoot, templateSha);
 }
 
 main();

@@ -216,7 +216,7 @@ npm run scaffold:refresh -- --into ../lattice-app-smoke-test
 
 In **smoke-test**:
 
-1. Follow `.lattice/refresh.json` `postRefreshPrompts` (overwritten docs only; spawn names stay in `lattice-smoke-test-deploys.md`).
+1. Refresh already ran `postRefreshPrompts` and `npm run ci`. Confirm docs look right (spawn names stay in `lattice-smoke-test-deploys.md`).
 2. Commit the refresh in smoke-test.
 3. Set `dns-zone` `zone_name = "lattice.brendanprobst.com"`. Run standup or apply that stack. Copy `name_servers`.
 4. At **Google Domains**, add **NS** for `lattice.brendanprobst.com` only (not a nameserver change on `brendanprobst.com`). Wait until:
