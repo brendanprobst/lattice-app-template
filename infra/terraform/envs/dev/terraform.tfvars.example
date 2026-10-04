@@ -47,3 +47,5 @@ api_schedule_timezone         = "UTC"
 # If DNS stays at third-party provider (e.g. Squarespace), disable Route 53 DNS management:
 # web_custom_domain          = "app.example.com"
 # manage_web_dns_in_route53  = false
+# Then create the CNAME pair from terraform output acm_validation_record_name /
+# acm_validation_record_value (this cert only — never copy another hostname's _hash).

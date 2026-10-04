@@ -94,7 +94,7 @@ Root `npm run infra:fmt` and `npm run infra:validate` (no AWS credentials requir
 - **API**: Lambda hosts the Express app via `@vendia/serverless-express`; API Gateway invokes Lambda.
 - **API secrets**: Lambda resolves Supabase parameter names from SSM at runtime (`SUPABASE_URL_PARAM`, `SUPABASE_SERVICE_ROLE_KEY_PARAM`) with IAM-scoped `ssm:GetParameter`.
 - **Web**: `apps/web` builds as static export (`out/`) and is served from S3 + CloudFront.
-- **Custom domain (optional)**: Set `web_custom_domain` and either create a Route 53 hosted zone or pass `route53_hosted_zone_id`. ACM (in `us-east-1`), CloudFront aliases, and API CORS are wired in Terraform. Registrar steps (nameserver delegation) are documented in **[`docs/playbooks/route53-custom-domain.md`](../../docs/playbooks/route53-custom-domain.md)**.
+- **Custom domain (optional)**: Set `web_custom_domain` and either create a Route 53 hosted zone, pass `route53_hosted_zone_id`, or set `manage_web_dns_in_route53 = false` and create the ACM CNAME from `acm_validation_record_name` / `acm_validation_record_value`. CloudFront gets the hostname and certificate only after ACM is **ISSUED**. Registrar steps are documented in **[`docs/playbooks/route53-custom-domain.md`](../../docs/playbooks/route53-custom-domain.md)**.
 - **Never** commit `terraform.tfvars` with real secrets.
 
 

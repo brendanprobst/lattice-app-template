@@ -43,6 +43,16 @@ output "web_custom_domain" {
   value       = local.web_use_custom_domain ? trimspace(var.web_custom_domain) : null
 }
 
+output "acm_validation_record_name" {
+  description = "ACM DNS validation CNAME name for this certificate. Create it at the registrar when manage_web_dns_in_route53 is false. Never copy another hostname's _hash."
+  value       = try(local.web_acm_validation.name, null)
+}
+
+output "acm_validation_record_value" {
+  description = "ACM DNS validation CNAME value (acm-validations.aws target) for this certificate."
+  value       = try(local.web_acm_validation.value, null)
+}
+
 output "route53_hosted_zone_id" {
   description = "Route 53 hosted zone used for the web app DNS (when custom domain is enabled); otherwise null."
   value       = local.web_use_custom_domain ? local.route53_zone_id : null

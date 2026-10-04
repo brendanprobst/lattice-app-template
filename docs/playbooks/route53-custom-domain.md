@@ -51,9 +51,37 @@ If you already have a public hosted zone for `example.com` in the same AWS accou
 
 ### C. DNS stays at a third party (not Route 53)
 
-This stack is optimized for **Route 53–managed** validation and alias records. If you must keep **all** DNS at Cloudflare-only or another provider **without** a Route 53 zone:
+Use this when the hostname stays at Google Domains, Squarespace, Cloudflare DNS, or another registrar **without** a Route 53 zone.
 
-- You would add **ACM validation CNAMEs** and a **CNAME** (or alias) to CloudFront at that provider manually, and you would **not** use the Terraform Route 53 resources here without adapting them. For a predictable flow, use **A** or **B** above.
+1. In `terraform.tfvars`, set:
+   - `web_custom_domain` — e.g. `app.example.com`
+   - `manage_web_dns_in_route53 = false`
+
+   Do not set `create_route53_hosted_zone` or `route53_hosted_zone_id`.
+
+2. Apply Terraform. ACM still creates a certificate in **`us-east-1`**. CloudFront does **not** get that hostname or certificate until ACM status is **`ISSUED`**. A pending cert fails CloudFront with `InvalidViewerCertificate`. Read **this certificate’s** outputs (even if apply stops on the ISSUED precondition):
+
+```bash
+terraform output acm_validation_record_name
+terraform output acm_validation_record_value
+terraform output web_cloudfront_domain
+```
+
+3. At the registrar, add **two** records. Use the values Terraform printed for **this** hostname. **Never copy another hostname’s `_hash` CNAME** onto the new name — each ACM certificate has its own token.
+
+| Purpose | Name | Type | Value |
+| --- | --- | --- | --- |
+| ACM validation | `acm_validation_record_name` | CNAME | `acm_validation_record_value` (ends in `acm-validations.aws.`) |
+| Site | `web_custom_domain` | CNAME | `web_cloudfront_domain` |
+
+```bash
+dig +short CNAME app.example.com
+dig +short CNAME '_paste-acm_validation_record_name'
+```
+
+The site `dig` should show the CloudFront domain. The validation `dig` should show a target ending in `acm-validations.aws.` When ACM is Issued, re-run `terraform apply` so CloudFront gets the alias and certificate.
+
+For a predictable AWS-hosted DNS flow, use **A** or **B** above.
 
 ## Two-phase apply when creating a new zone
 
@@ -80,7 +108,7 @@ dig +short NS example.com
 
 The answer must match the four **Route 53** nameservers from `terraform output route53_zone_name_servers` (same as the zone’s **NS** record in the console). If you see your old registrar or parking DNS, update nameservers at the registrar, wait for propagation, then re-run `terraform apply`.
 
-**Check that the validation record is publicly visible** — in ACM (us-east-1) open the certificate → **Domains** → copy the **CNAME name** (often under `_*.example.com`), then:
+**Check that the validation record is publicly visible** — prefer `terraform output acm_validation_record_name` (this certificate only). Or in ACM (us-east-1) open the certificate → **Domains** → copy the **CNAME name** (often under `_*.example.com`). Never paste another hostname’s `_hash`. Then:
 
 ```bash
 dig +short CNAME '_paste-the-full-cname-name.example.com.'

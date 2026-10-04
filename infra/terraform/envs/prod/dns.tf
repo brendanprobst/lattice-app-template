@@ -2,6 +2,35 @@ locals {
   # Hosted zone for ACM validation + CloudFront alias (when using a custom web hostname).
   route53_zone_id           = var.create_route53_hosted_zone ? aws_route53_zone.web[0].zone_id : var.route53_hosted_zone_id
   web_manage_dns_in_route53 = local.web_use_custom_domain && var.manage_web_dns_in_route53
+
+  # Splats stay null when no cert exists (web_custom_domain unset).
+  web_acm_status = one(aws_acm_certificate.web[*].status)
+  web_acm_issued = local.web_acm_status == "ISSUED"
+  web_acm_validation = one([
+    for dvo in flatten(aws_acm_certificate.web[*].domain_validation_options) : {
+      name  = dvo.resource_record_name
+      value = dvo.resource_record_value
+    }
+  ])
+  web_acm_validation_name  = try(local.web_acm_validation.name, "<terraform output acm_validation_record_name>")
+  web_acm_validation_value = try(local.web_acm_validation.value, "<terraform output acm_validation_record_value>")
+  web_acm_not_issued_error = <<-EOT
+ACM certificate for ${local.web_use_custom_domain ? trimspace(var.web_custom_domain) : "(none)"} is ${coalesce(local.web_acm_status, "unknown")}, not ISSUED.
+CloudFront will not attach this hostname or certificate until ACM status is ISSUED (avoids InvalidViewerCertificate).
+
+Add this certificate's validation CNAME at the registrar. Never copy another hostname's _hash onto this name.
+
+  Name   ${local.web_acm_validation_name}
+  Type   CNAME
+  Value  ${local.web_acm_validation_value}
+
+Also CNAME the site hostname to CloudFront (terraform output web_cloudfront_domain).
+
+  dig +short CNAME ${local.web_use_custom_domain ? trimspace(var.web_custom_domain) : "example.com"}
+  dig +short CNAME '${local.web_acm_validation_name}'
+
+After public DNS shows the acm-validations.aws target and ACM is Issued, re-run terraform apply.
+EOT
 }
 
 resource "aws_route53_zone" "web" {
@@ -17,6 +46,8 @@ resource "aws_acm_certificate" "web" {
   validation_method = "DNS"
 
   lifecycle {
+    # Replacement creates the new cert first. The in-use cert is not destroyed
+    # until CloudFront has switched (blocked while the new cert is not ISSUED).
     create_before_destroy = true
   }
 }

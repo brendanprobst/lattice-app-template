@@ -4,7 +4,7 @@ overview: Harvest smoke-test day-1 failures into the template, then add npm run 
 todos:
   - id: harvest-preflight-acm
     content: "Phase 1 — Template harvest: Deploy app secret preflight; ACM validation outputs; refuse CloudFront attach while cert is PENDING; slugs as repo vars; GetFunctionConfiguration in playbook/module contract"
-    status: pending
+    status: completed
   - id: terraform-gha-role
     content: "Phase 2 — F2c bootstrap stack: one <app-slug>-gha role, trust repo:owner/repo:*, permissions on this app’s *-dev-* and *-prod-* including lambda:GetFunctionConfiguration; write AWS_ROLE_ARN"
     status: pending

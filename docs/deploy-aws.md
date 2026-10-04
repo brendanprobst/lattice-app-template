@@ -52,7 +52,7 @@ Workflow: **`.github/workflows/deploy-app.yml`** (**Actions → Deploy app → R
 
 Pick `dev` or `prod`. That name is the Infisical `env-slug` and the GitHub environment (prod reviewer). App secrets do **not** live on those environments. Any branch can deploy **dev**. **Prod** only runs from **`main`**. `/<app-slug>/flags` is optional; missing flags stay off.
 
-The job reads Supabase keys, optional feature flags, and the Terraform outputs (`WEB_BUCKET`, `CLOUDFRONT_DISTRIBUTION_ID`, `LAMBDA_FUNCTION_NAME`, `NEXT_PUBLIC_API_URL`) from Infisical `/<app-slug>/shared` and `/<app-slug>/flags`. `npm run infisical:sync-outputs` writes those outputs after a laptop apply. Put `INFISICAL_PROJECT_SLUG`, `INFISICAL_APP_SLUG`, the Infisical identity, and `AWS_ROLE_ARN` on the **repository** (Actions secrets / variables). Setup: [`docs/playbooks/infisical-github-deploys.md`](playbooks/infisical-github-deploys.md).
+The job reads Supabase keys, optional feature flags, and the Terraform outputs (`WEB_BUCKET`, `CLOUDFRONT_DISTRIBUTION_ID`, `LAMBDA_FUNCTION_NAME`, `NEXT_PUBLIC_API_URL`) from Infisical `/<app-slug>/shared` and `/<app-slug>/flags`. `npm run infisical:sync-outputs` writes those outputs after a laptop apply. Put `INFISICAL_PROJECT_SLUG` and `INFISICAL_APP_SLUG` as repository **variables** (secrets still accepted as fallback). Put the Infisical identity and `AWS_ROLE_ARN` as repository **secrets**. Setup: [`docs/playbooks/infisical-github-deploys.md`](playbooks/infisical-github-deploys.md).
 
 The older **Deploy (AWS)** workflow (`.github/workflows/deploy-aws.yml`) stays in the repo as the unused Terraform-in-GHA path. Do not run it.
 

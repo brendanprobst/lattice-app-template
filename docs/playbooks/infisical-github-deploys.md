@@ -17,7 +17,7 @@ One Infisical organization holds **one project** named `lattice`. Apps are not s
 | App folders | `/<app-slug>/shared`, `/<app-slug>/flags`, `/<app-slug>/sensitive` |
 | Environments | `dev` and `prod` (same names in Infisical, GitHub, and `infra/terraform/envs/<env>`) |
 | Laptop app slug | `.lattice/infisical.json` → `{ "appSlug": "<app-slug>" }` (copy from `.lattice/infisical.json.example`) |
-| GitHub (repo, once) | `INFISICAL_PROJECT_SLUG`, `INFISICAL_APP_SLUG`, plus `INFISICAL_CLIENT_ID` / `INFISICAL_CLIENT_SECRET` / `AWS_ROLE_ARN`. Not copied onto each environment. |
+| GitHub (repo, once) | Variables `INFISICAL_PROJECT_SLUG` and `INFISICAL_APP_SLUG`. Secrets `INFISICAL_CLIENT_ID` / `INFISICAL_CLIENT_SECRET` / `AWS_ROLE_ARN`. Not copied onto each environment. Not `INFISICAL_PROJECT_ID`. |
 | Prod GitHub deploys from | `main` |
 
 `dev` and `prod` both have the same key names, with different values. Inside one environment, put this app’s keys only under `/<app-slug>/**`:
@@ -82,7 +82,7 @@ infisical secrets set \
 2. In the spawn repo, run `infisical login` and choose the `lattice` project.
 3. Run `infisical init` at the repo root so `.infisical.json` holds the `lattice` project id. Do not commit it. Do not init inside `infra/terraform/envs/*`.
 4. Copy `.lattice/infisical.json.example` to `.lattice/infisical.json` and set `appSlug` to the same string as `INFISICAL_APP_SLUG`.
-5. On the Infisical project settings page, copy the project id (laptop CLI) and the project slug (GitHub variable).
+5. On the Infisical project settings page, copy the project id (laptop CLI `--projectId` only) and the project slug (GitHub **variable** `INFISICAL_PROJECT_SLUG`). Do not put the project UUID on GitHub.
 6. Confirm:
 
 ```bash
@@ -103,20 +103,23 @@ infisical secrets --projectId=<project id> --env=dev --path=/<app-slug>/shared
 3. Allow only S3 sync, CloudFront invalidation, and Lambda `UpdateFunctionCode` / `GetFunction` / `GetFunctionConfiguration` on **this app’s** `*-dev-*` and `*-prod-*` names.
 4. This role cannot apply Terraform. Console create is day-1. Terraform for per-spawn roles is backlog **F2c**.
 
-### 6. GitHub repository secrets (once) and environments (approval only)
+### 6. GitHub repository variables and secrets (once) and environments (approval only)
 
 The identity, role, and slugs are the same for `dev` and `prod`. Put them **once** on the repo. Do not paste the same values onto each environment.
 
 Repo → Settings → Secrets and variables → **Actions**:
 
-1. Repository secrets:
+1. Repository **variables** (once, not on each environment):
+   - `INFISICAL_PROJECT_SLUG` (slug of the **lattice** project from `…/project/<slug>/…`. Not the org name. Not the project UUID.)
+   - `INFISICAL_APP_SLUG` (lowercase slug, e.g. `your-app`)
+   - `AWS_REGION` (optional; default is `us-east-1`)
+2. Repository **secrets** (once, not on each environment):
    - `INFISICAL_CLIENT_ID`
    - `INFISICAL_CLIENT_SECRET`
    - `AWS_ROLE_ARN`
-   - `INFISICAL_PROJECT_SLUG` (slug of the **lattice** project from `…/project/<slug>/…`. Not the org name. Not the project UUID.)
-   - `INFISICAL_APP_SLUG` (lowercase slug, e.g. `your-app`)
-2. Or put the two slugs as repository **variables** instead. The workflow accepts either (`secrets.*` then `vars.*`).
-3. Leave the Supabase keys, `TERRAFORM_TFVARS`, and the Terraform outputs out of GitHub. `AWS_REGION` is an optional repository variable; default is `us-east-1`.
+3. Secrets are still accepted as a fallback for the two slugs (`vars.*` then `secrets.*`) if a spawn has not moved them yet.
+4. Do not set `INFISICAL_PROJECT_ID` on GitHub. That UUID is for the laptop CLI (`--projectId`). **Deploy app** uses the project slug.
+5. Leave the Supabase keys, `TERRAFORM_TFVARS`, and the Terraform outputs out of GitHub.
 
 Repo → Settings → Environments:
 
