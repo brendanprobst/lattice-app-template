@@ -21,7 +21,7 @@ Still typed by a human: Supabase URL/anon (once), **Google SSO** on that project
 
 - Implement in the **template**. Refresh into smoke-test. Do not hand-port files.
 - One Infisical project (`lattice` / `lattice-ecosystem-7iyf`). One identity, one AWS role, and one Route 53 zone **per spawn**.
-- Do not put secrets on GitHub environments. Do not grant `/sensitive` to GitHub when Infisical allows path-scoped ACL. On the current lattice project plan, additional privileges and custom roles are gated; standup then assigns built-in viewer so Deploy app can read `/shared` and `/flags`.
+- Do not put secrets on GitHub environments. Leave Infisical `/sensitive` empty: the free plan cannot deny the GitHub identity that path. API secrets are `terraform.tfvars` → **SSM**. On this plan standup assigns built-in viewer so Deploy app can read `/shared` and `/flags`.
 - Do not apply Terraform in GitHub. **Deploy app** = site + Lambda. Laptop = Terraform + first cert.
 - Do not change `environment` in live `envs/dev` tfvars to `prod`.
 - Do not touch `fosterfolio-gha-arn` or create a second `fosterfolio.com` zone.

@@ -24,7 +24,7 @@ One Infisical organization holds **one project** named `lattice`. Apps are not s
 
 - `/<app-slug>/shared` — `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, plus the four Terraform outputs
 - `/<app-slug>/flags` — optional app-specific `NEXT_PUBLIC_*` flags. Missing flags stay off (`continue-on-error`)
-- `/<app-slug>/sensitive` — laptop-only keys such as `SUPABASE_DB_URL`. No GitHub identity gets this folder
+- `/<app-slug>/sensitive` — **leave empty** on the current Infisical plan (built-in viewer can read it). Local `terraform.tfvars` is the type-in source (and later feature experiments). `deploy:aws` copies URL / anon / service role (optional JWT) to **SSM** at `/<project>-<env>/supabase/…`. Deploy app does not read SSM. `deploy:check` asserts those **names** exist. Optional local curls: `npm run --silent ssm:env -- --env <env>`. `SUPABASE_DB_URL` stays in gitignored `supabase/.env.<env>`.
 
 **Deploy app** reads `/<app-slug>/shared` and `/<app-slug>/flags`. A key at `/` or `/shared` is invisible to that job. Do not import `/<app-slug>/sensitive` into the other folders. Do not paste a whole `.env`. Pass `--path` and only the keys for that folder.
 
@@ -61,7 +61,7 @@ Do this once per spawn. **Apply and browse dev** before you apply prod.
 2. In **both** `dev` and `prod`, create `/<app-slug>/shared`, `/<app-slug>/flags`, and `/<app-slug>/sensitive`. Use `--path` on every `infisical secrets set`.
 3. Paste that environment’s Supabase URL and anon key into `/<app-slug>/shared`. Prod must be a **different** Supabase project than dev.
 4. Paste only the `NEXT_PUBLIC_*` flags this app uses into `/<app-slug>/flags`.
-5. Paste laptop-only values such as `SUPABASE_DB_URL` into `/<app-slug>/sensitive`.
+5. Do not paste service role, JWT secret, or `SUPABASE_DB_URL` into `/<app-slug>/sensitive`. Those go to Terraform → SSM (and `supabase/.env.<env>` for the DB URL).
 6. Leave the four Terraform outputs for the laptop sync after each env’s first `terraform apply`.
 
 ```bash

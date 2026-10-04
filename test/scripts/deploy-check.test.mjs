@@ -7,6 +7,7 @@ import {
   parseCheckArgs,
   readTfvarsString,
   stackRegion,
+  dnsParentName,
 } from "../../scripts/deploy-check.mjs";
 import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -41,6 +42,11 @@ test("apiRootLooksHealthy accepts spawn branding", () => {
 test("parseCheckArgs requires --env", () => {
   assert.equal(parseCheckArgs(["node", "x", "--help"]).help, true);
   assert.equal(parseCheckArgs(["node", "x", "--env", "prod"]).env, "prod");
+});
+
+test("dnsParentName uses the zone for a dev hostname", () => {
+  assert.equal(dnsParentName("dev.lattice.brendanprobst.com"), "lattice.brendanprobst.com");
+  assert.equal(dnsParentName("lattice.brendanprobst.com"), "");
 });
 
 test("readTfvarsString reads supabase_url without printing", () => {

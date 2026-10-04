@@ -31,7 +31,7 @@ Copy the **Client ID** and **Client secret**. Do not put the Google secret in `N
 
 ## 2. Supabase → Authentication → Providers → Google
 
-Paste **Google's** Client ID and Client secret, enable, and save. Supabase's own secret / service_role key is for the API (`/sensitive`), not for Google.
+Paste **Google's** Client ID and Client secret, enable, and save. Supabase's service_role / JWT values go in `terraform.tfvars` (SSM), not Google and not Infisical `/sensitive`.
 
 The toggle can look on while GoTrue still reports the provider off until both fields are saved. Confirm with `deploy:check`.
 
@@ -52,7 +52,7 @@ The toggle can look on while GoTrue still reports the provider off until both fi
 - `infra/terraform/envs/<env>/terraform.tfvars` (`supabase_url`)
 - Infisical `/shared` (`NEXT_PUBLIC_SUPABASE_*`) so **Deploy app** bakes the same pair
 
-Infisical `/sensitive` JWT issuer/audience must be this project. Then rebuild the static site.
+Lambda JWT issuer/audience and service role must be this project (`terraform.tfvars` → SSM). Then rebuild the static site so `/shared` matches.
 
 ## Verify
 

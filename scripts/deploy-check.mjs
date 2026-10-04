@@ -19,6 +19,7 @@ import { appSharedPath, infisicalConfigPath, readAppSlug, readWorkspaceId } from
 import { parsePostgresConn, parseStandupMigrations, standupConfigPath } from "./standup-migrations.mjs";
 import { parseGitRemoteUrl } from "./standup.mjs";
 import { supabaseOriginsMatch } from "./supabase-origins.mjs";
+import { expectedSsmNames, ssmSuffix, SSM_REQUIRED_SUFFIXES } from "./ssm-env.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -36,9 +37,10 @@ export const HELP = `Usage:
   npm run deploy:check -- --env <dev|prod>
   npm run deploy:check -- --help
 
-Read-only health check of Terraform outputs, AWS, DNS, Infisical names,
-GitHub Actions config, and local laptop files. Safe after standup and
-before Deploy app (empty bucket / missing site is a warning).
+Read-only health check of Terraform outputs, AWS, DNS, SSM parameter names
+(not values), Infisical /shared names, GitHub Actions config, and local
+laptop files. Safe after standup and before Deploy app (empty bucket /
+missing site is a warning).
 `;
 
 export function parseCheckArgs(argv) {
@@ -71,6 +73,16 @@ export function parseCheckArgs(argv) {
     process.exit(1);
   }
   return opts;
+}
+
+/** Leaf hostnames (dev.zone.tld) have no NS of their own — query the zone. */
+export function dnsParentName(hostname) {
+  const parts = String(hostname || "")
+    .replace(/\.$/, "")
+    .split(".")
+    .filter(Boolean);
+  if (parts.length < 4) return "";
+  return parts.slice(1).join(".");
 }
 
 export function corsHasLocalhost(cors) {
@@ -288,6 +300,7 @@ function checkTerraform(check, env) {
     acmStatus: tfRaw(tfDir, "acm_certificate_status"),
     zoneId: tfRaw(tfDir, "route53_hosted_zone_id"),
     manageDns: tfRaw(tfDir, "manage_web_dns_in_route53"),
+    ssmPrefix: tfRaw(tfDir, "ssm_path_prefix"),
   };
   for (const [key, label] of [
     ["apiUrl", "api_url"],
@@ -308,6 +321,8 @@ function checkTerraform(check, env) {
   }
   outputs.region = stackRegion({ apiUrl: outputs.apiUrl, tfDir });
   check.ok("aws_region", outputs.region);
+  if (outputs.ssmPrefix) check.ok("ssm_path_prefix", outputs.ssmPrefix);
+  else check.fail("ssm_path_prefix", "empty — apply this env once");
   return outputs;
 }
 
@@ -338,6 +353,8 @@ function checkAws(check, env, outputs) {
       }
     }
   }
+
+  checkSsmNames(check, outputs);
 
   if (outputs.bucket) {
     const loc = capture(
@@ -375,17 +392,39 @@ function checkAws(check, env, outputs) {
   }
 }
 
+function checkSsmNames(check, outputs) {
+  const prefix = outputs.ssmPrefix;
+  if (!prefix) return;
+  const region = outputs.region || "us-east-1";
+  const listed = awsJson(
+    ["ssm", "get-parameters-by-path", "--path", prefix, "--recursive", "--query", "Parameters[].Name"],
+    region,
+  );
+  if (!listed.ok) {
+    check.fail("ssm supabase params", listed.err || "get-parameters-by-path failed");
+    return;
+  }
+  const names = new Set(Array.isArray(listed.json) ? listed.json : []);
+  const missing = SSM_REQUIRED_SUFFIXES.filter((suffix) => {
+    const full = `${prefix.replace(/\/$/, "")}/${suffix}`;
+    return ![...names].some((n) => n === full || ssmSuffix(n, prefix) === suffix);
+  });
+  if (missing.length) check.fail("ssm supabase params", `missing ${missing.join(", ")} (names only)`);
+  else check.ok("ssm supabase params", `${expectedSsmNames(prefix).length} names under ${prefix}`);
+}
+
 function checkDns(check, outputs) {
   console.log("\nDNS");
   if (!outputs.customDomain) {
     check.warn("custom domain DNS", "skipped");
     return;
   }
-  const ns = capture("dig", ["+short", "NS", outputs.customDomain], { allowFail: true });
+  const nsHost = dnsParentName(outputs.customDomain) || outputs.customDomain;
+  const ns = capture("dig", ["+short", "NS", nsHost], { allowFail: true });
   const nsLine = (ns.stdout || "").split("\n").filter(Boolean);
-  if (nsLine.some((n) => /awsdns/i.test(n))) check.ok(`NS ${outputs.customDomain}`, "Route 53");
-  else if (ns.stdout) check.warn(`NS ${outputs.customDomain}`, "not awsdns yet");
-  else check.fail(`NS ${outputs.customDomain}`, "no nameservers");
+  if (nsLine.some((n) => /awsdns/i.test(n))) check.ok(`NS ${nsHost}`, "Route 53");
+  else if (ns.stdout) check.warn(`NS ${nsHost}`, "not awsdns yet");
+  else check.fail(`NS ${nsHost}`, "no nameservers");
 
   const a = capture("dig", ["+short", outputs.customDomain], { allowFail: true });
   if (a.stdout) check.ok(`A/CNAME ${outputs.customDomain}`, "resolves");

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-**AWS** infrastructure as code under [`terraform/`](terraform/). Supabase remains hosted; **credentials and URL** are defined in **`terraform.tfvars`** (per environment) and optionally **replicated to SSM** for hybrid AWS workloads.
+**AWS** infrastructure as code under [`terraform/`](terraform/). Supabase remains hosted; **credentials and URL** are defined in **`terraform.tfvars`** (per environment) and **written to SSM** (`/<project>-<env>/supabase/…`) for Lambda. That is the secret store — not Infisical `/sensitive`.
 
 ## Conventions
 

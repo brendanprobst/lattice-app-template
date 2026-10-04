@@ -2,7 +2,7 @@
  * Env-file lookup shared by deploy and Supabase scripts.
  *
  * Dev (the default) uses the first file that exists:
- *   .env.dev, .env.local, .env
+ *   .env.dev, .env.local, .env.development.local, .env
  * Any other name, including prod, uses only `.env.<name>` in that directory.
  * A prod command never falls back to a dev file.
  */
@@ -10,7 +10,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ENV_NAME = /^[a-z][a-z0-9-]*$/;
-const DEV_FILES = [".env.dev", ".env.local", ".env"];
+const DEV_FILES = [".env.dev", ".env.local", ".env.development.local", ".env"];
 
 export function takeEnvArg(argv) {
   const rest = [];
@@ -71,7 +71,7 @@ export function resolveEnvFile(dir, env) {
 }
 
 export function envFileLabel(dir, env) {
-  if (env === "dev") return `${dir}/{.env.dev,.env.local,.env}`;
+  if (env === "dev") return `${dir}/{.env.dev,.env.local,.env.development.local,.env}`;
   return `${dir}/.env.${env}`;
 }
 
