@@ -16,7 +16,7 @@
 
 ## Imports
 
-Use the **`@api/*`** path alias only (no relative `../` imports). Configured in `apps/api/tsconfig.json` and the root `tsconfig.json` used by Jest.
+Use the **`@api/*`** path alias only (no relative `../` imports). Configured in `apps/api/tsconfig.json` and the root `tsconfig.json` used by Jest. Local **`npm run dev`** (and Playwright’s API webServer) registers **`tsconfig-paths`** so Node can resolve those aliases.
 
 ## Adding a feature
 
