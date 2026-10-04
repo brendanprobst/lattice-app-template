@@ -21,6 +21,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { loadWebEnv, takeEnvArg, terraformDir } from "./deploy-env.mjs";
+import { terraformInitArgs } from "./terraform-backend.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -75,7 +76,7 @@ function main() {
   loadWebEnv(root, env);
 
   console.log(`→ terraform init (${env}; read outputs only; no apply)\n`);
-  run("terraform", [chdir, "init", "-input=false"]);
+  run("terraform", terraformInitArgs(root, `envs/${env}`));
 
   const apiUrl = capture("terraform", [chdir, "output", "-raw", "api_url"]);
   process.env.NEXT_PUBLIC_API_URL = apiUrl;

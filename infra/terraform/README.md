@@ -47,14 +47,9 @@ Terraform needs permission to create/update everything this stack defines (Lambd
 
 **Never** commit access keys, session tokens, or `terraform.tfvars` with secrets.
 
-### 4. Remote Terraform state (S3 backend) — optional but recommended for teams
+### 4. Remote Terraform state (S3 backend)
 
-If you uncomment the **`backend "s3"`** block in `envs/dev/versions.tf`, the **same** credentials (or a narrower **state** role) must be allowed to:
-
-- Read/write the **state object** in S3
-- **Lock** state via the **DynamoDB** table you name in `backend`
-
-Create the bucket and table **once** (often manually or a tiny bootstrap stack), then configure the backend and run `terraform init -migrate-state` when moving from local state.
+Stacks use a partial `backend "s3" { encrypt = true }`. Bucket, table, and key come from `.lattice/terraform-backend.json` (gitignored). `npm run terraform:state` creates `lattice-tfstate-<account>` (private, versioned, encrypted) and `lattice-tfstate-locks`, then migrates each local `terraform.tfstate` to `<appSlug>/<stack>/terraform.tfstate`. Without that JSON, laptop scripts pass `-backend=false` (local state). CI validate stays `-backend=false`. Do not grant the GHA Deploy app role this bucket.
 
 ### 5. GitHub Actions: site and Lambda (no Terraform)
 

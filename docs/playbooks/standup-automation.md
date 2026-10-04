@@ -9,6 +9,7 @@ You do not need to be the person who writes the code. Each phase is: open a chat
 ```bash
 # spawn repo, after tfvars + web env files exist
 npm run standup -- --env dev
+npm run terraform:state   # once per AWS account (or first spawn): S3 + lock, migrate local tfstate
 gh workflow run "Deploy app" --field environment=dev
 
 npm run standup -- --env prod

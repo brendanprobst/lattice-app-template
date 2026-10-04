@@ -1,0 +1,5 @@
+{
+  "bucket": "lattice-tfstate-ACCOUNT_ID",
+  "dynamodb_table": "lattice-tfstate-locks",
+  "region": "us-east-1"
+}

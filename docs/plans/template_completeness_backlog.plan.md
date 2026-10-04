@@ -39,8 +39,8 @@ todos:
     content: Wire tflint into CI (called out as future in infra/AGENTS.md)
     status: pending
   - id: remote-terraform-state
-    content: Before the first apply, bootstrap an S3 state bucket and DynamoDB lock table, uncomment the backend in envs/dev/versions.tf, and use a distinct state key per environment so prod (envs/prod) cannot see or change the dev stack
-    status: pending
+    content: npm run terraform:state — S3 + DynamoDB lock, per-stack keys under <appSlug>/, laptop apply only
+    status: completed
   - id: future-ssr-next
     content: If product needs SSR—deferred in ADR-006; larger upgrade from static export
     status: pending
@@ -130,7 +130,7 @@ High value, small scope—work in roughly this order:
 | F2d | **`npm run standup`** | **Done in template** (proven on smoke-test dev + prod). Leftover Auth checklist, [`google-sso.md`](../playbooks/google-sso.md), `deploy:check` key/provider/URL-pair probes. Playbook: [`standup-automation.md`](../playbooks/standup-automation.md). |
 | F3 | **Prod hardening** | Restrict or disable `/api-docs` on public API URLs; Lambda logging verbosity (`morgan` vs structured). |
 | F4 | **`tflint` in CI** | Stricter Terraform static analysis (`infra/AGENTS.md`). |
-| F5 | **Remote Terraform state** | Before the first apply, create the S3 bucket and DynamoDB lock table (Terraform does not create them), uncomment the backend in `envs/dev/versions.tf`, and give each environment its own key (`lattice/dev/terraform.tfstate`, later `lattice/prod/terraform.tfstate`). Local state is fine only for a throwaway smoke; moving it later is `terraform init -migrate-state`. |
+| F5 | **Remote Terraform state** | **Done in template.** `npm run terraform:state` — account bucket `lattice-tfstate-<account>`, lock table, keys `<appSlug>/{dev,prod,bootstrap,dns-zone}/terraform.tfstate`. Partial `backend "s3"` in all four `versions.tf`. Laptop only. |
 | F6 | **SSR / non-static Next.js** | Only when the product needs it—larger change from static export. |
 | F7 | **Always-on API (e.g. App Runner)** | Higher baseline cost; simpler ops if you outgrow Lambda cold starts. |
 | F8 | **Supabase RLS / policies** | Tighten before real production data; align with service-role usage. |

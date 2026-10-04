@@ -2,7 +2,8 @@
   "name": "lattice-app-smoke-test",
   "repo": "https://github.com/your-org/lattice-app-smoke-test.git",
   "preservePaths": [
-    "docs/playbooks/lattice-smoke-test-deploys.md"
+    "docs/playbooks/lattice-smoke-test-deploys.md",
+    ".lattice/terraform-backend.json"
   ],
   "prunePaths": [
     "apps/web/app/login",

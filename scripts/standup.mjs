@@ -26,6 +26,7 @@ import {
   readWorkspaceId,
 } from "./infisical-app.mjs";
 import { authLeftoverLines, supabaseProjectRef } from "./supabase-origins.mjs";
+import { terraformInitArgs } from "./terraform-backend.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -903,7 +904,7 @@ function applyBootstrapRole({ appSlug, owner, repo, projectName, account, awsReg
 
   const chdir = `-chdir=${bootstrapDir}`;
   console.log("→ terraform init (bootstrap)\n");
-  run("terraform", [chdir, "init", "-input=false"]);
+  run("terraform", terraformInitArgs(root, "bootstrap"));
 
   const state = capture("terraform", [chdir, "state", "list"], { allowFail: true });
   const hasRole = state.ok && state.stdout.split("\n").includes("module.gha_deploy_role.aws_iam_role.this");
@@ -1076,7 +1077,7 @@ function applyDnsZone({ appSlug, projectName, awsRegion, env }) {
   const dnsDir = join(root, "infra/terraform/dns-zone");
   const chdir = `-chdir=${dnsDir}`;
   console.log("→ terraform init (dns-zone)\n");
-  run("terraform", [chdir, "init", "-input=false"]);
+  run("terraform", terraformInitArgs(root, "dns-zone"));
 
   const state = capture("terraform", [chdir, "state", "list"], { allowFail: true });
   const hasZone = state.ok && state.stdout.split("\n").includes("aws_route53_zone.this");

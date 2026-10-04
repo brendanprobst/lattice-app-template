@@ -20,6 +20,13 @@ import { parsePostgresConn, parseStandupMigrations, standupConfigPath } from "./
 import { parseGitRemoteUrl } from "./standup.mjs";
 import { supabaseOriginsMatch } from "./supabase-origins.mjs";
 import { expectedSsmNames, ssmSuffix, SSM_REQUIRED_SUFFIXES } from "./ssm-env.mjs";
+import {
+  inspectStateBucket,
+  inspectStateObject,
+  readTerraformBackend,
+  remoteStateResourceCount,
+  stateObjectKey,
+} from "./terraform-backend.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -323,7 +330,37 @@ function checkTerraform(check, env) {
   check.ok("aws_region", outputs.region);
   if (outputs.ssmPrefix) check.ok("ssm_path_prefix", outputs.ssmPrefix);
   else check.fail("ssm_path_prefix", "empty — apply this env once");
+  checkRemoteState(check, env, outputs.region);
   return outputs;
+}
+
+function checkRemoteState(check, env, region) {
+  const cfg = readTerraformBackend(root);
+  if (!cfg) {
+    check.warn("s3 terraform state", "no .lattice/terraform-backend.json — local tfstate only");
+    return;
+  }
+  if (!existsSync(infisicalConfigPath(root))) {
+    check.warn("s3 terraform state", "no .lattice/infisical.json");
+    return;
+  }
+  const slug = readAppSlug(root);
+  const hardened = inspectStateBucket(root, cfg);
+  if (hardened.ok) check.ok("s3 state bucket", "versioned, encrypted, not public");
+  else check.fail("s3 state bucket", "versioning/encryption/public-access not set — npm run terraform:state");
+  const key = stateObjectKey(slug, env);
+  const obj = inspectStateObject(root, cfg, key);
+  if (!obj.ok) {
+    check.fail("s3 terraform state", `${key} ${obj.err} — npm run terraform:state`);
+    return;
+  }
+  const listed = remoteStateResourceCount(root, `envs/${env}`);
+  if (!listed.ok) {
+    check.fail("s3 terraform state", `${key} is ${obj.bytes} bytes but terraform state list is empty`);
+    return;
+  }
+  check.ok("s3 terraform state", `${key} — ${obj.bytes} bytes, ${listed.count} resources`);
+  void region;
 }
 
 function checkAws(check, env, outputs) {

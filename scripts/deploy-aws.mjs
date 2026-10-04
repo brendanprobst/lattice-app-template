@@ -27,6 +27,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { loadWebEnv, takeEnvArg, terraformDir } from "./deploy-env.mjs";
+import { terraformInitArgs } from "./terraform-backend.mjs";
 import { appSharedPath, infisicalConfigPath, readAppSlug } from "./infisical-app.mjs";
 import { applyStandupMigrations } from "./standup-migrations.mjs";
 import {
@@ -214,7 +215,7 @@ function main() {
   }
 
   console.log(`→ terraform init (${opts.env})\n`);
-  run("terraform", [chdir, "init", "-input=false"]);
+  run("terraform", terraformInitArgs(root, `envs/${opts.env}`));
 
   if (opts.planOnly) {
     console.log("→ terraform plan\n");

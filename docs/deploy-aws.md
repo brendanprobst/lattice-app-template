@@ -27,6 +27,8 @@ The template repo itself is not deployed. After `npm run scaffold`, the spawn ow
 | `npm run deploy:aws -- --env prod` | Same pipeline against **`infra/terraform/envs/prod`**. Web build requires **`apps/web/.env.prod`**. |
 | `npm run deploy:check -- --env <dev|prod>` | Read-only health check (Terraform, AWS, DNS, SSM parameter **names**, Infisical `/shared` names, GitHub, laptop files, Supabase URL pair + Auth). Empty S3 / missing site is a warning. Google SSO leftovers: [google-sso.md](playbooks/google-sso.md). |
 | `npm run --silent ssm:env -- --env <dev|prod>` | Optional. Print `KEY=value` from this env’s SSM copy for local curls. `--names` prints paths only. Not used by Deploy app. |
+| `npm run terraform:state` | Create/reuse the account S3 state bucket + DynamoDB lock, write `.lattice/terraform-backend.json`, migrate local `terraform.tfstate`. Verifies size + `terraform state list` from S3. Laptop apply only. Not used by Deploy app. |
+| `npm run terraform:state -- --verify` | Check the backup only (object size, versioning, encryption, public access blocked, resource count). Does not print state JSON. |
 | `npm run deploy:aws -- --skip-web` | Lambda + Terraform only (no static build, no S3 sync). |
 | `npm run deploy:aws -- --skip-api-build` | Reuse existing `apps/api/dist-lambda` (still runs Terraform + web). |
 | `npm run deploy:aws -- --auto-approve` | Non-interactive apply (required in CI and headless shells). |

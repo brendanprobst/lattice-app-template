@@ -8,13 +8,7 @@ terraform {
     }
   }
 
-  # Local state is OK until F5. Do not share this state with envs/dev, envs/prod,
-  # or bootstrap (GHA role).
-  # backend "s3" {
-  #   bucket         = "your-org-terraform-state"
-  #   key            = "lattice/dns-zone/hosted-zone.tfstate"
-  #   region         = "us-east-1"
-  #   dynamodb_table = "terraform-locks"
-  #   encrypt        = true
-  # }
+  backend "s3" {
+    encrypt = true
+  }
 }

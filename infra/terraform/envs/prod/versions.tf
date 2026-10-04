@@ -12,12 +12,7 @@ terraform {
     }
   }
 
-  # Remote state (uncomment and set bucket + DynamoDB lock table per project):
-  # backend "s3" {
-  #   bucket         = "your-org-terraform-state"
-  #   key            = "lattice/prod/terraform.tfstate"
-  #   region         = "us-east-1"
-  #   dynamodb_table = "terraform-locks"
-  #   encrypt        = true
-  # }
+  backend "s3" {
+    encrypt = true
+  }
 }

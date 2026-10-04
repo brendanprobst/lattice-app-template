@@ -17,6 +17,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { takeEnvArg, terraformDir } from "./deploy-env.mjs";
+import { terraformInitArgs } from "./terraform-backend.mjs";
 import { appSharedPath, readAppSlug, readWorkspaceId } from "./infisical-app.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -163,7 +164,7 @@ function main() {
   const tfDir = terraformDir(root, env);
   const chdir = `-chdir=${tfDir}`;
   console.log(`→ terraform init (${env}; read outputs only; no apply)\n`);
-  run("terraform", [chdir, "init", "-input=false"]);
+  run("terraform", terraformInitArgs(root, `envs/${env}`));
 
   const wanted = OUTPUT_KEYS.map(([outputName, secretName]) => {
     const value = capture("terraform", [chdir, "output", "-raw", outputName]);

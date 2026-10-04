@@ -164,7 +164,7 @@ Keep `terraform.tfvars` on disk; Terraform still reads the service role from tha
 
 The older **Deploy (AWS)** workflow (`.github/workflows/deploy-aws.yml`) stays in the repo as the unused Terraform-in-GHA path. Do not run it.
 
-Remote Terraform state, then Terraform in GitHub, is a follow-up. Template backlog item F5.
+Laptop Terraform state lives in S3 after `npm run terraform:state` (see [`docs/deploy-aws.md`](../deploy-aws.md)). Deploy app still does not run Terraform.
 
 ## Adding a hostname or a later environment
 
