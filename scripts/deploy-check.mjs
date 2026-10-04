@@ -370,6 +370,59 @@ function checkDns(check, outputs) {
   else check.fail(`A/CNAME ${outputs.customDomain}`, "does not resolve");
 }
 
+async function checkSupabaseAuth(check, env) {
+  console.log("\nSupabase Auth");
+  const web = resolveEnvFile(join(root, "apps/web"), env);
+  if (!web) {
+    check.warn("supabase auth", `skipped — no apps/web/.env.${env}`);
+    return;
+  }
+  const values = readEnvFile(web);
+  const url = String(values.NEXT_PUBLIC_SUPABASE_URL || "").trim().replace(/\/$/, "");
+  const anon = String(values.NEXT_PUBLIC_SUPABASE_ANON_KEY || "").trim();
+  if (!url || !anon) {
+    check.warn("supabase auth", "URL or anon key missing in laptop web env");
+    return;
+  }
+  let res;
+  try {
+    res = await fetch(`${url}/auth/v1/settings`, {
+      headers: { apikey: anon, Authorization: `Bearer ${anon}` },
+    });
+  } catch (err) {
+    check.fail("supabase auth settings", err instanceof Error ? err.message : String(err));
+    return;
+  }
+  if (res.status === 401 || res.status === 403) {
+    check.fail(
+      "supabase anon key",
+      "Invalid API key — this URL and anon key are not a pair. Copy the publishable key from the same project as NEXT_PUBLIC_SUPABASE_URL.",
+    );
+    return;
+  }
+  if (!res.ok) {
+    check.warn("supabase auth settings", `HTTP ${res.status}`);
+    return;
+  }
+  let settings = {};
+  try {
+    settings = await res.json();
+  } catch {
+    check.warn("supabase auth settings", "could not parse JSON");
+    return;
+  }
+  check.ok("supabase anon key", "accepted by this project");
+  const wantProvider = String(values.NEXT_PUBLIC_SUPABASE_OAUTH_PROVIDER || "google").trim();
+  const enabled = Boolean(settings.external?.[wantProvider]);
+  if (enabled) check.ok(`${wantProvider} provider`, "enabled");
+  else {
+    check.fail(
+      `${wantProvider} provider`,
+      `disabled on this project — Authentication → Providers → ${wantProvider} (add Client ID/secret; add this project’s /auth/v1/callback in Google Cloud)`,
+    );
+  }
+}
+
 async function checkHttp(check, outputs) {
   console.log("\nHTTP");
   const api = withHttps(outputs.apiUrl);
@@ -491,6 +544,7 @@ async function main() {
   console.log(`→ deploy:check ${opts.env}\n`);
   const check = new Checker();
   checkLaptopFiles(check, opts.env);
+  await checkSupabaseAuth(check, opts.env);
   const outputs = checkTerraform(check, opts.env);
   checkAws(check, opts.env, outputs);
   checkDns(check, outputs);
