@@ -27,10 +27,10 @@ locals {
       "https://${aws_cloudfront_distribution.web.domain_name}",
     ],
     local.web_acm_issued ? ["https://${trimspace(var.web_custom_domain)}"] : [],
-    [
+    var.environment == "dev" ? [
       "http://localhost:3001",
       "http://127.0.0.1:3001",
-    ],
+    ] : [],
     [for o in split(",", var.api_cors_extra_origins) : trimspace(o) if trimspace(o) != ""],
   )))
 }

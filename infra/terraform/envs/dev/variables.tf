@@ -102,7 +102,7 @@ variable "api_gateway_throttling_burst_limit" {
 }
 
 variable "api_cors_extra_origins" {
-  description = "Optional comma-separated extra browser origins for the Express CORS middleware (e.g. https://app.example.com). The deployed CloudFront HTTPS origin and local dev (3001) origins are always included."
+  description = "Optional comma-separated extra browser origins for the Express CORS middleware (e.g. https://app.example.com). CloudFront HTTPS is always included. Localhost:3001 is added only when environment is dev."
   type        = string
   default     = ""
 }
