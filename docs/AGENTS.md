@@ -9,6 +9,7 @@
 - **[Deploy to AWS](deploy-aws.md)** — `npm run standup` (Infisical + GitHub + GHA role + per-spawn Route 53 zone), then `npm run deploy:aws` on a laptop (Terraform + site + Lambda) and the manual **Deploy app** workflow (site and Lambda, no Terraform). The older **Deploy (AWS)** workflow is unused. Per-spawn GitHub OIDC role: [`infra/terraform/bootstrap/README.md`](../infra/terraform/bootstrap/README.md). Per-spawn DNS: [`infra/terraform/dns-zone/README.md`](../infra/terraform/dns-zone/README.md).
 - **[Infisical and GitHub deploys](playbooks/infisical-github-deploys.md)** — Dual-env by default (`dev` + `prod`). One Infisical project; apps are folders `/<app-slug>/**`. GitHub repository variables (secrets as fallback) are `INFISICAL_PROJECT_SLUG` and `INFISICAL_APP_SLUG`.
 - **[Standup automation](playbooks/standup-automation.md)** — Follow-along to harvest smoke-test day-1 failures, add `npm run standup`, refresh the canary, then stand up prod. Plan: [`plans/standup-automation.plan.md`](plans/standup-automation.plan.md).
+- **[Google SSO](playbooks/google-sso.md)** — New Supabase project: Google Cloud client, matching publishable key, redirect URLs. Confirm with `npm run deploy:check`.
 - **[Route 53 custom domain](playbooks/route53-custom-domain.md)** — Optional HTTPS hostname, ACM, registrar nameservers.
 - **[PostHog analytics](playbooks/posthog-analytics.md)** — Optional, feature-flagged web analytics (`@lattice/web`).
 - **[Email allowlist](playbooks/email-allowlist.md)** — Optional private-app signup and API gate.

@@ -25,13 +25,13 @@ todos:
     status: pending
   - id: gha-default-deploy-dx
     content: Deploy app is the GitHub path for site and Lambda (OIDC + Infisical). Dual-env by default (dev + prod folders, GitHub envs, Infisical paths). Terraform apply stays on the laptop until F5 remote state. The older Deploy (AWS) workflow remains unused.
-    status: in_progress
+    status: completed
   - id: terraform-github-oidc-deploy-role
     content: Terraform one GitHub OIDC deploy role per spawn (name like <app-slug>-gha). Reuse only the account-level token.actions.githubusercontent.com provider. Do not widen Fosterfolio’s role into a lattice-ecosystem mega-role. Each role trusts only repo:<org>/<spawn>:* and this app’s *-dev-* / *-prod-* names. Bootstrap stack, not envs/dev or envs/prod. Day-1 still pastes that spawn’s AWS_ROLE_ARN into GitHub. Implementation order: docs/plans/standup-automation.plan.md Phase 2.
     status: completed
   - id: spawn-standup-script
-    content: npm run standup (Infisical folders + identity + gh env/vars/secrets + deploy:aws ACM wait). Follow docs/playbooks/standup-automation.md; prove on smoke-test dev then prod.
-    status: pending
+    content: npm run standup (Infisical folders + identity + gh env/vars/secrets + deploy:aws ACM wait). Follow docs/playbooks/standup-automation.md; prove on smoke-test dev then prod. Auth leftover + google-sso playbook + deploy:check URL/provider probe.
+    status: completed
   - id: prod-swagger-and-lambda-logging
     content: Harden or disable /api-docs on public stacks; tune morgan/structured logging in Lambda
     status: pending
@@ -125,9 +125,9 @@ High value, small scope—work in roughly this order:
 | F0b | **Supabase CLI layout** | Root `supabase/migrations/`, `npm run supabase:push` — [Supabase migrations playbook](../playbooks/supabase-migrations.md). |
 | F1 | **`scripts/smoke`** | Deployed HTTPS checks with `API_BASE_URL` + `BEARER_TOKEN`; no secret logging. |
 | F2 | **Deploy + smoke GitHub workflow** | AWS OIDC; masked outputs. |
-| F2b | **GitHub Deploy app + Infisical** | **In progress.** Files and dual-env playbook are in the template. Remaining work is human setup on a spawn (vault keys, **repository** Actions secrets, first **Deploy app** on `dev`). GitHub environments are approval + Infisical env-slug only. **Deploy app** is the GitHub path. One Infisical project (`INFISICAL_PROJECT_SLUG`) with per-app folders (`INFISICAL_APP_SLUG` → `/<app>/{shared,flags}`). Terraform apply stays on the laptop until F5. Setup: [`docs/playbooks/infisical-github-deploys.md`](../playbooks/infisical-github-deploys.md). Automation slice: [`standup-automation.plan.md`](./standup-automation.plan.md). |
+| F2b | **GitHub Deploy app + Infisical** | **Done in template.** Spawn still fills vault keys once. **Deploy app** is the GitHub path. Terraform apply stays on the laptop until F5. Setup: [`docs/playbooks/infisical-github-deploys.md`](../playbooks/infisical-github-deploys.md). |
 | F2c | **Terraform one GitHub OIDC role per spawn** | **Done in template** (`infra/terraform/bootstrap` + `modules/gha-deploy-role`). Day-1 applies (or **imports**) `<app-slug>-gha` and pastes `aws_role_arn` as `AWS_ROLE_ARN` until Phase 3 standup. Trust `repo:<org>/<spawn>:*` only. Permissions only that app’s `<project>-dev-*` / `<project>-prod-*`. Smoke-test: import `lattice-smoke-test-gha-arn` — do not create a second role. Do **not** manage `fosterfolio-gha-arn`. |
-| F2d | **`npm run standup`** | **Phases 3–5 in template.** Folders/identity/GitHub/F2c, ACM wait, then one Route 53 zone per spawn (`infra/terraform/dns-zone`, not `envs/*`). Prove on smoke-test **dev** (delegate `lattice.brendanprobst.com`), then `--env prod`. Playbook: [`standup-automation.md`](../playbooks/standup-automation.md). |
+| F2d | **`npm run standup`** | **Done in template** (proven on smoke-test dev + prod). Leftover Auth checklist, [`google-sso.md`](../playbooks/google-sso.md), `deploy:check` key/provider/URL-pair probes. Playbook: [`standup-automation.md`](../playbooks/standup-automation.md). |
 | F3 | **Prod hardening** | Restrict or disable `/api-docs` on public API URLs; Lambda logging verbosity (`morgan` vs structured). |
 | F4 | **`tflint` in CI** | Stricter Terraform static analysis (`infra/AGENTS.md`). |
 | F5 | **Remote Terraform state** | Before the first apply, create the S3 bucket and DynamoDB lock table (Terraform does not create them), uncomment the backend in `envs/dev/versions.tf`, and give each environment its own key (`lattice/dev/terraform.tfstate`, later `lattice/prod/terraform.tfstate`). Local state is fine only for a throwaway smoke; moving it later is `terraform init -migrate-state`. |

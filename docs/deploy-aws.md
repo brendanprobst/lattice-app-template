@@ -25,7 +25,7 @@ The template repo itself is not deployed. After `npm run scaffold`, the spawn ow
 | `npm run standup -- --env dev` | Infisical folders + identity + GitHub env/vars/secrets + GHA role + per-spawn Route 53 zone (prints NS), then laptop `deploy:aws` for that env. `--bootstrap-only` skips the env apply. Same with `--env prod`. Path C skips `dns-zone`. |
 | `npm run deploy:aws` | Full deploy of **`envs/dev`** (interactive `terraform apply` when in a TTY). |
 | `npm run deploy:aws -- --env prod` | Same pipeline against **`infra/terraform/envs/prod`**. Web build requires **`apps/web/.env.prod`**. |
-| `npm run deploy:check -- --env <dev|prod>` | Read-only super health check (Terraform, AWS, DNS, Infisical names, GitHub, laptop files). Empty S3 / missing site is a warning so it is useful after standup and before Deploy app. |
+| `npm run deploy:check -- --env <dev|prod>` | Read-only health check (Terraform, AWS, DNS, Infisical names, GitHub, laptop files, Supabase URL pair + Auth settings). Empty S3 / missing site is a warning. Google SSO leftovers: [google-sso.md](playbooks/google-sso.md). |
 | `npm run deploy:aws -- --skip-web` | Lambda + Terraform only (no static build, no S3 sync). |
 | `npm run deploy:aws -- --skip-api-build` | Reuse existing `apps/api/dist-lambda` (still runs Terraform + web). |
 | `npm run deploy:aws -- --auto-approve` | Non-interactive apply (required in CI and headless shells). |

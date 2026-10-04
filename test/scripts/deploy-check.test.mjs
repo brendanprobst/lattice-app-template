@@ -5,8 +5,12 @@ import {
   classifySiteResponse,
   corsHasLocalhost,
   parseCheckArgs,
+  readTfvarsString,
   stackRegion,
 } from "../../scripts/deploy-check.mjs";
+import { writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 test("corsHasLocalhost flags loopback only", () => {
   assert.equal(corsHasLocalhost("https://lattice.brendanprobst.com"), false);
@@ -37,4 +41,11 @@ test("apiRootLooksHealthy accepts spawn branding", () => {
 test("parseCheckArgs requires --env", () => {
   assert.equal(parseCheckArgs(["node", "x", "--help"]).help, true);
   assert.equal(parseCheckArgs(["node", "x", "--env", "prod"]).env, "prod");
+});
+
+test("readTfvarsString reads supabase_url without printing", () => {
+  const path = join(tmpdir(), `lattice-tfvars-${process.pid}.tfvars`);
+  writeFileSync(path, 'supabase_url = "https://abcd.supabase.co"\naws_region = "us-east-1"\n');
+  assert.equal(readTfvarsString(path, "supabase_url"), "https://abcd.supabase.co");
+  assert.equal(readTfvarsString(path, "missing"), "");
 });

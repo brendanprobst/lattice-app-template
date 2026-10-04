@@ -25,6 +25,7 @@ import {
   readAppSlug,
   readWorkspaceId,
 } from "./infisical-app.mjs";
+import { authLeftoverLines, supabaseProjectRef } from "./supabase-origins.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -71,6 +72,8 @@ Steps:
      create_route53_hosted_zone in an env stack.
   8. Call deploy:aws for --env (ACM wait, CloudFront alias/cert + CORS, then
      SQL files from .lattice/standup.json). Skip with --bootstrap-only.
+  9. Print leftover Auth steps (Google + matching keys). See
+     docs/playbooks/google-sso.md.
 
 The template repo is refused. Do not run this against Fosterfolio.
 
@@ -1205,6 +1208,21 @@ async function main() {
   maybeDeployAws(opts.env, opts.bootstrapOnly);
 
   console.log("GitHub Deploy app is site and Lambda only. Terraform ran on this laptop.");
+  printAuthLeftover(opts.env);
+}
+
+function printAuthLeftover(env) {
+  const envTf = readEnvTfvars(env);
+  const customDomain = envTf.exists ? readHclString(envTf.raw, "web_custom_domain") : "";
+  const supabaseUrl = envTf.exists ? readHclString(envTf.raw, "supabase_url") : "";
+  const siteOrigin = customDomain ? `https://${customDomain.replace(/^https?:\/\//, "")}` : "";
+  for (const line of authLeftoverLines({
+    env,
+    siteOrigin,
+    projectRef: supabaseProjectRef(supabaseUrl),
+  })) {
+    console.log(line);
+  }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

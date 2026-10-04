@@ -15,7 +15,7 @@ npm run standup -- --env prod
 # click the GitHub prod reviewer
 ```
 
-Still typed by a human: Supabase URL/anon (once), **one NS delegation** at the parent registrar for this spawn’s zone, prod approval. Two ACM CNAMEs per env only if you stay on path C.
+Still typed by a human: Supabase URL/anon (once), **Google SSO** on that project ([google-sso.md](google-sso.md)), **one NS delegation** at the parent registrar for this spawn’s zone, prod approval. Two ACM CNAMEs per env only if you stay on path C. Standup reprints the Auth checklist at the end.
 
 ## Ground rules
 
@@ -262,11 +262,7 @@ Same command, new Terraform state.
 2. Fill `apps/web/.env.prod` (or `.env.production.local` if that is what this spawn uses) with that project’s URL/anon.
 3. Copy `.lattice/standup.json.example` → `.lattice/standup.json` if needed. Put the new project’s `SUPABASE_DB_URL` in **`supabase/.env.prod`** (gitignored). Standup apply runs those SQL files after terraform; it does not use `supabase db push`.
 4. Confirm GitHub `prod` environment exists and requires you as reviewer.
-5. **New Supabase project Auth (required).** Dashboard for **this** prod ref, not the `-dev` project:
-   - **Project Settings → API:** copy **this** project’s URL + publishable/anon key into `apps/web/.env.prod`, `infra/terraform/envs/prod/terraform.tfvars`, and Infisical `/shared` (`NEXT_PUBLIC_SUPABASE_*`). Reusing the old project’s key against the new URL is `Invalid API key`.
-   - **Authentication → URL configuration:** Site URL `https://<prod host>`. Redirect allowlist at least `https://<prod host>/auth/sign-in` (and `/auth/sign-up`, `/auth/callback` if you use them). Do not put `localhost` on prod.
-   - **Authentication → Providers → Google:** enable it. Paste the Google Cloud OAuth Client ID/secret. In Google Cloud, add **Authorized redirect URI** `https://<prod-ref>.supabase.co/auth/v1/callback`. Without this, `/auth/v1/authorize?provider=google` returns `Unsupported provider: provider is not enabled`.
-   - Infisical `/sensitive` JWT issuer/audience (and API keys) must be the **new** project. Then rebuild/sync the site (`standup` / Deploy app) so the baked `NEXT_PUBLIC_*` match.
+5. **New Supabase project Auth (required).** Follow [`google-sso.md`](google-sso.md) on **this** prod project (not `-dev`). Standup reprints the checklist. `deploy:check` fails if the laptop URL does not match `terraform.tfvars` or Google is off.
 
 ### Agent prompt (optional — standup should be enough)
 

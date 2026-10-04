@@ -18,6 +18,7 @@ import { terraformDir } from "./deploy-env.mjs";
 import { appSharedPath, infisicalConfigPath, readAppSlug, readWorkspaceId } from "./infisical-app.mjs";
 import { parsePostgresConn, parseStandupMigrations, standupConfigPath } from "./standup-migrations.mjs";
 import { parseGitRemoteUrl } from "./standup.mjs";
+import { supabaseOriginsMatch } from "./supabase-origins.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -74,6 +75,13 @@ export function parseCheckArgs(argv) {
 
 export function corsHasLocalhost(cors) {
   return /localhost|127\.0\.0\.1/i.test(String(cors || ""));
+}
+
+export function readTfvarsString(path, key) {
+  if (!path || !existsSync(path)) return "";
+  const escaped = String(key).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const m = readFileSync(path, "utf8").match(new RegExp(`^\\s*${escaped}\\s*=\\s*"([^"]+)"`, "m"));
+  return m ? m[1].trim() : "";
 }
 
 export function stackRegion({ apiUrl = "", tfDir = "" } = {}) {
@@ -219,6 +227,20 @@ function checkLaptopFiles(check, env) {
     );
     if (missing.length) check.fail(relative(root, web), `missing ${missing.join(", ")}`);
     else check.ok(relative(root, web), "supabase public keys present");
+    const tfUrl = readTfvarsString(join(terraformDir(root, env), "terraform.tfvars"), "supabase_url");
+    const webUrl = values.NEXT_PUBLIC_SUPABASE_URL;
+    if (tfUrl && webUrl) {
+      if (supabaseOriginsMatch(tfUrl, webUrl)) {
+        check.ok("supabase URL pair", "laptop web env matches terraform.tfvars");
+      } else {
+        check.fail(
+          "supabase URL pair",
+          "laptop NEXT_PUBLIC_SUPABASE_URL does not match terraform supabase_url — same project only",
+        );
+      }
+    } else if (webUrl && !tfUrl) {
+      check.warn("supabase URL pair", "terraform.tfvars has no supabase_url to compare");
+    }
   }
 
   const dbFile = resolveEnvFile(join(root, "supabase"), env);

@@ -264,6 +264,7 @@ Requires `envs/prod/terraform.tfvars` filled on day 1 (already the dual-env rule
 - F5 remote Terraform state / Terraform in GitHub Actions.
 - One AWS role for every Lattice repo.
 - One Route 53 zone for all of `brendanprobst.com` (would put the personal site in AWS).
+- Automating Google Cloud OAuth client creation (dashboard + leftover checklist + `deploy:check`).
 - Infisical GitHub OIDC (nice follow-up; Universal Auth + `gh secret set` is enough for this slice).
 - Squarespace/Google Domains API (NS click stays human).
 - Fosterfolio migration onto `npm run standup` or collapsing Fosterfolio’s two `fosterfolio.com` zones (optional after smoke-test prod).
