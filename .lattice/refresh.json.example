@@ -1,6 +1,9 @@
 {
   "name": "lattice-app-smoke-test",
   "repo": "https://github.com/your-org/lattice-app-smoke-test.git",
+  "preservePaths": [
+    "docs/playbooks/lattice-smoke-test-deploys.md"
+  ],
   "prunePaths": [
     "apps/web/app/login",
     "apps/web/client/pages/login",

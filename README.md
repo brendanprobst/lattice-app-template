@@ -38,7 +38,7 @@ You can still **fork** or **“Use this template”** on GitHub if you prefer; t
 
 ### Deploy to AWS
 
-**`npm run deploy:aws`** builds the API Lambda bundle, runs **Terraform** in `infra/terraform/envs/dev`, builds the static web app with **`NEXT_PUBLIC_API_URL`** from Terraform output, then **`aws s3 sync`**. Optional: trigger the **Deploy (AWS)** workflow in GitHub Actions (manual, OIDC). See **[`docs/deploy-aws.md`](docs/deploy-aws.md)**.
+**`npm run deploy:aws`** builds the API Lambda bundle, runs **Terraform** in `infra/terraform/envs/<env>` (default **`dev`**), builds the static web app with **`NEXT_PUBLIC_API_URL`** from Terraform output, then **`aws s3 sync`**. Spawns are **dual-environment** (`dev` and `prod`) from day 1: apply and smoke **dev**, leave **prod** one `terraform apply -- --env prod` and a GitHub **Deploy app** dispatch away. GitHub **Deploy app** updates the site and Lambda only (Infisical + OIDC, no Terraform). See **[`docs/deploy-aws.md`](docs/deploy-aws.md)** and **[`docs/playbooks/infisical-github-deploys.md`](docs/playbooks/infisical-github-deploys.md)**.
 
 ### After you have an app repo (clone happy path)
 

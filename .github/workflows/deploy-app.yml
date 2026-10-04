@@ -1,0 +1,148 @@
+# Manual deploy of the static site and the API Lambda zip.
+# Does not run on push. Does not run Terraform and does not read terraform.tfstate.
+# Dev: any branch. Prod: main only.
+# Requires a GitHub environment named dev or prod. See docs/playbooks/infisical-github-deploys.md.
+# This is the GitHub path to run. The older Deploy (AWS) workflow is unused.
+
+name: Deploy app
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy
+        type: choice
+        required: true
+        options:
+          - dev
+          - prod
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-app-${{ github.repository }}-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+    steps:
+      - name: Restrict prod to main
+        if: ${{ inputs.environment == 'prod' && github.ref != 'refs/heads/main' }}
+        run: |
+          echo "Prod deploys must run from main (got ${{ github.ref }})."
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check GitHub environment variables
+        run: |
+          set -euo pipefail
+          if [ -z "${{ vars.INFISICAL_PROJECT_SLUG }}" ]; then
+            echo "Missing GitHub environment variable INFISICAL_PROJECT_SLUG on environment '${{ inputs.environment }}'."
+            exit 1
+          fi
+          if [ -z "${{ vars.INFISICAL_APP_SLUG }}" ]; then
+            echo "Missing GitHub environment variable INFISICAL_APP_SLUG on environment '${{ inputs.environment }}'."
+            exit 1
+          fi
+          if ! [[ "${{ vars.INFISICAL_APP_SLUG }}" =~ ^[a-z][a-z0-9-]*$ ]]; then
+            echo "INFISICAL_APP_SLUG must be a lowercase slug (e.g. your-app), got '${{ vars.INFISICAL_APP_SLUG }}'."
+            exit 1
+          fi
+
+      - name: Read Infisical /<app>/shared
+        uses: Infisical/secrets-action@a663da43e1541832614bfd9dcf9ab67381ea2b98 # v1.0.12
+        with:
+          method: universal
+          client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
+          client-secret: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+          env-slug: ${{ inputs.environment }}
+          secret-path: /${{ vars.INFISICAL_APP_SLUG }}/shared
+          include-imports: "false"
+          recursive: "false"
+
+      - name: Read Infisical /<app>/flags
+        continue-on-error: true
+        uses: Infisical/secrets-action@a663da43e1541832614bfd9dcf9ab67381ea2b98 # v1.0.12
+        with:
+          method: universal
+          client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
+          client-secret: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+          env-slug: ${{ inputs.environment }}
+          secret-path: /${{ vars.INFISICAL_APP_SLUG }}/flags
+          include-imports: "false"
+          recursive: "false"
+
+      - name: Confirm public hosts
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY WEB_BUCKET CLOUDFRONT_DISTRIBUTION_ID LAMBDA_FUNCTION_NAME NEXT_PUBLIC_API_URL; do
+            if [ -z "${!name}" ]; then
+              echo "Infisical /${{ vars.INFISICAL_APP_SLUG }}/shared did not provide ${name}. Run npm run infisical:sync-outputs -- --env ${{ inputs.environment }} after terraform apply."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+          node --input-type=module <<'EOF'
+          const supabase = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL);
+          const api = new URL(process.env.NEXT_PUBLIC_API_URL);
+          console.log(`Supabase host: ${supabase.host}`);
+          console.log(`API host: ${api.host}`);
+          EOF
+
+      - name: Build static web
+        run: npm run web:build:static
+
+      - name: Build Lambda bundle
+        run: npm run api:build:lambda
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sync static site
+        run: |
+          set -euo pipefail
+          test -d apps/web/out
+          aws s3 sync apps/web/out "s3://${WEB_BUCKET}" --delete
+
+      - name: Invalidate CloudFront
+        run: |
+          set -euo pipefail
+          aws cloudfront create-invalidation \
+            --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" \
+            --paths "/*"
+
+      - name: Update Lambda code
+        run: |
+          set -euo pipefail
+          zip -j /tmp/api-lambda.zip apps/api/dist-lambda/index.js
+          aws lambda update-function-code \
+            --function-name "${LAMBDA_FUNCTION_NAME}" \
+            --zip-file fileb:///tmp/api-lambda.zip
+          aws lambda wait function-updated --function-name "${LAMBDA_FUNCTION_NAME}"

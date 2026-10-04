@@ -2,58 +2,59 @@
 
 Two ways to deploy:
 
-1. **Local / CI runner:** **`npm run deploy:aws`** (uses your AWS credentials and `infra/terraform/envs/dev/terraform.tfvars`).
-2. **GitHub Actions:** workflow **Deploy (AWS)** — **Actions → Deploy (AWS) → Run workflow** (manual only, `main` only).
+1. **Laptop:** **`npm run deploy:aws`** (your AWS credentials and `infra/terraform/envs/<env>/terraform.tfvars`). **`--env`** defaults to **`dev`**. This is the path that runs Terraform.
+2. **GitHub Actions:** workflow **Deploy app** for site and Lambda updates. Manual only. It does not run Terraform.
 
-The script order is: **build API Lambda bundle → `terraform apply` → read `api_url` → build static web with `NEXT_PUBLIC_API_URL` → `aws s3 sync`**.
+The laptop script order is: **build API Lambda bundle → `terraform apply` → read `api_url` → build static web with `NEXT_PUBLIC_API_URL` → `aws s3 sync`**.
+
+The template repo itself is not deployed. After `npm run scaffold`, the spawn owns Infisical folders `/<app-slug>/{shared,flags,sensitive}` in the shared `lattice` project. See [`docs/playbooks/infisical-github-deploys.md`](playbooks/infisical-github-deploys.md).
 
 ## Prerequisites
 
 - **AWS CLI** and credentials that can run Terraform and S3 sync (`aws sts get-caller-identity`).
 - **Terraform** `>= 1.6`.
-- **`terraform.tfvars`** in `infra/terraform/envs/dev/` (copy from `terraform.tfvars.example`). Do not commit secrets.
-- For the **web** build: **`NEXT_PUBLIC_SUPABASE_URL`** and **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** in the environment or in **`apps/web/.env.local`** / **`apps/web/.env.production.local`** (the deploy script loads those files if present).
+- **`terraform.tfvars`** in `infra/terraform/envs/<env>/` (copy from `terraform.tfvars.example`). Do not commit secrets. Default env is **`dev`**. `envs/prod` ships so `--env prod` works; CI still validates only `envs/dev`.
+- For a laptop **web** build: **`NEXT_PUBLIC_SUPABASE_URL`** and **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** must be in the env file. **`dev`** loads the first of **`apps/web/.env.dev`**, **`.env.local`**, **`.env`** and does **not** overwrite a `NEXT_PUBLIC_*` already set in the shell. Any other **`--env`** loads only **`apps/web/.env.<env>`** and overwrites those keys. `infisical run` needs **`--path=/<app-slug>/shared`** or it does not see vault keys. GitHub **Deploy app** reads those keys from Infisical instead.
 
 ## Commands
 
 | Command | Purpose |
 |---------|---------|
-| `npm run deploy:aws` | Full deploy (interactive `terraform apply` when in a TTY). |
+| `npm run deploy:aws` | Full deploy of **`envs/dev`** (interactive `terraform apply` when in a TTY). |
+| `npm run deploy:aws -- --env prod` | Same pipeline against **`infra/terraform/envs/prod`**. Web build requires **`apps/web/.env.prod`**. |
 | `npm run deploy:aws -- --plan-only` | `terraform init` + `terraform plan` only. |
 | `npm run deploy:aws -- --skip-web` | Lambda + Terraform only (no static build, no S3 sync). |
 | `npm run deploy:aws -- --skip-api-build` | Reuse existing `apps/api/dist-lambda` (still runs Terraform + web). |
 | `npm run deploy:aws -- --auto-approve` | Non-interactive apply (required in CI and headless shells). |
-| `npm run deploy:aws:web` | Static web only: build, S3 sync, CloudFront invalidation (no Lambda build, no `terraform apply`). Uses existing Terraform outputs — run a full deploy after infra changes. |
+| `npm run deploy:aws:web` | Static web only for `envs/dev`: build, S3 sync, CloudFront invalidation (no Lambda build, no `terraform apply`). |
+| `npm run deploy:aws:web -- --env prod` | Static web only against prod Terraform outputs. |
+| `npm run infisical:sync-outputs -- --env <env>` | Write bucket, distribution, Lambda name, and API URL from Terraform state into Infisical `/<app-slug>/shared`. |
 
-**CI / automation:** always pass **`--auto-approve`** for full deploys. The **Deploy (AWS)** workflow supports **web_only** for front-end-only updates.
+Always pass **`--auto-approve`** for non-interactive full deploys.
 
-## GitHub Actions (OIDC)
+## Laptop deploy with Infisical
 
-Workflow: **`.github/workflows/deploy-aws.yml`**. It runs only when you trigger it manually; it does **not** run on every commit.
+After `infisical login` in a spawn, copy `.lattice/infisical.json.example` to `.lattice/infisical.json` and set `appSlug`. Keep `apps/web/.env.local` (or `.env.dev`) **and** `apps/web/.env.prod` on disk from day 1. The deploy script reads those files. `infisical run` without `--path=/<app-slug>/shared` does not see vault keys under the app folder.
 
-### 1. IAM OIDC trust for GitHub
+```bash
+npm run deploy:aws
+npm run deploy:aws -- --env prod
+infisical run --env=dev --path=/<app-slug>/shared -- npm run deploy:aws
+```
 
-Create an IAM role that trusts **`sts:AssumeRoleWithWebIdentity`** for your GitHub org/repo (see [GitHub OIDC on AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)). Attach policies that allow Terraform to manage this stack and S3 sync to the web bucket.
+`dev` does not overwrite a `NEXT_PUBLIC_*` already set in the shell. `prod` reads only `apps/web/.env.prod` and overwrites those keys. The script prints the Supabase host and the API host before the web build. After a successful apply, it writes `WEB_BUCKET`, `CLOUDFRONT_DISTRIBUTION_ID`, `LAMBDA_FUNCTION_NAME`, and `NEXT_PUBLIC_API_URL` to Infisical `/<app-slug>/shared` for that environment. That write uses your Infisical login. GitHub Actions does not run it.
 
-### 2. Repository secrets / variables
+If the Infisical CLI is missing or the write fails, the deploy still finishes. Re-run `npm run infisical:sync-outputs -- --env <env>`. Keep `terraform.tfvars` on disk; Terraform still reads the service role from that file.
 
-| Name | Required | Purpose |
-|------|----------|---------|
-| **`AWS_DEPLOY_ROLE_ARN`** | Yes | ARN of the OIDC role (e.g. `arn:aws:iam::123456789012:role/github-deploy-lattice`). |
-| **`TERRAFORM_TFVARS`** | Yes | **Full** contents of your `terraform.tfvars` (multiline). |
-| **`NEXT_PUBLIC_SUPABASE_URL`** | For full web deploy | Same as local web build. |
-| **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** | For full web deploy | Same as local web build. |
-| **`AWS_REGION`** | — | The workflow pins **`us-east-1`** for `configure-aws-credentials`; keep **`aws_region`** in `terraform.tfvars` consistent (change both if you use another region). |
+## Deploy the site and Lambda without Terraform
 
-If **`NEXT_PUBLIC_*`** secrets are missing and you did not skip web, the workflow may still run if those values exist inside the loaded `.env` files in the repo (they usually should **not** be committed).
+Workflow: **`.github/workflows/deploy-app.yml`** (**Actions → Deploy app → Run workflow**). Manual only. It does not apply Terraform and does not read `terraform.tfstate`.
 
-### 3. Run
+Pick `dev` or `prod`. The job uses the GitHub environment of the same name, so a dev run cannot read prod secrets. Any branch can deploy **dev**. **Prod** only runs from **`main`**. `/<app-slug>/flags` is optional; missing flags stay off.
 
-**Actions → Deploy (AWS) → Run workflow** (branch **main**). Optional: **Skip web** to deploy API + infra only.
+Secrets and variables for that environment are listed in [`docs/playbooks/infisical-github-deploys.md`](playbooks/infisical-github-deploys.md). The job reads Supabase keys, optional feature flags, and the Terraform outputs (`WEB_BUCKET`, `CLOUDFRONT_DISTRIBUTION_ID`, `LAMBDA_FUNCTION_NAME`, `NEXT_PUBLIC_API_URL`) from Infisical `/<app-slug>/shared` and `/<app-slug>/flags`. `npm run infisical:sync-outputs` writes those outputs after a laptop apply. The GitHub variables are `INFISICAL_PROJECT_SLUG` and `INFISICAL_APP_SLUG`.
 
-### 4. Remote Terraform state
-
-If you enable an **S3 backend** in `infra/terraform/envs/dev/versions.tf`, the OIDC role needs **S3/DynamoDB** permissions for state, and the first run may need `terraform init -migrate-state` locally before CI can apply.
+The older **Deploy (AWS)** workflow (`.github/workflows/deploy-aws.yml`) stays in the repo as the unused Terraform-in-GHA path. Do not run it.
 
 ## See also
 

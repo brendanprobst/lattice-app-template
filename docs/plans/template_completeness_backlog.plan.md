@@ -24,8 +24,8 @@ todos:
     content: Optional GitHub Actions deploy + smoke with AWS OIDC; mask outputs; no echo of keys
     status: pending
   - id: gha-default-deploy-dx
-    content: Make manual Deploy (AWS) the encouraged path for every apply. Docs, README, and AGENTS currently lead with npm run deploy:aws on a laptop (local AWS creds, local DNS, local Terraform state), so a flaky network fails the apply. Lead first-run setup with OIDC role + TERRAFORM_TFVARS and NEXT_PUBLIC_* secrets, keep workflow_dispatch (not deploy-on-push), and demote the local script to plan-only and break-glass. Depends on remote state so Actions and a laptop share one state file.
-    status: pending
+    content: Deploy app is the GitHub path for site and Lambda (OIDC + Infisical). Dual-env by default (dev + prod folders, GitHub envs, Infisical paths). Terraform apply stays on the laptop until F5 remote state. The older Deploy (AWS) workflow remains unused.
+    status: in_progress
   - id: prod-swagger-and-lambda-logging
     content: Harden or disable /api-docs on public stacks; tune morgan/structured logging in Lambda
     status: pending
@@ -110,7 +110,7 @@ High value, small scope—work in roughly this order:
 | F0b | **Supabase CLI layout** | Root `supabase/migrations/`, `npm run supabase:push` — [Supabase migrations playbook](../playbooks/supabase-migrations.md). |
 | F1 | **`scripts/smoke`** | Deployed HTTPS checks with `API_BASE_URL` + `BEARER_TOKEN`; no secret logging. |
 | F2 | **Deploy + smoke GitHub workflow** | AWS OIDC; masked outputs. |
-| F2b | **GitHub Actions as the default deploy** | **Deploy (AWS)** already runs on `workflow_dispatch`, but README, `docs/deploy-aws.md`, `AGENTS.md`, and ADR-007 lead with `npm run deploy:aws` on a laptop. That ties apply to local DNS and local AWS credentials — a hotel network dropped `*.amazonaws.com` lookups mid-apply. Make first-run setup the OIDC role plus `TERRAFORM_TFVARS` and `NEXT_PUBLIC_*` secrets, keep dispatch manual (not deploy-on-push), and document the local script as plan-only / break-glass. Needs F5 so Actions and a laptop share one remote state file. |
+| F2b | **GitHub Deploy app + Infisical** | **In progress.** Files and dual-env playbook are in the template. Remaining work is human setup on a spawn (vault keys, GitHub env secrets, first **Deploy app** on `dev`). **Deploy app** is the GitHub path. One Infisical project (`INFISICAL_PROJECT_SLUG`) with per-app folders (`INFISICAL_APP_SLUG` → `/<app>/{shared,flags}`). Terraform apply stays on the laptop until F5. Setup: [`docs/playbooks/infisical-github-deploys.md`](../playbooks/infisical-github-deploys.md). |
 | F3 | **Prod hardening** | Restrict or disable `/api-docs` on public API URLs; Lambda logging verbosity (`morgan` vs structured). |
 | F4 | **`tflint` in CI** | Stricter Terraform static analysis (`infra/AGENTS.md`). |
 | F5 | **Remote Terraform state** | Before the first apply, create the S3 bucket and DynamoDB lock table (Terraform does not create them), uncomment the backend in `envs/dev/versions.tf`, and give each environment its own key (`lattice/dev/terraform.tfstate`, later `lattice/prod/terraform.tfstate`). Local state is fine only for a throwaway smoke; moving it later is `terraform init -migrate-state`. |

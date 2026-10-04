@@ -44,6 +44,7 @@
     "deploy:aws": "node scripts/deploy-aws.mjs",
     "deploy:aws:web": "node scripts/deploy-aws-web.mjs",
     "deploy:aws:plan": "node scripts/deploy-aws.mjs --plan-only",
+    "infisical:sync-outputs": "node scripts/sync-infisical-terraform-outputs.mjs",
     "lattice:harvest-index": "node scripts/lattice-harvest-index.mjs",
     "use:claude": "node scripts/use-agent.mjs claude",
     "use:cursor": "node scripts/use-agent.mjs cursor",
