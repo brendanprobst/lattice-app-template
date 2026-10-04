@@ -59,13 +59,16 @@ Use this when the hostname stays at Google Domains, Squarespace, Cloudflare DNS,
 
    Do not set `create_route53_hosted_zone` or `route53_hosted_zone_id`.
 
-2. Apply Terraform. ACM still creates a certificate in **`us-east-1`**. CloudFront does **not** get that hostname or certificate until ACM status is **`ISSUED`**. A pending cert fails CloudFront with `InvalidViewerCertificate`. Read **this certificate’s** outputs (even if apply stops on the ISSUED precondition):
+2. Apply with **`npm run deploy:aws`** (or `npm run standup -- --env <env>`). ACM still creates a certificate in **`us-east-1`**. CloudFront does **not** get that hostname or certificate until ACM status is **`ISSUED`**. A pending cert fails CloudFront with `InvalidViewerCertificate`. The script prints **this certificate’s** records (never another hostname’s `_hash`):
 
 ```bash
+# same values: terraform output
 terraform output acm_validation_record_name
 terraform output acm_validation_record_value
 terraform output web_cloudfront_domain
 ```
+
+It polls ACM until **ISSUED**, then applies the CloudFront alias/cert and Lambda CORS. If you stop early, re-run after Issued.
 
 3. At the registrar, add **two** records. Use the values Terraform printed for **this** hostname. **Never copy another hostname’s `_hash` CNAME** onto the new name — each ACM certificate has its own token.
 

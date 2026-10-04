@@ -26,7 +26,7 @@ locals {
     [
       "https://${aws_cloudfront_distribution.web.domain_name}",
     ],
-    local.web_use_custom_domain ? ["https://${trimspace(var.web_custom_domain)}"] : [],
+    local.web_acm_issued ? ["https://${trimspace(var.web_custom_domain)}"] : [],
     [
       "http://localhost:3001",
       "http://127.0.0.1:3001",
@@ -203,15 +203,11 @@ resource "aws_cloudfront_distribution" "web" {
   # Attach the hostname and ACM cert only after the cert is ISSUED.
   aliases = local.web_acm_issued ? [trimspace(var.web_custom_domain)] : []
 
-  # Wait for ACM DNS validation when Terraform manages it (otherwise CloudFront may reject a pending cert).
+  # Wait for ACM DNS validation when Terraform manages Route 53. Path C
+  # (registrar DNS) leaves the cert pending; aliases/viewer_certificate stay
+  # on the default cert until ISSUED so apply can finish. npm run deploy:aws
+  # prints the CNAMEs, polls ACM, then applies again.
   depends_on = [aws_acm_certificate_validation.web]
-
-  lifecycle {
-    precondition {
-      condition     = !local.web_use_custom_domain || local.web_acm_issued
-      error_message = local.web_acm_not_issued_error
-    }
-  }
 
   origin {
     domain_name              = aws_s3_bucket.web.bucket_regional_domain_name

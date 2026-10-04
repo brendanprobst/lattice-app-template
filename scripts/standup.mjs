@@ -8,8 +8,8 @@
  *   npm run standup -- --env dev --bootstrap-only
  *   npm run standup -- --help
  *
- * Laptop `deploy:aws` runs only after Phase 4 (ACM wait) is in this tree,
- * and only when `--bootstrap-only` is not set.
+ * Laptop `deploy:aws` (ACM wait + apply) runs after bootstrap unless
+ * `--bootstrap-only` is set.
  *
  * The template repo is not deployed and must not get an Infisical folder.
  */
@@ -62,16 +62,16 @@ Steps:
      AWS_ROLE_ARN if missing. Prints "set" or "already present", never values.
   6. Apply infra/terraform/bootstrap (Phase 2 GHA role) and write AWS_ROLE_ARN
      when that secret is missing.
-  7. Call deploy:aws for --env after Phase 4 (ACM wait) is merged, unless
-     --bootstrap-only.
+  7. Call deploy:aws for --env (ACM wait, then CloudFront alias/cert + CORS)
+     unless --bootstrap-only.
 
 The template repo is refused. Do not run this against Fosterfolio.
 
 Flags:
-  --env <dev|prod>   Required. Selects the laptop deploy env after Phase 4.
+  --env <dev|prod>   Required. Selects the laptop deploy env.
                      Infisical folders and GitHub environments are always both.
   --bootstrap-only   Stop after identity, GitHub, and the GHA role. Skip
-                     deploy:aws even when Phase 4 is present.
+                     deploy:aws.
   --help, -h         Show this help.
 `;
 

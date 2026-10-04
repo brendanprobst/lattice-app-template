@@ -43,6 +43,21 @@ output "web_custom_domain" {
   value       = local.web_use_custom_domain ? trimspace(var.web_custom_domain) : null
 }
 
+output "manage_web_dns_in_route53" {
+  description = "True when Terraform writes ACM validation and the site alias in Route 53."
+  value       = local.web_manage_dns_in_route53
+}
+
+output "acm_certificate_arn" {
+  description = "ACM certificate ARN in us-east-1 when web_custom_domain is set."
+  value       = try(aws_acm_certificate.web[0].arn, null)
+}
+
+output "acm_certificate_status" {
+  description = "ACM certificate status (ISSUED, PENDING_VALIDATION, …). Null when there is no custom domain."
+  value       = local.web_acm_status
+}
+
 output "acm_validation_record_name" {
   description = "ACM DNS validation CNAME name for this certificate. Create it at the registrar when manage_web_dns_in_route53 is false. Never copy another hostname's _hash."
   value       = try(local.web_acm_validation.name, null)

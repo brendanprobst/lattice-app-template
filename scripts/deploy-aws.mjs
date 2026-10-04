@@ -2,8 +2,8 @@
 /**
  * Deploy API (Lambda bundle) + Terraform (AWS infra) + static web build + S3 sync.
  *
- * Order: build Lambda → terraform apply → read api_url → build web (NEXT_PUBLIC_API_URL from Terraform)
- * → aws s3 sync → cloudfront invalidation. Supabase NEXT_PUBLIC_* come from Infisical or apps/web/.env.<env>.
+ * Order: build Lambda → terraform apply → ACM wait (path C) → second apply for
+ * CloudFront alias/cert + CORS when ISSUED → read api_url → build web → s3 sync.
  *
  *   npm run deploy:aws
  *   npm run deploy:aws -- --env prod
@@ -27,6 +27,15 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { loadWebEnv, takeEnvArg, terraformDir } from "./deploy-env.mjs";
 import { appSharedPath, infisicalConfigPath, readAppSlug } from "./infisical-app.mjs";
+import {
+  PHASE4_ACM_WAIT,
+  pollAcmUntilIssued,
+  printRegistrarCnames,
+  rerunAfterIssuedMessage,
+  tfOutputOrNull,
+} from "./acm-wait.mjs";
+
+export { PHASE4_ACM_WAIT, pollAcmUntilIssued };
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -66,7 +75,7 @@ function run(cmd, args, extraEnv = {}) {
   if (r.status !== 0) process.exit(r.status ?? 1);
 }
 
-function capture(cmd, args) {
+function capture(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, {
     cwd: root,
     encoding: "utf8",
@@ -74,10 +83,35 @@ function capture(cmd, args) {
   });
   if (r.error) throw r.error;
   if (r.status !== 0) {
+    if (opts.allowFail) return "";
     console.error(r.stderr || r.stdout || `${cmd} failed`);
     process.exit(r.status ?? 1);
   }
   return (r.stdout || "").trim();
+}
+
+function tfRaw(chdir, name) {
+  return tfOutputOrNull(capture("terraform", [chdir, "output", "-raw", name], { allowFail: true }));
+}
+
+function applyTerraform(chdir, autoApprove) {
+  if (!autoApprove && !process.stdout.isTTY) {
+    console.error(
+      "Refusing terraform apply in a non-interactive terminal without --auto-approve (e.g. CI).",
+    );
+    process.exit(1);
+  }
+  const applyArgs = [chdir, "apply", "-input=false"];
+  if (autoApprove) applyArgs.push("-auto-approve");
+  console.log("→ terraform apply\n");
+  const r = spawnSync("terraform", applyArgs, {
+    cwd: root,
+    stdio: "inherit",
+    env: process.env,
+    shell: false,
+  });
+  if (r.error) throw r.error;
+  return r.status === 0;
 }
 
 function logPublicHosts() {
@@ -92,6 +126,78 @@ function logPublicHosts() {
       console.warn(`→ ${label}: NEXT_PUBLIC value is not a valid URL`);
     }
   }
+}
+
+function registrarRecords(chdir) {
+  return {
+    domain: tfRaw(chdir, "web_custom_domain"),
+    cloudfrontDomain: tfRaw(chdir, "web_cloudfront_domain"),
+    validationName: tfRaw(chdir, "acm_validation_record_name"),
+    validationValue: tfRaw(chdir, "acm_validation_record_value"),
+    certArn: tfRaw(chdir, "acm_certificate_arn"),
+    status: tfRaw(chdir, "acm_certificate_status"),
+    manageDns: tfRaw(chdir, "manage_web_dns_in_route53") === "true",
+  };
+}
+
+function printPathCRecords(rec) {
+  printRegistrarCnames({
+    domain: rec.domain,
+    cloudfrontDomain: rec.cloudfrontDomain,
+    validationName: rec.validationName,
+    validationValue: rec.validationValue,
+  });
+}
+
+function exitPendingAcm(rec) {
+  if (rec.domain && !rec.manageDns) printPathCRecords(rec);
+  console.error(rerunAfterIssuedMessage());
+  process.exit(1);
+}
+
+/**
+ * After the first apply: print path-C CNAMEs, poll ACM, then apply CloudFront
+ * alias/cert + Lambda CORS_ORIGINS only when the cert is ISSUED.
+ */
+export function waitForIssuedAcmThenAttach(chdir, autoApprove) {
+  const rec = registrarRecords(chdir);
+  if (!rec.domain) return;
+
+  if (!rec.manageDns) {
+    printPathCRecords(rec);
+  }
+
+  if (rec.status === "ISSUED") {
+    console.log("→ ACM ISSUED. CloudFront alias/cert and CORS attach on this apply when needed.");
+    return;
+  }
+
+  let status = rec.status;
+  if (rec.certArn) {
+    try {
+      status = pollAcmUntilIssued(rec.certArn);
+    } catch (err) {
+      console.error(err instanceof Error ? err.message : String(err));
+      exitPendingAcm(rec);
+    }
+  }
+
+  if (status === "ISSUED") {
+    console.log("→ ACM ISSUED. Applying CloudFront alias/cert and Lambda CORS_ORIGINS.\n");
+    if (!applyTerraform(chdir, autoApprove)) {
+      console.error("Second terraform apply (CloudFront alias/cert) failed.");
+      process.exit(1);
+    }
+    return;
+  }
+
+  if (rec.manageDns) {
+    console.error(
+      `ACM for ${rec.domain} is ${status || "unknown"}, not ISSUED. Route 53 validation did not finish.`,
+    );
+    process.exit(1);
+  }
+  exitPendingAcm({ ...rec, status });
 }
 
 function main() {
@@ -115,18 +221,16 @@ function main() {
     return;
   }
 
-  if (!opts.autoApprove && !process.stdout.isTTY) {
-    console.error(
-      "Refusing terraform apply in a non-interactive terminal without --auto-approve (e.g. CI).",
-    );
+  if (!applyTerraform(chdir, opts.autoApprove)) {
+    const rec = registrarRecords(chdir);
+    if (rec.domain && !rec.manageDns) {
+      printPathCRecords(rec);
+      console.error(rerunAfterIssuedMessage());
+    }
     process.exit(1);
   }
 
-  const applyArgs = [chdir, "apply", "-input=false"];
-  if (opts.autoApprove) applyArgs.push("-auto-approve");
-
-  console.log("→ terraform apply\n");
-  run("terraform", applyArgs);
+  waitForIssuedAcmThenAttach(chdir, opts.autoApprove);
   syncInfisicalOutputs(opts.env);
 
   if (opts.skipWeb) {
@@ -227,9 +331,11 @@ function syncInfisicalOutputs(envName) {
 function printOutputs(chdir) {
   const apiUrl = capture("terraform", [chdir, "output", "-raw", "api_url"]);
   const domain = capture("terraform", [chdir, "output", "-raw", "web_cloudfront_domain"]);
+  const custom = tfRaw(chdir, "web_custom_domain");
   console.log("\nOutputs:");
   console.log(`  API:        ${apiUrl}`);
   console.log(`  Web (HTTPS): https://${domain}/`);
+  if (custom) console.log(`  Custom:     https://${custom}/`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

@@ -13,12 +13,11 @@
  * Requires `infisical login` as a user who can write /<appSlug>/shared. The
  * GitHub machine identity is read-only and cannot run this script.
  */
-import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { takeEnvArg, terraformDir } from "./deploy-env.mjs";
-import { appSharedPath, readAppSlug } from "./infisical-app.mjs";
+import { appSharedPath, readAppSlug, readWorkspaceId } from "./infisical-app.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -54,18 +53,57 @@ function capture(cmd, args) {
 }
 
 function projectId() {
-  const file = join(root, ".infisical.json");
-  if (!existsSync(file)) {
-    console.error("No .infisical.json. Run `infisical login` and `infisical init` in the repo first.");
-    process.exit(1);
+  return readWorkspaceId(root);
+}
+
+export function existingInfisicalValues(json) {
+  const map = new Map();
+  if (!json) return map;
+  if (Array.isArray(json)) {
+    for (const item of json) {
+      const key = item.secretKey || item.key || item.name;
+      const value = item.secretValue || item.value;
+      if (key && typeof value === "string") map.set(key, value);
+    }
+    return map;
   }
-  const parsed = JSON.parse(readFileSync(file, "utf8"));
-  const id = parsed.workspaceId;
-  if (!id || typeof id !== "string") {
-    console.error(".infisical.json is missing workspaceId.");
-    process.exit(1);
+  if (typeof json === "object") {
+    const bag = json.secrets || json.data || json;
+    if (Array.isArray(bag)) return existingInfisicalValues(bag);
+    for (const [key, value] of Object.entries(bag)) {
+      if (typeof value === "string") map.set(key, value);
+      else if (value && typeof value === "object") {
+        const inner = value.secretValue || value.value;
+        if (typeof inner === "string") map.set(key, inner);
+      }
+    }
   }
-  return id;
+  return map;
+}
+
+function currentSharedSecrets(envName, id, sharedPath) {
+  const result = spawnSync(
+    "infisical",
+    [
+      "secrets",
+      "--env",
+      envName,
+      "--path",
+      sharedPath,
+      "--projectId",
+      id,
+      "--silent",
+      "--output",
+      "json",
+    ],
+    { cwd: root, encoding: "utf8", shell: false },
+  );
+  if (result.status !== 0) return null;
+  try {
+    return existingInfisicalValues(JSON.parse(result.stdout || "{}"));
+  } catch {
+    return null;
+  }
 }
 
 function logSyncedKey(secretName, value) {
@@ -127,18 +165,31 @@ function main() {
   console.log(`→ terraform init (${env}; read outputs only; no apply)\n`);
   run("terraform", [chdir, "init", "-input=false"]);
 
-  const pairs = OUTPUT_KEYS.map(([outputName, secretName]) => {
+  const wanted = OUTPUT_KEYS.map(([outputName, secretName]) => {
     const value = capture("terraform", [chdir, "output", "-raw", outputName]);
     if (!value) {
       console.error(`terraform output ${outputName} was empty in ${env}`);
       process.exit(1);
     }
-    logSyncedKey(secretName, value);
-    return `${secretName}=${value}`;
+    return { secretName, value };
   });
 
   const id = projectId();
+  const current = currentSharedSecrets(env, id, sharedPath);
+  if (
+    current &&
+    wanted.every(({ secretName, value }) => current.get(secretName) === value)
+  ) {
+    console.log("skip Infisical output sync (unchanged)");
+    return;
+  }
+
+  for (const { secretName, value } of wanted) {
+    logSyncedKey(secretName, value);
+  }
+
   ensureSharedFolder(env, id, appSlug);
+  const pairs = wanted.map(({ secretName, value }) => `${secretName}=${value}`);
 
   const result = spawnSync(
     "infisical",

@@ -5,7 +5,9 @@ Two ways to deploy:
 1. **Laptop:** **`npm run deploy:aws`** (your AWS credentials and `infra/terraform/envs/<env>/terraform.tfvars`). **`--env`** defaults to **`dev`**. This is the path that runs Terraform.
 2. **GitHub Actions:** workflow **Deploy app** for site and Lambda updates. Manual only. It does not run Terraform.
 
-The laptop script order is: **build API Lambda bundle → `terraform apply` → read `api_url` → build static web with `NEXT_PUBLIC_API_URL` → `aws s3 sync`**.
+The laptop script order is: **build API Lambda bundle → `terraform apply` → ACM wait (registrar path) → second apply for CloudFront alias/cert + CORS when ISSUED → read `api_url` → build static web with `NEXT_PUBLIC_API_URL` → `aws s3 sync`**.
+
+When `web_custom_domain` is set and `manage_web_dns_in_route53 = false`, the script prints **this certificate’s** site CNAME (`<domain>` → `web_cloudfront_domain`) and ACM validation CNAME (`acm_validation_record_name` → `acm_validation_record_value`). It polls ACM in `us-east-1` until **ISSUED**, then applies the CloudFront alias/cert and Lambda `CORS_ORIGINS`. If the poll times out, it exits with those records and **re-run after Issued**. Do not copy another hostname’s `_hash`. Tune wait with `ACM_WAIT_INTERVAL_SEC` and `ACM_WAIT_TIMEOUT_SEC` (default 30s / 12 min).
 
 The template repo itself is not deployed. After `npm run scaffold`, the spawn owns Infisical folders `/<app-slug>/{shared,flags,sensitive}` in the shared `lattice` project. See [`docs/playbooks/infisical-github-deploys.md`](playbooks/infisical-github-deploys.md).
 
@@ -20,7 +22,7 @@ The template repo itself is not deployed. After `npm run scaffold`, the spawn ow
 
 | Command | Purpose |
 |---------|---------|
-| `npm run standup -- --env dev` | Infisical folders + `github-<app>` identity + GitHub env/vars/secrets + GHA role. Same with `--env prod`. Skips laptop `deploy:aws` until Phase 4 (or with `--bootstrap-only`). |
+| `npm run standup -- --env dev` | Infisical folders + identity + GitHub env/vars/secrets + GHA role, then laptop `deploy:aws` for that env. `--bootstrap-only` skips the apply. Same with `--env prod`. |
 | `npm run deploy:aws` | Full deploy of **`envs/dev`** (interactive `terraform apply` when in a TTY). |
 | `npm run deploy:aws -- --env prod` | Same pipeline against **`infra/terraform/envs/prod`**. Web build requires **`apps/web/.env.prod`**. |
 | `npm run deploy:aws -- --plan-only` | `terraform init` + `terraform plan` only. |
@@ -43,7 +45,7 @@ npm run deploy:aws -- --env prod
 infisical run --env=dev --path=/<app-slug>/shared -- npm run deploy:aws
 ```
 
-`dev` does not overwrite a `NEXT_PUBLIC_*` already set in the shell. `prod` reads only `apps/web/.env.prod` and overwrites those keys. The script prints the Supabase host and the API host before the web build. After a successful apply, it writes `WEB_BUCKET`, `CLOUDFRONT_DISTRIBUTION_ID`, `LAMBDA_FUNCTION_NAME`, and `NEXT_PUBLIC_API_URL` to Infisical `/<app-slug>/shared` for that environment. That write uses your Infisical login. GitHub Actions does not run it.
+`dev` does not overwrite a `NEXT_PUBLIC_*` already set in the shell. `prod` reads only `apps/web/.env.prod` and overwrites those keys. The script prints the Supabase host and the API host before the web build. After a successful apply, it writes `WEB_BUCKET`, `CLOUDFRONT_DISTRIBUTION_ID`, `LAMBDA_FUNCTION_NAME`, and `NEXT_PUBLIC_API_URL` to Infisical `/<app-slug>/shared` for that environment. If those four keys already match, it logs `skip Infisical output sync (unchanged)`. That write uses your Infisical login. GitHub Actions does not run it.
 
 If the Infisical CLI is missing or the write fails, the deploy still finishes. Re-run `npm run infisical:sync-outputs -- --env <env>`. Keep `terraform.tfvars` on disk; Terraform still reads the service role from that file.
 

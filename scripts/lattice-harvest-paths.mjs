@@ -47,6 +47,7 @@ export const FOUNDATION_PATH_PREFIXES = [
   "apps/api/infrastructure/adapters/",
   "apps/api/domain/errors/",
   "scripts/deploy-aws",
+  "scripts/acm-wait",
   "scripts/sync-infisical",
   "scripts/deploy-env",
   "scripts/env-files",

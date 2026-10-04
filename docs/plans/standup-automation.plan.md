@@ -1,6 +1,6 @@
 ---
 name: Spawn standup automation
-overview: Harvest smoke-test day-1 failures into the template, then add npm run standup so a spawn’s GitHub identity, GHA role, Infisical folders, ACM wait, and laptop apply are one command. Prove idempotent on lattice-app-smoke-test dev, then stand up prod.
+overview: Harvest smoke-test day-1 failures into the template, then add npm run standup so a spawn’s GitHub identity, GHA role, Infisical folders, per-app Route 53 zone, ACM wait, and laptop apply are one command. Prove on lattice-app-smoke-test dev, then stand up prod.
 todos:
   - id: harvest-preflight-acm
     content: "Phase 1 — Template harvest: Deploy app secret preflight; ACM validation outputs; refuse CloudFront attach while cert is PENDING; slugs as repo vars; GetFunctionConfiguration in playbook/module contract"
@@ -13,12 +13,15 @@ todos:
     status: completed
   - id: deploy-aws-acm-wait
     content: "Phase 4 — deploy:aws prints registrar CNAMEs, polls ACM to ISSUED, then applies CloudFront alias/cert; skip Infisical sync when outputs unchanged"
+    status: completed
+  - id: per-spawn-dns-zone
+    content: "Phase 5 — One Route 53 zone per spawn (not envs/dev or envs/prod): create once, print NS, both envs set route53_hosted_zone_id; never create_route53_hosted_zone in env state"
     status: pending
   - id: refresh-smoke-dev
-    content: "Phase 5 — refresh template into lattice-app-smoke-test, run standup --env dev (no-op remaining work), confirm Deploy app + https://dev.lattice.brendanprobst.com"
+    content: "Phase 6 — refresh template into lattice-app-smoke-test, delegate lattice.brendanprobst.com, standup --env dev, confirm Deploy app + https://dev.lattice.brendanprobst.com"
     status: pending
   - id: standup-prod
-    content: "Phase 6 — standup --env prod on smoke-test (new envs/prod state), ACM wait for lattice.brendanprobst.com, Deploy app from main + reviewer"
+    content: "Phase 7 — standup --env prod on smoke-test (new envs/prod state), same zone, Deploy app from main + reviewer"
     status: pending
 isProject: true
 ---
@@ -46,7 +49,7 @@ Smoke-test **dev** reached `https://dev.lattice.brendanprobst.com`, but day 1 wa
 | Apex ACM token copied onto `dev.lattice` | Phase 1 / 4 printed validation CNAME |
 | “I already deployed” (Deploy app vs `deploy:aws`) | Phase 3–4 one laptop command; logs name the path |
 
-**One-step target** (after a short spawn file / flags): `npm run standup -- --env <env>`. Still human: Supabase URL/anon once, registrar CNAMEs if DNS is not Route 53, prod GitHub reviewer.
+**One-step target** (after a short spawn file / flags): `npm run standup -- --env <env>`. Still human: Supabase URL/anon once, **one NS delegation** at the parent registrar for this spawn’s zone (Phase 5), prod GitHub reviewer. Path C (two ACM CNAMEs per env) stays the escape hatch when the app is not on a delegated zone.
 
 ---
 
@@ -55,6 +58,7 @@ Smoke-test **dev** reached `https://dev.lattice.brendanprobst.com`, but day 1 wa
 - One Infisical project (`lattice`, slug `lattice-ecosystem-7iyf`). Apps are `/<app-slug>/**`.
 - One machine identity per spawn (`github-<app-slug>`). Read `/shared` and `/flags` only. Never `/sensitive`.
 - One AWS OIDC role per spawn. Trust **this repo only**. Permissions **this app’s** `*-dev-*` and `*-prod-*` only.
+- One Route 53 hosted zone per spawn (this app’s hostname tree, e.g. `lattice.brendanprobst.com`). Created **once**, not in `envs/dev` or `envs/prod` state. Both envs set `create_route53_hosted_zone = false` and the same `route53_hosted_zone_id`. Do not put the personal apex `brendanprobst.com` in a spawn stack. Do not create a second zone for `fosterfolio.com`.
 - GitHub environments `dev` / `prod` are approval + Infisical `env-slug`. Identity, role, and slugs live **once** on the repo.
 - `INFISICAL_PROJECT_SLUG` and `INFISICAL_APP_SLUG` are repository **variables**. Client id/secret and `AWS_ROLE_ARN` are repository **secrets**.
 - Template is not deployed and must not get an Infisical folder.
@@ -179,25 +183,64 @@ Idempotent. Reads `.lattice/infisical.json` `appSlug`, `.infisical.json` `worksp
 
 ---
 
-## Phase 5 — Refresh smoke-test and prove one-step on live dev
+## Phase 5 — One Route 53 zone per spawn (template, before refresh)
 
-From the template checkout:
+Fosterfolio was easy because the domain **is** the app and already has a zone. Smoke-test sits on `brendanprobst.com` (personal site at Google Domains), so day-1 used path C (`manage_web_dns_in_route53 = false`) and two registrar CNAMEs per hostname. Do not move the personal apex into AWS. Do not share one `brendanprobst.com` zone across every Lattice repo.
+
+**Default:** one public hosted zone per spawn, covering that app’s hostname tree. Smoke-test zone name is `lattice.brendanprobst.com` (hosts `lattice.brendanprobst.com` and `dev.lattice.brendanprobst.com`). A later spawn gets `runout.brendanprobst.com`, not a record in the smoke-test zone.
+
+### Layout (suggested)
+
+- Thin stack `infra/terraform/dns-zone/` (not `envs/`, not inside `bootstrap/` IAM state). Same idea as Phase 2: `deploy:aws --env` cannot target it. Local state is OK until F5.
+- Module optional if the stack is a single `aws_route53_zone`.
+- Inputs: `zone_name` (FQDN of **this app’s** island, not the parent personal apex), `app_slug` / `project_name` for tags.
+- Reject `zone_name` that is only `brendanprobst.com` or `fosterfolio.com` unless an explicit override exists — the point is a **child** island (or a domain the spawn already owns, like Fosterfolio’s existing zone).
+- Look up / import an existing zone by name if it already exists. Do not create a second zone for the same `zone_name`.
+- Outputs: `route53_hosted_zone_id`, `name_servers`.
+
+### `envs/dev` and `envs/prod` (keep them twins)
+
+- When the spawn uses this pattern: `manage_web_dns_in_route53 = true`, `create_route53_hosted_zone = false`, `route53_hosted_zone_id = <dns-zone output>`.
+- Add a check or loud docs: `create_route53_hosted_zone = true` in an env stack is the Fosterfolio-dev footgun (a second zone for the same name; registrar NS will not match). Prefer path B against the Phase 5 zone.
+- Path C (`manage_web_dns_in_route53 = false`) remains valid when there is no delegated zone.
+
+### Standup / docs
+
+- `npm run standup` applies (or no-ops) `dns-zone` with the GHA bootstrap, prints **NS** for the parent registrar, and does not print leftover ACM `_hash` CNAMEs when Route 53 manages the zone.
+- [route53-custom-domain.md](../playbooks/route53-custom-domain.md): add **path D** — per-spawn zone + NS delegation at the parent. Path A (`create_route53_hosted_zone` in `envs/dev`) is no longer the recommended Lattice default.
+- Do not apply this stack in the Fosterfolio account against `fosterfolio.com`. Leave `Z086583512U74ZET8C9T8` as Fosterfolio prod’s zone.
+
+### Done when
+
+- Template tree has the dns-zone stack and docs. `terraform validate` / `infra:fmt` still pass.
+- A reviewer can see that `envs/*` cannot create the per-spawn zone.
+- No apply against live smoke-test or Fosterfolio in this phase (refresh is Phase 6).
+
+---
+
+## Phase 6 — Refresh smoke-test and prove one-step on live dev
+
+From the template checkout, on the commit that has Phases 1–5:
 
 ```bash
 npm run scaffold:refresh -- --into ../lattice-app-smoke-test
 ```
 
-Then in smoke-test: follow [standup-automation.md](../playbooks/standup-automation.md) Phase 5. Fix only refresh fallout (preservePaths already has `docs/playbooks/lattice-smoke-test-deploys.md`).
+Then in smoke-test: follow [standup-automation.md](../playbooks/standup-automation.md) Phase 6. Fix only refresh fallout (preservePaths already has `docs/playbooks/lattice-smoke-test-deploys.md`).
+
+Human once: at Google Domains, NS-delegate **`lattice.brendanprobst.com`** to the printed nameservers (do not change nameservers for `brendanprobst.com`). Flip spawn tfvars to path B against that zone id.
 
 ### Done when
 
-- `npm run standup -- --env dev` is a no-op (or only harmless GitHub var moves).
+- One zone `lattice.brendanprobst.com`; `dig NS lattice.brendanprobst.com` matches Route 53.
+- `envs/dev` and (filled) `envs/prod` share that `route53_hosted_zone_id`. Neither sets `create_route53_hosted_zone = true`.
+- `npm run standup -- --env dev` exits 0. Dev hostname still `dev.lattice.brendanprobst.com`.
 - **Deploy app** → `dev` is green.
 - `https://dev.lattice.brendanprobst.com` still loads.
 
 ---
 
-## Phase 6 — Prod (only after Phase 5)
+## Phase 7 — Prod (only after Phase 6)
 
 Same command, new state:
 
@@ -205,12 +248,12 @@ Same command, new state:
 npm run standup -- --env prod
 ```
 
-Requires `envs/prod/terraform.tfvars` filled on day 1 (already the dual-env rule). Hostname `lattice.brendanprobst.com`. Do **not** change `environment` on the live `envs/dev` state.
+Requires `envs/prod/terraform.tfvars` filled on day 1 (already the dual-env rule). Hostname `lattice.brendanprobst.com`. Same `route53_hosted_zone_id` as dev. `manage_web_dns_in_route53 = true`. Do **not** change `environment` on the live `envs/dev` state.
 
 ### Done when
 
 - Prod stack exists (`lattice-app-smoke-test-prod-*`).
-- ACM for the apex is Issued and attached.
+- ACM for the apex is Issued and attached (Route 53 validation, not a Google `_hash` paste).
 - **Deploy app** → `prod` from `main` after the reviewer click.
 - Dev URL still works.
 
@@ -220,6 +263,7 @@ Requires `envs/prod/terraform.tfvars` filled on day 1 (already the dual-env rule
 
 - F5 remote Terraform state / Terraform in GitHub Actions.
 - One AWS role for every Lattice repo.
+- One Route 53 zone for all of `brendanprobst.com` (would put the personal site in AWS).
 - Infisical GitHub OIDC (nice follow-up; Universal Auth + `gh secret set` is enough for this slice).
-- Squarespace/Google Domains API.
-- Fosterfolio migration onto `npm run standup` (optional after smoke-test prod).
+- Squarespace/Google Domains API (NS click stays human).
+- Fosterfolio migration onto `npm run standup` or collapsing Fosterfolio’s two `fosterfolio.com` zones (optional after smoke-test prod).
