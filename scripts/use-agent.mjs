@@ -41,6 +41,29 @@ const PATH_AGENTS = [
     description: "Infra expert — adapters, composition root, config, seed (auto when editing infra/config)",
     globs: ["apps/api/infrastructure/**", "apps/api/config/**", "apps/web/client/lib/**", "seed.json"],
   },
+  {
+    id: "harvest-expert",
+    prompt: "agents/prompts/harvest-expert.md",
+    description: "Harvest expert — analyze/integrate child-app → template (auto on harvest docs and scripts)",
+    globs: [
+      "docs/playbooks/upstream-harvest.md",
+      "docs/playbooks/template-growth.md",
+      "docs/research/harvests/**",
+      "scripts/harvest.mjs",
+      "scripts/lattice-harvest*.mjs",
+      ".lattice/harvest.json.example",
+    ],
+  },
+];
+
+const ALWAYS_APPLY_AGENTS = [
+  {
+    id: "template-growth",
+    prompt: "agents/prompts/template-growth.md",
+    description:
+      "Template growth — kernel vs capability vs catalog. Always on. Highest priority for template surface changes.",
+    alwaysApply: true,
+  },
 ];
 
 const GLOBAL_AGENTS = [
@@ -97,8 +120,12 @@ function mdcFrontmatter(agent) {
     lines.push("globs:");
     for (const g of agent.globs) lines.push(`  - "${g}"`);
   }
-  lines.push("alwaysApply: false", "---", "");
+  lines.push(`alwaysApply: ${agent.alwaysApply === true}`, "---", "");
   return lines.join("\n");
+}
+
+function allCursorAgents() {
+  return [...ALWAYS_APPLY_AGENTS, ...PATH_AGENTS, ...GLOBAL_AGENTS];
 }
 
 // ─── All generated file paths (for status checks) ────────────────────────────
@@ -113,7 +140,7 @@ function claudePaths() {
 }
 
 function cursorPaths() {
-  return [...PATH_AGENTS, ...GLOBAL_AGENTS].map((a) => `.cursor/rules/${a.id}.mdc`);
+  return allCursorAgents().map((a) => `.cursor/rules/${a.id}.mdc`);
 }
 
 // ─── Root CLAUDE.md ──────────────────────────────────────────────────────────
@@ -122,6 +149,10 @@ function rootClaudeContent() {
   return `# Claude agent mode
 
 > Full project context: see \`AGENTS.md\` (monorepo layout, CI, conventions).
+
+## Template growth (always on — highest priority)
+
+${readPrompt("agents/prompts/template-growth.md")}
 
 ## Expert context (auto-loaded by directory)
 
@@ -133,6 +164,7 @@ guidance automatically as you navigate the project:
 | \`apps/api/domain/\`, \`apps/api/application/\`, \`docs/adr/\` | DDD expert |
 | \`apps/api/\`, \`apps/web/client/\`, \`apps/web/app/\`, \`test/api/\`, \`test/web/\` | Test expert (tests-first) |
 | \`apps/api/infrastructure/\`, \`apps/api/config/\`, \`apps/web/client/lib/\` | Infrastructure expert |
+| harvest playbooks, \`docs/research/harvests/\`, harvest scripts | Harvest expert |
 
 ## Slash commands (global experts)
 
@@ -165,7 +197,7 @@ function generateClaude() {
 // ─── Generate Cursor artifacts ────────────────────────────────────────────────
 
 function generateCursor() {
-  for (const agent of [...PATH_AGENTS, ...GLOBAL_AGENTS]) {
+  for (const agent of allCursorAgents()) {
     const body = readPrompt(agent.prompt);
     writeFile(`.cursor/rules/${agent.id}.mdc`, mdcFrontmatter(agent) + body);
   }

@@ -1,0 +1,69 @@
+---
+description: Template growth — kernel vs capability vs catalog. Always on. Highest priority for template surface changes.
+alwaysApply: true
+---
+# Template growth (always on — highest priority)
+
+This repo is a **clone-and-go stencil**, not an attic of utilities. Prefer a thin working app over a kitchen-sink skeleton people must strip.
+
+When this conflicts with “it looks generic, put it in the template,” **this document wins**.
+
+## Three destinations (every harvest / template add)
+
+| Destination | Day-one effect | When to use |
+|-------------|----------------|-------------|
+| **Kernel** | Always copied, always on | Every spawn needs it to be a real app |
+| **Capability** | Copied, **default off** | Wiring later is worse than a small dormant module |
+| **Catalog** | Harvested, **not** copied by `scaffold` | Useful later; unused on day one |
+
+Do not invent a fourth “drop it in `apps/` because it is reusable.”
+
+### Kernel
+
+Auth, Things demo, `Result` / `ErrorCatalog`, `Container`, tests, standup/deploy, CI. Foundation `F-###` rows that fix universal plumbing.
+
+**Bar:** if you would delete it in a new app on day one, it is not kernel. (Exception is the /thing entity which is a useful pattern to replicate then delete)
+
+### Capability
+
+In-tree, env/SQL/flag off. Examples: email allowlist, PostHog. Cap this set (a handful). Each needs a playbook, an off-switch, and tests that pass with the flag off.
+
+### Catalog
+
+Profile product surfaces, extra shadcn, QR share, markdown widgets, one-off HOCs. Land under `catalog/<bundle-id>/` only when a reviewer marks **APPROVE-CATALOG**. Do **not** create `catalog/` until the first such approval. `npm run scaffold` must not copy catalog unless the operator opts in.
+
+## Harvest is intake, not a merge
+
+`npm run harvest` indexes. `--focus` only **highlights** paths. Product nouns (`pet`, `inquiry`, child-app profile pages) stay in the child app.
+
+`--focus profile,styling,components` is **not** permission to bake those files into kernel.
+
+### Reviewer verdicts (required)
+
+| Verdict | Meaning |
+|---------|---------|
+| `APPROVE-KERNEL` | Bake into the default tree, on |
+| `APPROVE-CAPABILITY` | Bake into the default tree, off |
+| `APPROVE-CATALOG` | Record / copy into `catalog/`, not the default clone |
+| `SKIP` | Do not take |
+| `DEFER` | Not now |
+
+Bare `APPROVE` is incomplete. Treat it as “ask the reviewer to pick a destination,” not as kernel.
+
+### Two-app bar
+
+A UI or helper is kernel or capability only if **two child apps** needed the same **generalized** form, or Things/auth will use it immediately. One Fosterfolio `ProfilePage` / `PetCard` is catalog or skip.
+
+## Do not
+
+- Bulk-copy `client/components` or a child-app feature folder into the template
+- Comment out unused feature trees “for later”
+- Add packages or packages-per-widget for a solo maintainer
+- Auto-update child apps; refresh is explicit (`scaffold:refresh` + `preservePaths`)
+- Grow capabilities without a playbook and a default-off flag
+
+## Pointers
+
+- Playbook: `docs/playbooks/upstream-harvest.md`
+- Policy narrative: `docs/playbooks/template-growth.md`
+- Harvest expert (path-scoped): `agents/prompts/harvest-expert.md`
