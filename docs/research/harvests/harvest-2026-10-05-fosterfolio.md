@@ -1,6 +1,6 @@
 # Harvest index — fosterfolio → lattice-app-template
 
-**Generated:** 2026-10-05T02:37:05.934Z  
+**Generated:** 2026-10-05T02:40:00.441Z  
 **Child app:** `/Users/brendanprobst/github/fosterfolio`  
 **Template:** `/Users/brendanprobst/github/lattice-app-template`  
 **Command:** `npm run harvest -- index --from /Users/brendanprobst/github/fosterfolio --focus profile,styling,components`
@@ -735,7 +735,7 @@ _None._
 _None._
 
 
-### Only in lattice-app-template (non-product) (48)
+### Only in lattice-app-template (non-product) (49)
 
 - `.cursor/skills`
 - `.github/workflows/deploy-aws.yml`
@@ -766,6 +766,7 @@ _None._
 - `apps/web/client/stores/thingsStore.ts`
 - `docs/plans/standup-automation.plan.md`
 - `docs/playbooks/standup-automation.md`
+- `docs/research/harvests`
 - `infra/terraform/bootstrap`
 - `infra/terraform/dns-zone`
 - `infra/terraform/modules/gha-deploy-role`
@@ -789,19 +790,72 @@ _None._
 
 ## § AGENT — Feature proposals (Track 1)
 
-_Agent: fill after reading SCRIPT sections. Per candidate: universal?, files, wiring, bake-in vs optional, conflicts._
+`--focus profile,styling,components` is a highlight only. Two-app bar: one Fosterfolio V1. Destinations follow [template-growth](../../playbooks/template-growth.md).
+
+### media-widgets — CATALOG
+
+Generalize Fosterfolio photo controls. Do not wire into kernel Things or `/profile`.
+
+- `PetPhotoDropzone.tsx` → `catalog/media-widgets/files/apps/web/client/components/media/ImageDropzone.tsx` (`maxFiles`, `label`, `onFiles`; drop/clipboard/MIME)
+- `PetPhotoList.tsx` → `ImageList.tsx` (`{ url }[]`)
+- `SegmentedToggle.tsx` → `SegmentedToggle.tsx` (not Age/Sex wrappers)
+- `apps/web/client/lib/media/isAllowedImageFile.ts`, `downscaleImage.ts`
+- Things conflict: none if catalog-only
+- Two-app bar: fail → catalog
+
+### account-profile — CATALOG
+
+Editable account + Users + regular `AvatarEditor` + signed upload. **Do not** replace kernel JWT `/profile`.
+
+- Users entity / repo / Get+Update / ensure-on-login (`id` = JWT `sub`)
+- `AvatarEditor` + `useMediaUpload` notes (storage stays in this bundle, not a kernel capability)
+- Dialog identity / location / social cards; no pets, Foster Me, vanity `/@handle`, QR
+- `UserAvatar` lives in **ui-chrome**; this bundle may import it after apply
+- Things conflict: second exemplar if baked in — avoided by catalog
+- Two-app bar: fail → catalog
+
+### ui-chrome — CATALOG
+
+- Extra shadcn: `dialog` (`max-w-2xl`), `dropdown-menu`, `sheet`, `textarea`, `tooltip`
+- `layout/`: `AppShell`, `PageWithSidebar`, `DataPageSkeleton` (neutral variants), not `AppHeader`
+- `markdown/` + `BioPreview`, `OutboundLink`, `UserAvatar` + `displayInitials.ts`
+- `globals.css` already matches — no token copy
+- Two-app bar: fail → catalog
+
+### SKIP
+
+`Pet*`, shelter pickers, `SexToggle` / `AgeUnitToggle`, `PetCard` / `PetFacts`, `OwnerOnlyLabel`, `PublicProfile*`, `FeatureUnavailable`, `FeedComposer`, Fosterfolio `AppHeader`, nature-URL shuffle, session Cursor rules, spawn env / Infisical files.
+
+### Optional KERNEL
+
+Keep `GET /profile` JWT smoke. Optional short App UX note in `apps/web/docs/ui-and-styling.md` pointing at `catalog/` — no component dump.
 
 ---
 
 ## § AGENT — Foundation audit (Track 2)
 
-_Agent: use foundation sub-skill. Per hunk: `F-###`, What, Why, UNIVERSAL|PROTOTYPE|UNSURE, INCLUDE|SKIP|DEFER recommendation._
+No foundation hunks are required to land catalog READMEs.
 
+| ID | Path theme | What | Why | Class | Rec |
+|----|------------|------|-----|-------|-----|
+| F-001 | terraform / standup / CI / SES | Spawn deploy drift | Not this harvest | PROTOTYPE / mixed | DEFER |
+| F-002 | `app.ts`, auth middleware, container | Fosterfolio route registration / users wiring | Product-shaped | PROTOTYPE | SKIP (catalog apply later) |
+| F-003 | `package.json`, harvest scripts | Template already ahead on harvest CLI | Do not overwrite from child | UNIVERSAL (template wins) | SKIP |
+
+---
 
 ## § REVIEWER — Decisions
 
-| Item | Type | Verdict (APPROVE / SKIP / DEFER) | Notes |
-|------|------|-----------------------------------|-------|
-| _example: email-allowlist_ | feature | | |
-| _example: F-001_ | foundation | | |
+Inferred from the approved harvest plan (operator asked to proceed without a second pass).
+
+| Item | Type | Verdict | Notes |
+|------|------|---------|-------|
+| media-widgets | feature | APPROVE-CATALOG | ImageDropzone, ImageList, SegmentedToggle, lib/media |
+| account-profile | feature | APPROVE-CATALOG | Users + AvatarEditor + dialog profile; not kernel |
+| ui-chrome | feature | APPROVE-CATALOG | layout, markdown, extra shadcn, UserAvatar |
+| App UX doc pointer | feature | APPROVE-KERNEL | Paragraph + catalog pointer only |
+| pets / public profiles / AppHeader / nature shuffle | feature | SKIP | Product or rejected experiment |
+| F-001 | foundation | DEFER | Infra/deploy |
+| F-002 | foundation | SKIP | Do not copy Fosterfolio app.ts |
+| F-003 | foundation | SKIP | Template harvest tooling wins |
 

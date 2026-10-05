@@ -29,6 +29,7 @@ command above to regenerate. The `description` and glob metadata live in `regist
 | Kind | How it activates |
 |------|-------------------|
 | **Path-scoped experts** (DDD, test, infra) | Cursor loads the rule automatically when you edit files under the configured globs. |
+| **Always-on** (template growth) | Cursor loads **`template-growth`** on every chat (`alwaysApply: true`). Highest priority for what may enter the default clone. |
 | **Global experts** (debugger, code janitor) | Attach manually: in Chat or Composer type **`@`** → **Rules** → select the expert. |
 
 The Test expert rule activates on **`test/**`** *and* **`apps/api/`**, **`apps/web/client/`**, **`apps/web/app/`**
@@ -58,20 +59,22 @@ agents/
     infra-expert.md
     debugger-expert.md
     code-janitor.md
+    template-growth.md ← always-on kernel / capability / catalog
+    harvest-expert.md  ← harvest analyze + integrate
     _template.md       ← copy when adding a new expert
 ```
 
 ## Adding an expert
 
 1. Copy `agents/prompts/_template.md` to `agents/prompts/<id>.md` and write the expert content.
-2. Add an entry to `agents/prompts/registry.yaml` with `description` and `globs` (path-scoped) or `command` (global).
-3. Add the agent to `PATH_AGENTS` or `GLOBAL_AGENTS` in `scripts/use-agent.mjs`.
+2. Add an entry to `agents/prompts/registry.yaml` with `description` and `globs` (path-scoped), `command` (global), or `alwaysApply: true`.
+3. Add the agent to `PATH_AGENTS`, `GLOBAL_AGENTS`, or `ALWAYS_APPLY_AGENTS` in `scripts/use-agent.mjs`.
 4. Re-run `npm run use:claude`, `npm run use:cursor`, or `npm run agents:sync` to generate.
 
 ## Removing an expert
 
 Remove in this order to avoid errors:
-1. Remove the agent from `PATH_AGENTS` or `GLOBAL_AGENTS` in `scripts/use-agent.mjs`.
+1. Remove the agent from `PATH_AGENTS`, `GLOBAL_AGENTS`, or `ALWAYS_APPLY_AGENTS` in `scripts/use-agent.mjs`.
 2. Remove the entry from `agents/prompts/registry.yaml`.
 3. Delete `agents/prompts/<id>.md`.
 4. Re-run the appropriate generate command — it will leave the now-orphaned output files in place; delete those manually or with `git rm`.

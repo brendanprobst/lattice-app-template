@@ -70,4 +70,6 @@ test("harvestHelp names the fosterfolio-style workflow", () => {
   assert.match(text, /npm run harvest/);
   assert.match(text, /--focus/);
   assert.match(text, /--include-segment/);
+  assert.match(text, /APPROVE-KERNEL/);
+  assert.match(text, /APPROVE-CATALOG/);
 });

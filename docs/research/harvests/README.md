@@ -19,6 +19,6 @@ Open the file this printed under `docs/research/harvests/`.
 |---------|------------|
 | § SCRIPT — * | **Read** — inventory only; already complete |
 | § AGENT — * | **Next:** Cursor Agent fills these ([playbook step 2](../../playbooks/upstream-harvest.md#step-2--analyze-cursor-agent--do-this-next)) |
-| § REVIEWER — | **After agent:** you mark APPROVE / SKIP / DEFER |
+| § REVIEWER — | **After agent:** you mark `APPROVE-KERNEL` / `APPROVE-CAPABILITY` / `APPROVE-CATALOG` / `SKIP` / `DEFER` ([template growth](../../playbooks/template-growth.md)) |
 
 Full walkthrough: [`docs/playbooks/upstream-harvest.md`](../../playbooks/upstream-harvest.md)

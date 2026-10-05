@@ -15,7 +15,10 @@ import { parseHarvestIndexArgs, runHarvestIndex } from "./lattice-harvest-index.
 export const HARVEST_COMMANDS = ["index", "help"];
 
 export function harvestHelp() {
-  return `Lattice harvest — pull app-agnostic utilities from a child app into the template index.
+  return `Lattice harvest — index child-app platform slices for a human-gated integrate.
+
+Destinations (see docs/playbooks/template-growth.md): APPROVE-KERNEL, APPROVE-CAPABILITY,
+APPROVE-CATALOG, SKIP, DEFER. --focus only highlights paths; it does not bake them in.
 
 Usage:
   npm run harvest -- [--from <child-app>] [options]

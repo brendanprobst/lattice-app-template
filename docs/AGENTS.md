@@ -14,6 +14,7 @@
 - **[PostHog analytics](playbooks/posthog-analytics.md)** — Optional, feature-flagged web analytics (`@lattice/web`).
 - **[Email allowlist](playbooks/email-allowlist.md)** — Optional private-app signup and API gate.
 - **[Supabase migrations](playbooks/supabase-migrations.md)** — CLI / psql workflow; one Supabase project per spawn repo (planned `supabase/` layout).
+- **[Template growth](playbooks/template-growth.md)** — Kernel / capability / catalog. Highest-priority agent policy for what may enter the default clone.
 - **[Upstream harvest](playbooks/upstream-harvest.md)** — Pull platform work from a **child app** into the template (`npm run harvest`); harvest reports live in [`research/harvests/`](research/harvests/).
 - **[Scaffold vs adapters](research/scaffold-agents-and-adapters.md)** — Why `npm run scaffold` does not generate adapters; how agent rules scope to API infra vs web analytics.
 - **`research/`** — Exploratory notes (not ADRs), e.g. [Supabase access patterns](research/supabase-access-patterns.md) (client SDK vs API vs ORM) and the canonical [security-first Supabase Auth default](research/supabase-auth-security-first.md) for API/client separation.

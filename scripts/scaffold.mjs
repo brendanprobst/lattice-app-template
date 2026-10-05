@@ -109,6 +109,7 @@ function shouldExcludeSourcePath(absPath) {
     "playwright-report",
     "test-results",
     "blob-report",
+    "catalog",
   ]);
   for (const p of parts) {
     if (skipSegments.has(p)) return true;

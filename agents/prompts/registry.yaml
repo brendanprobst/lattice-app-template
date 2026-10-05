@@ -39,6 +39,24 @@ agents:
       - apps/web/client/lib/**
       - seed.json
 
+  - id: harvest-expert
+    path: prompts/harvest-expert.md
+    description: "Harvest expert — analyze/integrate child-app → template (auto on harvest docs and scripts)"
+    scope: path-scoped
+    globs:
+      - docs/playbooks/upstream-harvest.md
+      - docs/playbooks/template-growth.md
+      - docs/research/harvests/**
+      - scripts/harvest.mjs
+      - scripts/lattice-harvest*.mjs
+      - .lattice/harvest.json.example
+
+  - id: template-growth
+    path: prompts/template-growth.md
+    description: "Template growth — kernel vs capability vs catalog. Always on. Highest priority for template surface changes."
+    scope: always-apply
+    alwaysApply: true
+
   - id: debugger-expert
     path: prompts/debugger-expert.md
     description: "Debugger expert — attach with @Rules when investigating failures, flakes, or production errors"

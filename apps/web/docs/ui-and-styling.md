@@ -40,6 +40,10 @@ Aliases in `components.json` point to `@client/components/ui` and `@client/lib/u
 
 Prefer **lucide-react** for consistency with shadcn examples. Icon names vary by version; if a name fails to resolve, pick an alternative from the [Lucide](https://lucide.dev/icons/) catalog.
 
+## App UX
+
+Kernel pages stay thin (JWT `/profile`, Things, `/ui`). **Dialog-first edits** (read-only cards; pencil opens a `Dialog`, default `max-w-2xl`) and extra composed widgets live in the repo **[`catalog/`](../../../catalog/README.md)** — not copied by `npm run scaffold`. Do not bulk-copy a child-app `client/components` tree into this package.
+
 ## Live catalog
 
 - **`/ui`** — Component gallery (buttons, badges, form, cards, alerts) for **visual QA** and onboarding.

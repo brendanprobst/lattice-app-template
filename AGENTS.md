@@ -37,6 +37,8 @@ Each major directory contains **`AGENTS.md`**. Use that name so humans and autom
 
 ## Agent prompts
 
+- **Template growth (always on)** — kernel vs capability vs catalog. Do not dump unused utilities into the default clone. See **`agents/prompts/template-growth.md`** and [`docs/playbooks/template-growth.md`](docs/playbooks/template-growth.md).
+- **Harvest** — `npm run harvest` + [`docs/playbooks/upstream-harvest.md`](docs/playbooks/upstream-harvest.md); **`harvest-expert`** auto-attaches on harvest docs/scripts.
 - **`agents/`** — Prompt stubs + `registry.yaml` (see `agents/README.md`).
-- **`.cursor/rules/*.mdc`** — Cursor **project rules**: DDD / test / infra experts **scope by folder**; debugger / code janitor attach with **`@` → Rules**. See `.cursor/rules/README.md`.
+- **`.cursor/rules/*.mdc`** — Cursor **project rules**: DDD / test / infra / harvest **scope by folder**; **template-growth** always applies; debugger / code janitor attach with **`@` → Rules**. See `.cursor/rules/README.md`.
 - **Switching tools** — `agents/prompts/*.md` is the source of truth for all expert content. Run **`npm run use:claude`** to generate `CLAUDE.md` files (one per glob directory) and remove `.cursor/rules/`; run **`npm run use:cursor`** to generate `.cursor/rules/*.mdc` and remove `CLAUDE.md` files; run **`npm run agents:sync`** to generate both for mixed teams. Both sets of configs commit to git — neither tool's format is the master. See `agents/README.md`.

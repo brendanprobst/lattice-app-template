@@ -288,21 +288,21 @@ ${mdList(buckets["template-only"])}
 
 const AGENT_STUB = `## § AGENT — Feature proposals (Track 1)
 
-_Agent: fill after reading SCRIPT sections. Per candidate: universal?, files, wiring, bake-in vs optional, conflicts._
+_Agent: fill after reading SCRIPT sections. Per bundle: destination KERNEL|CAPABILITY|CATALOG|SKIP, files, wiring, Things conflicts, two-app bar. See docs/playbooks/template-growth.md. \`--focus\` is not an include list._
 
 ---
 
 ## § AGENT — Foundation audit (Track 2)
 
-_Agent: use foundation sub-skill. Per hunk: \`F-###\`, What, Why, UNIVERSAL|PROTOTYPE|UNSURE, INCLUDE|SKIP|DEFER recommendation._
+_Agent: use harvest-expert Track 2. Per hunk: \`F-###\`, What, Why, UNIVERSAL|PROTOTYPE|UNSURE, recommend APPROVE-KERNEL|APPROVE-CAPABILITY|SKIP|DEFER._
 
 `;
 
 const REVIEWER_STUB = `## § REVIEWER — Decisions
 
-| Item | Type | Verdict (APPROVE / SKIP / DEFER) | Notes |
-|------|------|-----------------------------------|-------|
-| _example: email-allowlist_ | feature | | |
+| Item | Type | Verdict (APPROVE-KERNEL / APPROVE-CAPABILITY / APPROVE-CATALOG / SKIP / DEFER) | Notes |
+|------|------|-------------------------------------------------------------------------------|-------|
+| _example: email-allowlist_ | feature | | capability — default off |
 | _example: F-001_ | foundation | | |
 
 `;

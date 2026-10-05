@@ -4,7 +4,7 @@
 
 Getting started is easy: create a new repo, scaffold a fork of lattice with a CLI command, (then do some setup in supabase, aws, your domain provider, and google cloud services), set some .env vars, and you're ready to go - deploy a feature-flagged 'Under Construction' page on top of a fully-functional API and client to your desired URL within an hour or two of starting the fork! Now you're ready to start actually building the app, not wresting with infra and auth for the Nth time over the course of a few days. When you're done flip the construction-flag off and your site is live.
 
-When you're ready to lift app-agnostic utilities from a child app into this template, run **`npm run harvest -- --from ../<child-app>`** (see [`docs/playbooks/upstream-harvest.md`](docs/playbooks/upstream-harvest.md)). That does not share live code between apps — it indexes platform slices for a template integrate.
+When you're ready to lift app-agnostic utilities from a child app into this template, run **`npm run harvest -- --from ../<child-app>`** (see [`docs/playbooks/upstream-harvest.md`](docs/playbooks/upstream-harvest.md)). That indexes slices for a human-gated integrate — kernel, capability (default off), or catalog — not a dump into the default clone ([template growth](docs/playbooks/template-growth.md)).
 
 ## Getting Started
 
