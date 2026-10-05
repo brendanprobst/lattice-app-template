@@ -10,7 +10,7 @@ Pull **platform** improvements from a **child app** into **`lattice-app-template
 |------|---------|
 | **Template** | `lattice-app-template` |
 | **Child app** | Repo scaffolded from the template where you built V1 (e.g. `runout`) |
-| **Harvest doc** | `cursor/research/harvests/harvest-<date>-<child-app>.md` — one file per run |
+| **Harvest doc** | `docs/research/harvests/harvest-<date>-<child-app>.md` — one file per run (in this template repo) |
 
 ---
 
@@ -25,7 +25,7 @@ Pull **platform** improvements from a **child app** into **`lattice-app-template
 | **5. (Later)** | Optional | New scaffolds get the update; **child app is not auto-updated** |
 
 ```text
-  npm run lattice:harvest-index     →  § SCRIPT —
+  npm run harvest [-- index]        →  § SCRIPT —
   Agent chat                        →  § AGENT —
   You edit the markdown             →  § REVIEWER —
   Agent on template branch          →  git diff in lattice-app-template
@@ -47,10 +47,12 @@ Pull **platform** improvements from a **child app** into **`lattice-app-template
 From **`lattice-app-template`**:
 
 ```bash
-npm run lattice:harvest-index -- --from ../runout
+npm run harvest -- --from ../fosterfolio --focus profile,styling,components
+# same as: npm run harvest -- index --from ../fosterfolio
+# alias:   npm run lattice:harvest-index -- --from ../fosterfolio
 ```
 
-Output (default): **`../cursor/research/harvests/harvest-<today>-runout.md`**
+Output (default): **`docs/research/harvests/harvest-<today>-fosterfolio.md`** (under this template, not `cursor/`)
 
 Open that file. You should see:
 
@@ -75,6 +77,8 @@ Re-run the script anytime to refresh **§ SCRIPT —** only; it keeps **§ AGENT
 | `--from <path>` | Child app repo (required) |
 | `--spawn-name <name>` | Filename segment (default: folder basename) |
 | `--out <file.md>` | Override output path |
+| `--focus <csv>` | Highlight utility scopes (`profile`, `styling`, `components`, `docs`) |
+| `--include-segment <seg>` | Keep a normally excluded product segment in the harvest (repeatable) |
 | `--dry-run` | Print to stdout |
 
 ### Product exclusions (automatic)
@@ -85,13 +89,13 @@ Not a fixed Runout list. The script **infers** product path segments (child app 
 
 ## Step 2 — Analyze (Cursor Agent) ← do this next
 
-1. Open **`lattice-ecosystem.code-workspace`** (or ensure `cursor/` and both repos are in the workspace).
-2. Open your harvest doc (e.g. `cursor/research/harvests/harvest-2026-05-18-runout.md`).
+1. Open the template repo (and the child app if you want to diff).
+2. Open your harvest doc (e.g. `docs/research/harvests/harvest-2026-10-05-fosterfolio.md`).
 3. Start a **new Agent** chat.
 4. Paste (replace the filename if yours differs):
 
 ```text
-Read cursor/research/harvests/harvest-2026-05-18-runout.md.
+Read docs/research/harvests/harvest-2026-10-05-fosterfolio.md.
 
 The § SCRIPT — sections are complete. Do not re-scan both repos from scratch — use that file as your checklist.
 
@@ -142,7 +146,7 @@ You do not need every SCRIPT path — only what you explicitly approve here gets
 In lattice-app-template only, on branch integrate/runout-2026-05-18:
 
 Integrate only what § REVIEWER — Decisions marks APPROVE in
-cursor/research/harvests/harvest-2026-05-18-runout.md.
+docs/research/harvests/harvest-2026-10-05-fosterfolio.md.
 
 - Generalize for the template (keep Things scaffold; strip child-app naming).
 - Wire Container, routes, .env.example, terraform, tests as needed.
@@ -179,8 +183,8 @@ Before merging the integrate branch.
 
 ## Related
 
-- `scripts/lattice-harvest-index.mjs`, `lattice-harvest-paths.mjs`, `lattice-harvest-product-context.mjs`
+- `scripts/harvest.mjs` (`npm run harvest`), `lattice-harvest-index.mjs`, `lattice-harvest-paths.mjs`, `lattice-harvest-product-context.mjs`
 - `.lattice/harvest.json.example` — optional product-path hints for harvest indexing (child app)
 - `.lattice/refresh.json.example` — spawn refresh manifest (committed in **target** repo after scaffold)
-- `cursor/research/lattice-ecosystem-upstream-harvest.md` — example Tier 1 ideas (runout scan)
+- [`docs/research/harvests/`](../research/harvests/) — harvest reports written by `npm run harvest`
 - [Scaffold workflow](../scaffold-workflow.md) — greenfield scaffold and [refresh an existing spawn](../scaffold-workflow.md#refresh-an-existing-spawn-re-sync-from-template)

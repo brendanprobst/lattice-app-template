@@ -4,7 +4,7 @@
  *
  *   npm run lattice:harvest-index -- --from ../<child-app>
  *   npm run lattice:harvest-index -- --from ../runout --spawn-name runout
- *   npm run lattice:harvest-index -- --from ../acme-app --out ../cursor/research/harvests/harvest-2026-05-18-acme-app.md
+ *   npm run harvest -- --from ../acme-app --out docs/research/harvests/harvest-2026-05-18-acme-app.md
  *
  * Re-run updates SCRIPT sections only; preserves § AGENT — and § REVIEWER — if the output file exists.
  * See docs/playbooks/upstream-harvest.md and the ecosystem plan in cursor/plans/.
@@ -22,13 +22,23 @@ import {
 
 const templateRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-function parseArgs(argv) {
+/** Known utility-harvest scopes → path / filename hints. */
+export const UTILITY_FOCUS_HINTS = {
+  profile: ["profile", "ProfilePage", "userProfile"],
+  styling: ["globals.css", "styles/", "ui-and-styling", "tailwind", "theme"],
+  components: ["client/components", "components/ui", "registry", "hoc", "higher-order"],
+  docs: ["docs/ui-and-styling", "apps/web/docs/", "docs/playbooks/"],
+};
+
+export function parseHarvestIndexArgs(argv, { requireFrom = true } = {}) {
   const args = argv.slice(2);
   const opts = {
     from: null,
     out: null,
     spawnName: null,
     dryRun: false,
+    focus: [],
+    includeSegments: [],
   };
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -36,29 +46,51 @@ function parseArgs(argv) {
     else if (a === "--from" && args[i + 1]) opts.from = args[++i];
     else if (a === "--out" && args[i + 1]) opts.out = args[++i];
     else if (a === "--spawn-name" && args[i + 1]) opts.spawnName = args[++i];
-    else if (a.startsWith("-")) {
-      console.error(`Unknown flag: ${a}`);
-      process.exit(1);
+    else if ((a === "--focus" || a === "--utility") && args[i + 1]) {
+      opts.focus.push(
+        ...args[++i]
+          .split(",")
+          .map((s) => s.trim().toLowerCase())
+          .filter(Boolean),
+      );
+    } else if (a === "--include-segment" && args[i + 1]) {
+      opts.includeSegments.push(args[++i].toLowerCase());
+    } else if (a.startsWith("-")) {
+      throw new Error(`Unknown flag: ${a}`);
     } else {
-      console.error(`Unexpected argument: ${a}`);
-      process.exit(1);
+      throw new Error(`Unexpected argument: ${a}`);
     }
   }
-  if (!opts.from) {
-    console.error(
-      "Usage: npm run lattice:harvest-index -- --from <child-app-path> [--spawn-name <child-app>] [--out file.md]",
+  if (requireFrom && !opts.from) {
+    throw new Error(
+      "Usage: npm run harvest -- index --from <child-app-path> [--spawn-name <child-app>] [--out file.md] [--focus profile,styling,components] [--include-segment <seg>]",
     );
-    process.exit(1);
   }
   return opts;
 }
 
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+export function pathMatchesFocus(relPath, focusKeys) {
+  if (!focusKeys.length) return false;
+  const rel = relPath.toLowerCase();
+  for (const key of focusKeys) {
+    const hints = UTILITY_FOCUS_HINTS[key] ?? [key];
+    if (hints.some((h) => rel.includes(h.toLowerCase()))) return true;
+  }
+  return false;
 }
 
-function defaultOutPath(spawnName) {
-  return join(templateRoot, "..", "cursor", "research", "harvests", `harvest-${todayIso()}-${spawnName}.md`);
+function applyIncludeSegments(productContext, includeSegments) {
+  if (!includeSegments.length) return productContext;
+  for (const seg of includeSegments) {
+    productContext.productSegments.delete(seg);
+  }
+  productContext.meta.includeSegments = [...includeSegments].sort();
+  return productContext;
+}
+
+export function defaultHarvestOutPath(spawnName, now = new Date()) {
+  const day = now.toISOString().slice(0, 10);
+  return join(templateRoot, "docs", "research", "harvests", `harvest-${day}-${spawnName}.md`);
 }
 
 function runDiff(templateDir, spawnDir) {
@@ -288,6 +320,27 @@ function preserveTail(existing) {
   return { agent, reviewer };
 }
 
+function formatFocusSection(buckets, focusKeys) {
+  if (!focusKeys.length) return "";
+  const all = [
+    ...buckets.feature.differ,
+    ...buckets.feature["spawn-only"],
+    ...buckets.foundation.differ,
+    ...buckets.foundation["spawn-only"],
+  ];
+  const matched = [...new Set(all.filter((p) => pathMatchesFocus(p, focusKeys)))].sort();
+  const unknown = focusKeys.filter((k) => !UTILITY_FOCUS_HINTS[k]);
+  let s = `## § SCRIPT — Utility focus
+
+Requested scopes: ${focusKeys.map((k) => `\`${k}\``).join(", ")}
+${unknown.length ? `\nUnknown scopes (matched as literal path hints): ${unknown.map((k) => `\`${k}\``).join(", ")}\n` : ""}
+Paths in feature/foundation buckets that match this harvest's utility focus (${matched.length}):
+
+${mdList(matched)}
+`;
+  return s;
+}
+
 function buildDocument(opts, buckets, templateDir, spawnDir, productContext) {
   const childAppName = opts.spawnName || basename(spawnDir);
   const templateLabel = "lattice-app-template";
@@ -306,14 +359,17 @@ function buildDocument(opts, buckets, templateDir, spawnDir, productContext) {
 **Generated:** ${new Date().toISOString()}  
 **Child app:** \`${spawnDir}\`  
 **Template:** \`${templateDir}\`  
-**Command:** \`npm run lattice:harvest-index -- --from ${opts.from.replace(templateRoot, ".")}\`
+**Command:** \`npm run harvest -- index --from ${opts.from.replace(templateRoot, ".")}${opts.focus.length ? ` --focus ${opts.focus.join(",")}` : ""}${opts.includeSegments.map((s) => ` --include-segment ${s}`).join("")}\`
 
 > SCRIPT sections are deterministic (re-run safe). AGENT and REVIEWER sections are preserved on re-run unless missing.
 
 `;
 
+  const focusSection = formatFocusSection(buckets, opts.focus || []);
+
   return `${header}
 ${productSection}
+${focusSection}
 ${feature}
 ${foundation}
 ${excluded}
@@ -321,18 +377,22 @@ ${agent}
 ${reviewer}`;
 }
 
-function main() {
-  const opts = parseArgs(process.argv);
+export function runHarvestIndex(rawOpts) {
+  const opts = { ...rawOpts };
   const spawnDir = resolve(process.cwd(), opts.from);
   if (!existsSync(spawnDir)) {
-    console.error(`Child app path not found: ${spawnDir}`);
-    process.exit(1);
+    throw new Error(`Child app path not found: ${spawnDir}`);
   }
   const spawnName = opts.spawnName || basename(spawnDir);
-  opts.out = opts.out ? resolve(process.cwd(), opts.out) : resolve(defaultOutPath(spawnName));
+  opts.out = opts.out ? resolve(process.cwd(), opts.out) : resolve(defaultHarvestOutPath(spawnName));
   opts.from = spawnDir;
+  opts.focus = opts.focus || [];
+  opts.includeSegments = opts.includeSegments || [];
 
-  const productContext = resolveProductContext(templateRoot, spawnDir);
+  const productContext = applyIncludeSegments(
+    resolveProductContext(templateRoot, spawnDir),
+    opts.includeSegments,
+  );
   const lines = runDiff(templateRoot, spawnDir);
   const entries = parseDiffLines(lines, templateRoot, spawnDir);
   const buckets = bucketEntries(entries, productContext.productSegments);
@@ -354,7 +414,7 @@ function main() {
     console.error(
       `\n[dry-run] feature=${counts.feature} foundation=${counts.foundation} excluded=${counts.excluded} template-only=${counts.templateOnly}`,
     );
-    return;
+    return { out: opts.out, dryRun: true, counts, productContext };
   }
 
   mkdirSync(dirname(opts.out), { recursive: true });
@@ -363,6 +423,9 @@ function main() {
   console.log(
     `  product segments: ${[...productContext.productSegments].sort().join(", ") || "(none)"}`,
   );
+  if (opts.focus.length) {
+    console.log(`  utility focus: ${opts.focus.join(", ")}`);
+  }
   console.log(
     `  feature candidates: ${counts.feature} | foundation: ${counts.foundation} | excluded: ${counts.excluded} | template-only: ${counts.templateOnly}`,
   );
@@ -376,6 +439,20 @@ Step 1 done (SCRIPT sections only).
     4. Agent → integrate approved items on a template branch → npm run ci
 
   Child app is not modified.`);
+  return { out: opts.out, dryRun: false, counts, productContext };
 }
 
-main();
+function main() {
+  try {
+    const opts = parseHarvestIndexArgs(process.argv);
+    runHarvestIndex(opts);
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : err);
+    process.exit(1);
+  }
+}
+
+const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+if (invokedDirectly) {
+  main();
+}
