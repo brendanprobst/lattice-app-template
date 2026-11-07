@@ -8,7 +8,8 @@
   "prunePaths": [
     "apps/web/app/login",
     "apps/web/client/pages/login",
-    "test/api/auth/supabaseAuthMidleware.test.ts"
+    "test/api/auth/supabaseAuthMidleware.test.ts",
+    "apps/api/supabase"
   ],
   "notes": "postRefreshPrompts run automatically on scaffold:refresh (then npm ci / npm run ci). This notes field is printed only. Example: update Supabase redirect URLs from /login to /auth/sign-in after refresh.",
   "postRefreshPrompts": [

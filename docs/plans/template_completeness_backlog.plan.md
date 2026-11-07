@@ -14,6 +14,15 @@ todos:
   - id: add-supabase-cli-layout
     content: Add root supabase/ (config.toml, timestamped migrations), npm run supabase:push; see docs/playbooks/supabase-migrations.md
     status: pending
+  - id: verify-applied-sql-against-live-postgres
+    content: >-
+      No live Postgres test yet of scripts/applied-sql.mjs / lattice.applied_sql change
+      tracking or the allowlist's at-most-once backfill (docs/plans/supabase_sql_safety.plan.md).
+      Spin up `docker run postgres`, add `create schema auth; create table auth.users (id uuid,
+      email text);`, point a temp SUPABASE_DB_URL at it, and confirm: first planStandupMigrations
+      run lists both feature migrations NEW; a second run says "up to date"; deleting a row from
+      allowed_emails and re-running the allowlist migration does not bring it back.
+    status: pending
   - id: add-refresh-spawn-script
     content: Implement scripts/refresh-spawn.mjs + npm run scaffold:refresh (reads target .lattice/refresh.json); spec in docs/scaffold-workflow.md
     status: pending
@@ -122,7 +131,7 @@ High value, small scope—work in roughly this order:
 | Order | Item | Notes |
 |-------|------|--------|
 | F0 | **`scripts/refresh-spawn.mjs`** | Re-sync long-lived spawns from local template; target owns `.lattice/refresh.json` — [scaffold workflow § Refresh](../scaffold-workflow.md#refresh-an-existing-spawn-re-sync-from-template). |
-| F0b | **Supabase CLI layout** | Root `supabase/migrations/`, `npm run supabase:push` — [Supabase migrations playbook](../playbooks/supabase-migrations.md). |
+| F0b | **Supabase CLI layout** | Schema folders are in the template under `supabase/migrations/` (`master-migration/`, `feature-migrations/`, `seed/features/`). `npm run supabase:push` is still not wired — [Supabase migrations playbook](../playbooks/supabase-migrations.md). |
 | F1 | **`scripts/smoke`** | Deployed HTTPS checks with `API_BASE_URL` + `BEARER_TOKEN`; no secret logging. |
 | F2 | **Deploy + smoke GitHub workflow** | AWS OIDC; masked outputs. |
 | F2b | **GitHub Deploy app + Infisical** | **Done in template.** Spawn still fills vault keys once. **Deploy app** is the GitHub path. Terraform apply stays on the laptop until F5. Setup: [`docs/playbooks/infisical-github-deploys.md`](../playbooks/infisical-github-deploys.md). |

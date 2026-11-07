@@ -1,20 +1,26 @@
 /**
- * Apply SQL files listed in `.lattice/standup.json` after terraform apply.
+ * Plan, confirm and apply the SQL files listed in `.lattice/standup.json`.
+ * `deploy:aws` plans and asks before terraform apply, then applies after it.
  *
- *   { "migrations": { "dev": ["apps/api/supabase/migrations/foo.sql"], "prod": ["…"] } }
- *   { "migrations": ["apps/api/supabase/migrations/foo.sql"] }
+ *   { "migrations": { "dev": ["supabase/migrations/feature-migrations/foo.sql"], "prod": ["…"] } }
+ *   { "migrations": ["supabase/migrations/feature-migrations/foo.sql"] }
  *
  * Connection: `SUPABASE_DB_URL` in the shell, else `supabase/.env.<env>`
  * (prod is only `.env.prod`; dev is `.env.dev` then `.env.local` then `.env`).
  * Laptop-only — gitignored. Never print the URL or password.
  *
- * Empty / missing config is a no-op. `--plan-only` and `--bootstrap-only`
- * never reach this (callers skip).
+ * Only files that are NEW or CHANGED for that database (see `lattice.applied_sql`
+ * in ./applied-sql.mjs) are listed, and only a person typing the confirm word
+ * applies them. Empty / missing config is a no-op. `--plan-only` and
+ * `--bootstrap-only` never reach this (callers skip).
  */
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { spawnSync } from "node:child_process";
+import { createInterface } from "node:readline/promises";
+import { applyPendingSql, planAppliedSql } from "./applied-sql.mjs";
 import { envFileLabel, readEnvFile, resolveEnvFile } from "./env-files.mjs";
+import { syncFeatureMigrations } from "./sync-feature-migrations.mjs";
 
 export const STANDUP_CONFIG_NAME = ".lattice/standup.json";
 
@@ -49,9 +55,35 @@ export function parseStandupMigrations(json, envName) {
   });
 }
 
+/**
+ * Pre-relayout paths a spawn's preserved `.lattice/standup.json` may still list.
+ * Applying them would re-run the old allowlist SQL (unconditional auth.users
+ * backfill) under a filename lattice.applied_sql has never seen.
+ */
+const LEGACY_MIGRATION_DIR = "apps/api/supabase/migrations/";
+export const LEGACY_MIGRATION_PATHS = {
+  "apps/api/supabase/migrations/allowed_emails_signup_gate.sql":
+    "supabase/migrations/feature-migrations/20260520120000_platform_allowed_emails_signup_gate.sql",
+  "apps/api/supabase/migrations/things.sql":
+    "supabase/migrations/feature-migrations/20260520120100_app_things.sql",
+};
+
+function legacyPathError(rel) {
+  const replacement = LEGACY_MIGRATION_PATHS[rel];
+  const fix = replacement
+    ? `Replace it with ${replacement}.`
+    : `Move it to supabase/migrations/feature-migrations/ with a YYYYMMDDHHMMSS_ prefix and list that path.`;
+  return new Error(
+    `${STANDUP_CONFIG_NAME} lists ${rel}, which is from the old ${LEGACY_MIGRATION_DIR} layout.\n` +
+      `${fix}\n` +
+      `See docs/playbooks/supabase-migrations.md#migrating-a-spawn-from-appsapisupabase.`,
+  );
+}
+
 export function resolveMigrationFiles(root, relPaths) {
   const files = [];
   for (const rel of relPaths) {
+    if (rel.replace(/\\/g, "/").startsWith(LEGACY_MIGRATION_DIR)) throw legacyPathError(rel);
     if (isAbsolute(rel) || rel.split(/[\\/]/).includes("..")) {
       throw new Error(`Refusing migration path ${rel}. Use a repo-relative path.`);
     }
@@ -154,97 +186,164 @@ export function resolvePsqlBin() {
   return "";
 }
 
-function requirePsql() {
-  const bin = resolvePsqlBin();
-  if (bin) return bin;
-  console.error(
-    "psql is required to apply standup migrations.\n" +
-      "On macOS: brew install libpq && export PATH=\"/opt/homebrew/opt/libpq/bin:$PATH\"",
+function dbUrlHelp(envName) {
+  return (
+    `Add SUPABASE_DB_URL to ${envFileLabel("supabase", envName)} (copy supabase/.env.example).\n` +
+    `If the password has @ or !, URL-encode them (%40 / %21) or keep the raw password — standup uses the last @ as the host.\n` +
+    `Use the session pooler or direct host on port 5432, not the transaction pooler (6543).`
   );
-  process.exit(1);
 }
 
-export function applyStandupMigrations(root, envName) {
+const PSQL_HELP =
+  "On macOS: brew install libpq && export PATH=\"/opt/homebrew/opt/libpq/bin:$PATH\"";
+
+/** One TTY check, shared with deploy-aws's terraform gate. */
+export function isInteractive() {
+  return Boolean(process.stdin.isTTY && process.stdout.isTTY);
+}
+
+/** The word a person must type. Flip here to change the prod rule. */
+export function confirmWord(envName) {
+  return envName === "prod" ? "prod" : "yes";
+}
+
+function readStandupList(root, envName, log) {
   const file = standupConfigPath(root);
   if (!existsSync(file)) {
-    console.log("→ skip standup migrations (no .lattice/standup.json)");
-    return;
+    log("→ skip standup migrations (no .lattice/standup.json)");
+    return null;
   }
   let parsed;
   try {
     parsed = JSON.parse(readFileSync(file, "utf8"));
   } catch {
-    console.error(`${STANDUP_CONFIG_NAME} is not valid JSON.`);
-    process.exit(1);
+    throw new Error(`${STANDUP_CONFIG_NAME} is not valid JSON.`);
   }
-  let relPaths;
-  try {
-    relPaths = parseStandupMigrations(parsed, envName);
-  } catch (err) {
-    console.error(err instanceof Error ? err.message : String(err));
-    process.exit(1);
-  }
+  const relPaths = parseStandupMigrations(parsed, envName);
   if (relPaths.length === 0) {
-    console.log(`→ skip standup migrations (none listed for ${envName})`);
-    return;
+    log(`→ skip standup migrations (none listed for ${envName})`);
+    return null;
   }
-  let files;
-  try {
-    files = resolveMigrationFiles(root, relPaths);
-  } catch (err) {
-    console.error(err instanceof Error ? err.message : String(err));
-    process.exit(1);
-  }
-  const { url: dbUrl, source } = resolveDbUrl(root, envName);
+  return resolveMigrationFiles(root, relPaths);
+}
+
+/**
+ * Read-only plan of the SQL that would run for `envName`.
+ *
+ * Returns `null` for every skip case (no config, empty list, no DB URL, no
+ * psql binary). Missing connection details are warnings so terraform is
+ * never blocked by them. Throws on a broken config or an unreachable /
+ * unqueryable database — a connection you have but can't use is treated as
+ * a real failure, not a skip, so the deploy stops before terraform.
+ */
+export function planStandupMigrations(
+  root,
+  envName,
+  { log = console.log, warn = console.warn, env = process.env, spawn = spawnSync, psqlBin } = {},
+) {
+  const files = readStandupList(root, envName, log);
+  if (!files) return null;
+
+  const { url: dbUrl, source } = resolveDbUrl(root, envName, env);
   const conn = parsePostgresConn(dbUrl);
   if (!conn) {
-    console.error(
-      `Standup migrations for ${envName} need a usable SUPABASE_DB_URL.\n` +
-        `Add it to ${envFileLabel("supabase", envName)} (copy supabase/.env.example).\n` +
-        `If the password has @ or !, URL-encode them (%40 / %21) or keep the raw password — standup uses the last @ as the host.\n` +
-        `Use the session pooler or direct host on port 5432, not the transaction pooler (6543).`,
+    warn(
+      `\nWarning: skipping Supabase SQL for ${envName}. No usable SUPABASE_DB_URL.\n${dbUrlHelp(envName)}\n`,
     );
-    process.exit(1);
+    return null;
   }
-  if (source && source !== "SUPABASE_DB_URL") {
-    console.log(`→ standup migrations: ${source}`);
+  const psql = psqlBin ?? resolvePsqlBin();
+  if (!psql) {
+    warn(
+      `\nWarning: skipping Supabase SQL for ${envName}. psql is required to apply standup migrations.\n${PSQL_HELP}\n`,
+    );
+    return null;
   }
-  const psql = requirePsql();
+  if (source && source !== "SUPABASE_DB_URL") log(`→ standup migrations: ${source}`);
+
   const secrets = [dbUrl, conn.password];
-  for (const { rel, abs } of files) {
-    console.log(`→ psql -h ${conn.host} -f ${rel} (${envName})`);
-    const r = spawnSync(
-      psql,
-      [
-        "-h",
-        conn.host,
-        "-p",
-        conn.port,
-        "-U",
-        conn.user,
-        "-d",
-        conn.database,
-        "-v",
-        "ON_ERROR_STOP=1",
-        "-f",
-        abs,
-      ],
-      {
-        cwd: root,
-        encoding: "utf8",
-        shell: false,
-        env: {
-          ...process.env,
-          PGPASSWORD: conn.password,
-          PGSSLMODE: "require",
-        },
-      },
+  const redact = (text) => redactDbUrl(text, secrets);
+  let result;
+  try {
+    result = planAppliedSql({ files, psql, conn, cwd: root, spawn, redact });
+  } catch (err) {
+    // Decision: an unreachable (or unqueryable) database stops the deploy
+    // before terraform. Unlike a missing URL, you have a connection target
+    // here and it isn't working — that's worth failing loudly for.
+    throw new Error(
+      `Supabase SQL for ${envName}: could not read lattice.applied_sql (is the database reachable?):\n` +
+        `${redact(err instanceof Error ? err.message : String(err))}`,
     );
-    const combined = `${r.stdout || ""}\n${r.stderr || ""}`;
-    if (r.error || r.status !== 0) {
-      console.error(redactDbUrl(combined, secrets).trim() || `psql failed on ${rel}`);
-      process.exit(r.status ?? 1);
+  }
+  for (const file of result.pending) {
+    if (file.status === "CHANGED") {
+      warn(
+        `\n!! ${file.rel} was already applied to ${envName} with different contents.\n` +
+          `!! Applied feature migrations should not be edited. Add a new migration instead.\n`,
+      );
     }
   }
-  console.log(`→ standup migrations: ${files.length} file(s) applied (${envName})`);
+  if (result.pending.length === 0) {
+    log(`→ Supabase SQL up to date for ${envName} (${result.appliedCount} already applied)`);
+  }
+  return {
+    envName,
+    conn,
+    dbUrl,
+    source,
+    psql,
+    pending: result.pending,
+    appliedCount: result.appliedCount,
+  };
+}
+
+async function askLine(question) {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    return await rl.question(question);
+  } finally {
+    rl.close();
+  }
+}
+
+/**
+ * Terraform-style confirm. Resolves true only when the person types the exact
+ * confirm word (case-sensitive). `approve` comes from a flag a person passes.
+ */
+export async function confirmSqlApply(
+  plan,
+  { approve = false, isTTY = isInteractive(), ask = askLine, log = console.log } = {},
+) {
+  if (approve) return true;
+  if (!isTTY) {
+    // Do not name the non-interactive flag here: agents read this message.
+    throw new Error(
+      `Supabase SQL for ${plan.envName} needs a person to approve it. Run this command yourself in a terminal.`,
+    );
+  }
+  const word = confirmWord(plan.envName);
+  log(`\nSupabase SQL to apply (${plan.envName}):`);
+  log(`  host: ${plan.conn.host}`);
+  log(`  user: ${plan.conn.user}`);
+  for (const file of plan.pending) log(`  ${file.status.padEnd(7)} ${file.rel}`);
+  log(`\nDo you want to apply this SQL?\n  Only '${word}' will be accepted to approve.\n`);
+  const answer = await ask("  Enter a value: ");
+  return String(answer ?? "").trim() === word;
+}
+
+/** Apply an approved plan. Throws on failure; nothing secret is printed. */
+export function applyStandupMigrations(root, plan, { log = console.log, spawn = spawnSync } = {}) {
+  syncFeatureMigrations(root, { warn: log });
+  const secrets = [plan.dbUrl, plan.conn.password];
+  applyPendingSql({
+    pending: plan.pending,
+    psql: plan.psql,
+    conn: plan.conn,
+    cwd: root,
+    envName: plan.envName,
+    spawn,
+    redact: (text) => redactDbUrl(text, secrets),
+    log,
+  });
+  log(`→ standup migrations: ${plan.pending.length} file(s) applied (${plan.envName})`);
 }

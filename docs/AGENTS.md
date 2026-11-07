@@ -13,7 +13,7 @@
 - **[Route 53 custom domain](playbooks/route53-custom-domain.md)** — Optional HTTPS hostname, ACM, registrar nameservers.
 - **[PostHog analytics](playbooks/posthog-analytics.md)** — Optional, feature-flagged web analytics (`@lattice/web`).
 - **[Email allowlist](playbooks/email-allowlist.md)** — Optional private-app signup and API gate.
-- **[Supabase migrations](playbooks/supabase-migrations.md)** — CLI / psql workflow; one Supabase project per spawn repo (planned `supabase/` layout).
+- **[Supabase migrations](playbooks/supabase-migrations.md)** — `supabase/migrations/master-migration/LATEST_*.sql`, `supabase/migrations/feature-migrations/`, and `supabase/migrations/seed/features/`. One Supabase project per spawn repo.
 - **[Template growth](playbooks/template-growth.md)** — Kernel / capability / catalog. Highest-priority agent policy for what may enter the default clone.
 - **[Upstream harvest](playbooks/upstream-harvest.md)** — Pull platform work from a **child app** into the template (`npm run harvest`); harvest reports live in [`research/harvests/`](research/harvests/).
 - **[Scaffold vs adapters](research/scaffold-agents-and-adapters.md)** — Why `npm run scaffold` does not generate adapters; how agent rules scope to API infra vs web analytics.

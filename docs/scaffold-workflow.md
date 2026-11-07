@@ -216,7 +216,7 @@ Refresh already ran `postRefreshPrompts` and `npm ci` / `npm run ci` unless you 
 | Step | When needed |
 |------|-------------|
 | **Supabase → Auth → URL configuration** | Auth routes changed (e.g. `/login` → `/auth/sign-in`, forgot/reset password). Add redirect URLs for new paths. |
-| **Supabase SQL** | New files under `apps/api/supabase/migrations/` — apply per [Supabase migrations playbook](playbooks/supabase-migrations.md) |
+| **Supabase SQL** | New files under `supabase/migrations/feature-migrations/`, plus a rebuilt `supabase/migrations/master-migration/LATEST_*.sql` — apply per [Supabase migrations playbook](playbooks/supabase-migrations.md) |
 | **Terraform** | Merge new keys from each env’s `terraform.tfvars.example` into that env’s `terraform.tfvars`. Default is dual-env: fill **dev and prod** on day 1; apply **dev** first. |
 | **Infisical / Deploy app** | `.lattice/infisical.json` is restored automatically. List any filled-in playbook in `preservePaths`. Generic steps: [Infisical and GitHub deploys](playbooks/infisical-github-deploys.md). |
 | **Browser smoke** | Sign-in, profile, Things against the **dev** URL ([smoke test deployment guide](plans/smoke_test_deployment_guide.plan.md)). Prod is the same check after the first `--env prod` apply. |

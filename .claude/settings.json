@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(*--approve-sql*)",
+      "Bash(psql)",
+      "Bash(psql *)",
+      "Bash(*/psql)",
+      "Bash(*/psql *)",
+      "Bash(supabase db push*)",
+      "Bash(supabase db reset*)",
+      "Bash(npx supabase db push*)",
+      "Bash(npx supabase db reset*)",
+      "Bash(npx supabase@* db push*)",
+      "Bash(npx supabase@* db reset*)",
+      "Bash(curl *api.supabase.com*)"
+    ],
+    "ask": [
+      "Bash(npm run supabase:seed*)"
+    ]
+  }
+}

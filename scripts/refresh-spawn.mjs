@@ -140,7 +140,7 @@ Post-refresh checklist — from the spawn repo:
 
 Then if needed since your last deploy:
   • Supabase Auth redirect URLs (/auth/sign-in, etc.) — see docs/playbooks/supabase-migrations.md
-  • Apply new SQL under apps/api/supabase/migrations/
+  • Apply new SQL under supabase/migrations/feature-migrations/
   • Merge each env terraform.tfvars.example → terraform.tfvars; npm run deploy:aws (dev first)
   • Infisical: .lattice/infisical.json is preserved; see docs/playbooks/infisical-github-deploys.md
 

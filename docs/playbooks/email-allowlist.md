@@ -28,12 +28,12 @@ Confirm in **AWS Console → Lambda → your API function → Configuration → 
 ## How the gate works
 
 - **Table**: `public.allowed_emails (email citext unique, note text, created_at timestamptz)`.
-- **Settings**: `public.allowlist_settings (singleton, enabled, updated_at)` — single-row config.
+- **Settings**: `public.allowlist_settings (singleton, enabled, updated_at, backfilled_at)` — single-row config. `backfilled_at` records the one-time `auth.users` backfill.
 - **Trigger function**: `public.enforce_allowed_email()` (`SECURITY DEFINER`). Lives in `public` because Supabase restricts `CREATE` in the `auth` schema; the function reads the settings row and short-circuits when disabled, otherwise raises `EMAIL_NOT_APPROVED: ...` for any email not in `allowed_emails`.
 - **Trigger**: `enforce_allowed_email` runs `BEFORE INSERT ON auth.users` and calls the public function.
 - **API middleware**: `requireAllowedEmail` runs after `requireSupabaseAuth` on every protected route. When `EMAIL_ALLOWLIST_ENABLED` is off, the factory returns a pass-through. When on, it consults `public.allowed_emails` (with a 60s in-process cache) and returns 403 `EMAIL_NOT_APPROVED` for emails not on the list.
 
-The trigger and table are defined in `apps/api/supabase/migrations/allowed_emails_signup_gate.sql`. The migration is fully idempotent — re-running it is safe.
+The trigger and table are defined in `supabase/migrations/feature-migrations/20260520120000_platform_allowed_emails_signup_gate.sql`. The migration is idempotent, and re-running it never changes who is approved. It copies existing `auth.users` emails into the list **at most once per database**: only while `backfilled_at` is null **and** `allowed_emails` is empty. A database that already has a list is marked done without copying anyone back. `deploy:aws` also tracks applied files in `lattice.applied_sql`, so the file does not re-run on every deploy.
 
 ### If the SQL Editor still rejects the trigger
 
@@ -42,7 +42,7 @@ Supabase grants `USAGE` on the `auth` schema to the SQL Editor role but withhold
 1. **Run the migration via the Supabase CLI / direct psql as the `postgres` role.** See **[Supabase migrations playbook](supabase-migrations.md)**. Quick form:
    ```bash
    psql "postgresql://postgres:<password>@<host>:5432/postgres" \
-     -f apps/api/supabase/migrations/allowed_emails_signup_gate.sql
+     -f supabase/migrations/feature-migrations/20260520120000_platform_allowed_emails_signup_gate.sql
    ```
 2. **Skip the DB trigger entirely and rely on the API middleware.** The API gate already rejects every authenticated request from a non-approved email; the only loss is that orphan `auth.users` rows accumulate when someone tries to sign up. Comment out the final `drop trigger` / `create trigger` block and re-run.
 
@@ -84,8 +84,8 @@ Work through these in order:
    where tgrelid = 'auth.users'::regclass
      and tgname = 'enforce_allowed_email';
    ```
-   If this returns no rows, the migration did not create the trigger (often **permission denied** in the browser SQL editor). Run `allowed_emails_signup_gate.sql` with **psql as `postgres`** (see *If the SQL Editor still rejects the trigger* above).
-4. **Rows in `allowed_emails`** — Test addresses must be inserted; the migration only auto-seeds existing `auth.users` and one owner example.
+   If this returns no rows, the migration did not create the trigger (often **permission denied** in the browser SQL editor). Run `20260520120000_platform_allowed_emails_signup_gate.sql` with **psql as `postgres`** (see *If the SQL Editor still rejects the trigger* above).
+4. **Rows in `allowed_emails`** — Test addresses must be inserted. The migration auto-seeds existing `auth.users` emails once, on a database whose list was empty, and never again.
 5. **JWT email** — The API reads `email` from the Supabase JWT. If a custom token path omits `email`, the middleware treats the user as unapproved (`403`). Normal Supabase email + Google OAuth users include `email` in the access token.
 
 ## Whitelist a friend
@@ -103,7 +103,9 @@ Email comparison is case-insensitive (`citext`).
 delete from public.allowed_emails where email = 'them@example.com';
 ```
 
-This blocks future signups *and* invalidates existing API requests for that user once the API's 60-second allowlist cache expires. To kick them out immediately, also delete their `auth.users` row in Supabase Studio.
+This blocks future signups *and* invalidates existing API requests for that user once the API's 60-second allowlist cache expires. Removing them does **not** delete their `auth.users` row, so they can still sign in to Supabase, but the API middleware (`EMAIL_ALLOWLIST_ENABLED`) rejects every authenticated request with `403`. To kick them out entirely, also delete their `auth.users` row in Supabase Studio.
+
+A removed friend stays removed. Re-running the migration or redeploying does not copy them back from `auth.users`.
 
 ## What the user sees when blocked
 
