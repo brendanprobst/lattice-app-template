@@ -11,7 +11,8 @@
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
+import { isMainModule } from "./is-main-module.mjs";
 
 const FEATURE_DIR = "supabase/migrations/feature-migrations";
 const MASTER_DIR = "supabase/migrations/master-migration";
@@ -117,6 +118,6 @@ function main() {
   process.exit(1);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMainModule(import.meta.url)) {
   main();
 }

@@ -19,6 +19,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync } fr
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { isMainModule } from "./is-main-module.mjs";
 import {
   DEFAULT_SCAFFOLD_PROMPTS,
   parsePipelineFlags,
@@ -387,8 +388,7 @@ First commit (if you cloned from GitHub, origin may already exist):
 `);
 }
 
-const invokedDirectly =
-  process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+const invokedDirectly = isMainModule(import.meta.url);
 
 if (invokedDirectly) {
   const opts = parseArgs(process.argv);

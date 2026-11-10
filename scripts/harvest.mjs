@@ -8,8 +8,7 @@
  *
  * See docs/playbooks/upstream-harvest.md
  */
-import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { isMainModule } from "./is-main-module.mjs";
 import { parseHarvestIndexArgs, runHarvestIndex } from "./lattice-harvest-index.mjs";
 
 export const HARVEST_COMMANDS = ["index", "help"];
@@ -71,8 +70,7 @@ export function runHarvestCli(argv = process.argv) {
   return runHarvestIndex(opts);
 }
 
-const invokedDirectly =
-  process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+const invokedDirectly = isMainModule(import.meta.url);
 
 if (invokedDirectly) {
   try {

@@ -31,8 +31,9 @@
  */
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { isMainModule } from "./is-main-module.mjs";
 import { loadWebEnv, takeEnvArg, terraformDir } from "./deploy-env.mjs";
 import { terraformInitArgs } from "./terraform-backend.mjs";
 import { appSharedPath, infisicalConfigPath, readAppSlug } from "./infisical-app.mjs";
@@ -389,7 +390,7 @@ function printOutputs(chdir) {
   if (custom) console.log(`  Custom:     https://${custom}/`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMainModule(import.meta.url)) {
   main().catch((err) => {
     console.error(err instanceof Error ? err.message : err);
     process.exit(1);

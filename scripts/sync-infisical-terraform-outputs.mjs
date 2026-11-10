@@ -14,8 +14,9 @@
  * GitHub machine identity is read-only and cannot run this script.
  */
 import { dirname, join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { isMainModule } from "./is-main-module.mjs";
 import { takeEnvArg, terraformDir } from "./deploy-env.mjs";
 import { terraformInitArgs } from "./terraform-backend.mjs";
 import { appSharedPath, readAppSlug, readWorkspaceId } from "./infisical-app.mjs";
@@ -216,6 +217,6 @@ function main() {
   console.log(`Wrote ${pairs.length} Terraform outputs to Infisical ${sharedPath} (${env}).`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMainModule(import.meta.url)) {
   main();
 }

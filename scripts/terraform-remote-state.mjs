@@ -9,8 +9,9 @@
  */
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { isMainModule } from "./is-main-module.mjs";
 import { readAppSlug } from "./infisical-app.mjs";
 import {
   inspectStateBucket,
@@ -275,6 +276,6 @@ function main() {
   console.log("\nS3 state is readable. No state JSON printed.");
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMainModule(import.meta.url)) {
   main();
 }

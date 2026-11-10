@@ -22,6 +22,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { detectAgentMode } from "./agent-mode.mjs";
+import { isMainModule } from "./is-main-module.mjs";
 import {
   parsePipelineFlags,
   runPostRefreshPrompts,
@@ -398,7 +399,6 @@ function main() {
   printPostRefreshChecklist(targetRoot, templateSha);
 }
 
-const invokedDirectly =
-  process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+const invokedDirectly = isMainModule(import.meta.url);
 
 if (invokedDirectly) main();

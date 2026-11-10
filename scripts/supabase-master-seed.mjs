@@ -26,7 +26,8 @@
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
+import { isMainModule } from "./is-main-module.mjs";
 import { applyEnvFile, envFileLabel, resolveEnvFile, takeEnvArg } from "./env-files.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -259,6 +260,6 @@ async function main() {
   );
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMainModule(import.meta.url)) {
   await main();
 }

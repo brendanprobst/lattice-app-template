@@ -15,8 +15,9 @@
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { isMainModule } from "./is-main-module.mjs";
 import {
   appFlagsPath,
   appSensitivePath,
@@ -1226,7 +1227,7 @@ function printAuthLeftover(env) {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMainModule(import.meta.url)) {
   main().catch((err) => {
     console.error(redactSecrets(err?.message || String(err)));
     process.exit(1);

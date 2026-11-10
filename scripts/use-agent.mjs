@@ -19,8 +19,9 @@
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, rmSync, cpSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { detectAgentMode, isGeneratedClaudeMd } from "./agent-mode.mjs";
+import { isMainModule } from "./is-main-module.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -453,7 +454,7 @@ function main(cmd) {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMainModule(import.meta.url)) {
   try {
     main(process.argv[2]);
   } catch (err) {
