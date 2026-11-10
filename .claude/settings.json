@@ -1,21 +1,44 @@
 {
-  "permissions": {
-    "deny": [
-      "Bash(*--approve-sql*)",
-      "Bash(psql)",
-      "Bash(psql *)",
-      "Bash(*/psql)",
-      "Bash(*/psql *)",
-      "Bash(supabase db push*)",
-      "Bash(supabase db reset*)",
-      "Bash(npx supabase db push*)",
-      "Bash(npx supabase db reset*)",
-      "Bash(npx supabase@* db push*)",
-      "Bash(npx supabase@* db reset*)",
-      "Bash(curl *api.supabase.com*)"
-    ],
-    "ask": [
-      "Bash(npm run supabase:seed*)"
-    ]
-  }
+	"permissions": {
+		"deny": [
+			"Bash(*--approve-sql*)",
+			"Bash(psql)",
+			"Bash(psql *)",
+			"Bash(*/psql)",
+			"Bash(*/psql *)",
+			"Bash(supabase db push*)",
+			"Bash(supabase db reset*)",
+			"Bash(npx supabase db push*)",
+			"Bash(npx supabase db reset*)",
+			"Bash(npx supabase@* db push*)",
+			"Bash(npx supabase@* db reset*)",
+			"Bash(curl *api.supabase.com*)",
+			"Read(./supabase/.env)",
+			"Read(./supabase/.env.dev)",
+			"Read(./supabase/.env.local)",
+			"Read(./supabase/.env.prod)",
+			"Bash(*supabase/.env.dev*)",
+			"Bash(*supabase/.env.local*)",
+			"Bash(*supabase/.env.prod*)",
+			"Read(./apps/api/.env)",
+			"Read(./apps/api/.env.local)",
+			"Read(./apps/api/.env.dev)",
+			"Read(./apps/api/.env.prod)",
+			"Bash(*apps/api/.env.dev*)",
+			"Bash(*apps/api/.env.local*)",
+			"Bash(*apps/api/.env.prod*)",
+			"Edit(./.claude/settings.json)"
+		],
+		"ask": ["Bash(npm run supabase:seed*)"]
+	},
+	"sandbox": {
+		"filesystem": {
+			"denyRead": [
+				"./apps/api/.env",
+				"./apps/api/.env.local",
+				"./apps/api/.env.dev",
+				"./apps/api/.env.prod"
+			]
+		}
+	}
 }
