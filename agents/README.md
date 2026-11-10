@@ -8,8 +8,8 @@ can coexist in history.
 ## Switching between tools
 
 ```bash
-npm run use:claude   # generate CLAUDE.md files; remove .cursor/rules/*.mdc
-npm run use:cursor   # generate .cursor/rules/*.mdc; remove CLAUDE.md files
+npm run use:claude   # generate CLAUDE.md, .claude/{rules,commands,skills}, .mcp.json; remove .cursor/rules/
+npm run use:cursor   # generate .cursor/rules/*.mdc + README; remove the Claude files
 npm run agents:sync  # generate both (for teams using both tools simultaneously)
 npm run agent:status # show which mode is currently active
 ```
@@ -21,6 +21,17 @@ git add -A && git commit -m "chore: activate Claude agent mode"
 
 **Editing expert content:** change `agents/prompts/<id>.md`, then re-run the appropriate
 command above to regenerate. The `description` and glob metadata live in `registry.yaml`.
+
+**Skills and MCP** are not personas, so they keep a Cursor-native source of truth:
+`.cursor/skills/<name>/` is mirrored to `.claude/skills/<name>/`, and `.cursor/mcp.json` (if present) is
+converted to `.mcp.json` (`${env:VAR}` → `${VAR}`, `"type": "http"` added for `url` servers).
+Edit the `.cursor/` copies; the Claude copies are overwritten on every sync.
+
+**Hard guardrails** live in the committed `.claude/settings.json` (`permissions.deny` / `ask`).
+That file is the only list of what agents are blocked from. Read it there rather than copying
+rules into docs. `use-agent` never generates or removes it. Cursor has no committed
+equivalent, so in Cursor the "agents never apply SQL to a remote database" rule relies on the rule
+text only (`infra-expert`, the `sql-schema` skill, `supabase/AGENTS.md`).
 
 ## How each tool uses the generated configs
 
@@ -35,16 +46,22 @@ command above to regenerate. The `description` and glob metadata live in `regist
 The Test expert rule activates on **`test/**`** *and* **`apps/api/`**, **`apps/web/client/`**, **`apps/web/app/`**
 so test conventions are in context alongside the feature you're implementing (tests-first).
 
-**Claude Code** (`CLAUDE.md` files):
+**Claude Code** (`CLAUDE.md` files + `.claude/`):
 
 Claude Code reads `CLAUDE.md` hierarchically — the file closest to what you're editing wins,
-with all parent-directory files also loaded. Expert guidance is injected automatically:
+with all parent-directory files also loaded. Each `dir/**` glob becomes a `dir/CLAUDE.md`, and
+**template-growth** is inlined in the root `CLAUDE.md` so it is always loaded:
 
 | Directory | Expert loaded |
 |-----------|---------------|
 | `apps/api/domain/`, `apps/api/application/`, `docs/adr/` | DDD expert |
 | `apps/api/`, `apps/web/client/`, `apps/web/app/`, `test/api/`, `test/web/` | Test expert |
 | `apps/api/infrastructure/`, `apps/api/config/`, `apps/web/client/lib/` | Infrastructure expert |
+| `docs/research/harvests/` | Harvest expert |
+
+Globs that aren't whole directories (`seed.json`, `test/AGENTS.md`, the harvest playbooks and
+scripts) become a path-scoped `.claude/rules/<id>.md` (`paths:` frontmatter), which Claude loads
+when it reads a matching file.
 
 Global experts are available as slash commands: `/debug` and `/janitor`.
 

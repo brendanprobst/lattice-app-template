@@ -3,7 +3,8 @@
 # Source of truth: agents/prompts/<id>.md
 #
 # Generate tool-specific configs from these prompts:
-#   npm run use:claude   →  CLAUDE.md files (hierarchical, one per glob directory)
+#   npm run use:claude   →  CLAUDE.md per `dir/**` glob; .claude/rules/<id>.md for single-file globs;
+#                           .claude/commands/<command>.md for global agents
 #   npm run use:cursor   →  .cursor/rules/*.mdc files (frontmatter + body)
 #   npm run agents:sync  →  both simultaneously
 
