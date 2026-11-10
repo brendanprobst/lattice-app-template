@@ -177,15 +177,17 @@ Behavior (spec):
 
 1. Resolve `--into` to an existing directory (required).
 2. Read **`<target>/.lattice/refresh.json`**; fail with a clear message if missing.
-3. Snapshot spawn-owned paths (defaults + `preservePaths`).
-4. Run **`scaffold.mjs`** with `--into`, `--name`, `--repo` from the manifest, plus **`--force --yes`**.
-5. Delete each path in `prunePaths` (never a preserved path).
-6. Restore the snapshot so spawn config wins over anything the copy wrote.
-7. Run `postRefreshPrompts` in the spawn via `agent` / `cursor agent` (docs only, as written).
-8. Run **`npm ci`** then **`npm run ci`** in the spawn (build, lint, type-check, Jest, Vitest).
-9. Print leftover human steps (Supabase, Terraform, Infisical). Do **not** deploy.
+3. **Fail unless template and spawn are on the same agent mode** (`claude`, `cursor`, or `synced` — `npm run agent:status` in each). Also blocks `--dry-run`. Align with `npm run use:claude` / `use:cursor` / `agents:sync` in the repo that differs, commit, then re-run.
+4. Snapshot spawn-owned paths (defaults + `preservePaths`) and every skill the spawn already has (see below).
+5. Run **`scaffold.mjs`** with `--into`, `--name`, `--repo` from the manifest, plus **`--force --yes`**.
+6. Put the spawn's skills back exactly as they were (template copies of those names are discarded).
+7. Delete each path in `prunePaths` (never a preserved path).
+8. Restore the snapshot so spawn config wins over anything the copy wrote.
+9. Run `postRefreshPrompts` in the spawn via `agent` / `cursor agent` (docs only, as written).
+10. Run **`npm ci`** then **`npm run ci`** in the spawn (build, lint, type-check, Jest, Vitest).
+11. Print leftover human steps (Supabase, Terraform, Infisical). Do **not** deploy.
 
-Optional flags: `--dry-run` (scaffold dry-run + list prunes + print prompts/tests), `--skip-prune`, `--skip-prompts`, `--skip-tests`.
+Optional flags: `--dry-run` (scaffold dry-run + list prunes + skill plan + print prompts/tests), `--skip-prune`, `--skip-prompts`, `--skip-tests`.
 
 ### What refresh preserves vs overwrites
 
@@ -195,7 +197,9 @@ Refresh **must** keep spawn-owned config. It snapshots these paths before copy a
 
 **Also preserved** if listed in `preservePaths`: any other spawn-owned file (hostnames, filled playbooks, product notes). Fosterfolio would list `docs/playbooks/infisical-github-deploys.md` here if it keeps names in that file — it will then stop receiving template edits to that path.
 
-**Not copied from the template** (already excluded by `scaffold.mjs`): `.git/`, real `*.tfvars`, `terraform.tfstate`, `.terraform/`, `.env` / `.env.*` except `*.env.example`.
+**Skills** (`.cursor/skills/<name>/`, `.claude/skills/<name>/`): a skill name the spawn already has in either folder is **never overwritten** — the spawn's copy is restored byte-for-byte, and the template's copy of that name is not added to the other folder. Template skills the spawn doesn't have are **added**. Refresh lists kept skills whose content differs from the template so you can pull template changes in by hand. Once added, a skill is spawn-owned: later template edits to it are reported, not applied. To drop a skill, list its folders in `prunePaths`.
+
+**Not copied from the template** (already excluded by `scaffold.mjs`): `.git/`, real `*.tfvars`, `terraform.tfstate`, `.terraform/`, `.env` / `.env.*` except `*.env.example`, and per-user Claude Code files (`.claude/settings.local.json`, `CLAUDE.local.md`) — a spawn's own copies are left untouched.
 
 | Overwritten when the path exists in the template | Examples |
 |--------------------------------------------------|----------|

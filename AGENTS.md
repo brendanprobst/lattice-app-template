@@ -18,7 +18,7 @@
 
 Each major directory contains **`AGENTS.md`**. Use that name so humans and automation can rely on a single predictable filename when opening a folder for the first time. **`README.md`** is better for human-only onboarding in libraries; here **`AGENTS.md`** doubles as developer notes and agent context.
 
-**Refresh overwrites these files.** `npm run scaffold:refresh` copies `AGENTS.md`, `docs/AGENTS.md`, `agents/**`, and `.cursor/rules/**` from the template. Do not put spawn-only names, hostnames, or Infisical slugs here — they will disappear on the next refresh. Keep those in `.lattice/infisical.json` and any path listed in `.lattice/refresh.json` `preservePaths`.
+**Refresh overwrites these files.** `npm run scaffold:refresh` copies `AGENTS.md`, `docs/AGENTS.md`, `agents/**`, and the generated agent configs (`CLAUDE.md` files + `.claude/`, or `.cursor/rules/**`) from the template. Do not put spawn-only names, hostnames, or Infisical slugs here — they will disappear on the next refresh. Keep those in `.lattice/infisical.json` and any path listed in `.lattice/refresh.json` `preservePaths`. Refresh fails unless template and spawn are on the same agent mode (`npm run agent:status`), and never overwrites a skill the spawn already has — only new template skills are added (see [`docs/scaffold-workflow.md`](docs/scaffold-workflow.md#what-refresh-preserves-vs-overwrites)).
 
 ## CI parity
 
