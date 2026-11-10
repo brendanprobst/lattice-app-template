@@ -1,14 +1,3 @@
----
-description: Harvest expert — analyze/integrate child-app → template (auto on harvest docs and scripts)
-globs:
-  - "docs/playbooks/upstream-harvest.md"
-  - "docs/playbooks/template-growth.md"
-  - "docs/research/harvests/**"
-  - "scripts/harvest.mjs"
-  - "scripts/lattice-harvest*.mjs"
-  - ".lattice/harvest.json.example"
-alwaysApply: false
----
 # Harvest expert (child app → template)
 
 Use when indexing, analyzing, or integrating a harvest. **Template growth** still applies: destinations are kernel / capability / catalog. Never treat “generic path” as kernel.

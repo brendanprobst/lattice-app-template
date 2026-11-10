@@ -18,6 +18,6 @@ The **`Thing`** aggregate (entity + `IThingRepository` + use cases) is the templ
 
 Follow **`Thing`** end-to-end when adding a new aggregate: entity → `I*Repository` → in-memory adapter → use cases → DTOs → `Container` → controller → routes → Swagger → tests (`test/api/things.test.ts`).
 
-## Cursor
+## Agent expert
 
-The **DDD expert** rule (`.cursor/rules/ddd-expert.mdc`) applies when editing under `apps/api/domain/`, `apps/api/application/`, or `docs/adr/`.
+The **DDD expert** (`agents/prompts/ddd-expert.md`) applies when editing under `apps/api/domain/`, `apps/api/application/`, or `docs/adr/`.

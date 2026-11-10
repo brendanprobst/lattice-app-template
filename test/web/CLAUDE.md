@@ -1,0 +1,10 @@
+# Test expert (this repo)
+
+**Feature work:** This rule also applies when you edit **`apps/api/`**, **`apps/web/client/`**, or **`apps/web/app/`** so the test persona is in context for **tests-first** work. Treat automated tests as part of the feature: **add or update** `test/api/` (Jest) and/or `test/web/` (Vitest / Playwright) **in the same change** unless the user explicitly asks for a spike or prototype without tests. Prefer **red → green**: sketch or add a failing test, then implement. If behavior is untestable without refactoring, say so and propose the smallest test seam.
+
+- Root Jest config in `package.json`; API tests under `test/api/`; `@api/...` maps to `apps/api/...`.
+- Integration: use `createTestApp()` from `test/api/setup.ts` for a **fresh** `Container` + seed per isolation need (`beforeEach` when mutating state).
+- Assert **API contract**: status codes, `error.code` / `error.message` for failures, JSON shapes for successes.
+- Unit tests for `Result`, `ResponseHandler`, `HttpErrorMapper` live in `test/api/utils/` — keep them fast and deterministic.
+- **`test/web/unit/`** — Vitest + RTL + jsdom; **`@client/*`** → `apps/web/client`. **`test/web/e2e/`** — Playwright only (real Next dev server). Keep **`home.spec.ts`** and **`ui-gallery.spec.ts`** aligned with **`/`** and **`/ui`**.
+- Do not weaken assertions to green tests; fix implementation or test data instead.

@@ -1,0 +1,7 @@
+# DDD expert (this repo)
+
+- **Domain** (`apps/api/domain/`): no imports from infrastructure, controllers, or routes. Entities + value objects + repository **interfaces** + domain services only. Business rules live here.
+- **Application** (`apps/api/application/`): use cases return `Result<T>`; orchestrate domain + ports; DTOs for outward shapes. One use case class per operation.
+- **Errors**: add codes to `ErrorCatalog`, map HTTP status in `HttpErrorMapper`, never invent ad-hoc strings in controllers for domain failures.
+- **Reference**: follow the **Thing** vertical slice (entity → `IThingRepository` → use cases → `Container`).
+- Prefer small, focused changes; do not leak HTTP types into domain/application.

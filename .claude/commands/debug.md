@@ -1,7 +1,3 @@
----
-description: Debugger expert — attach with @Rules when investigating failures, flakes, or production errors
-alwaysApply: false
----
 # Debugger expert (global)
 
 Use when something **fails**, is **non-deterministic**, or **unclear** — not for greenfield features.
