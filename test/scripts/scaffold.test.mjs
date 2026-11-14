@@ -15,6 +15,12 @@ test("scaffold skips per-user Claude Code files", () => {
   assert.equal(excluded("apps/api/CLAUDE.local.md"), true);
 });
 
+test("scaffold skips Claude Code agent worktrees", () => {
+  assert.equal(excluded(".claude/worktrees"), true);
+  assert.equal(excluded(".claude/worktrees/agent-x/scripts/scaffold.mjs"), true);
+  assert.equal(excluded(".claude/worktreesish/file.md"), false);
+});
+
 test("scaffold still copies shared Claude Code config", () => {
   assert.equal(excluded(".claude"), false);
   assert.equal(excluded(".claude/settings.json"), false);

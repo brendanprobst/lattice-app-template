@@ -122,6 +122,8 @@ export function shouldExcludeSourcePath(absPath) {
 
   // Per-user Claude Code files — never ship the template author's into a spawn (or clobber the spawn's own on refresh)
   if (norm === ".claude/settings.local.json" || name === "CLAUDE.local.md") return true;
+  // Claude Code agent worktrees are full checkouts of this repo; never copy them into a spawn
+  if (norm === ".claude/worktrees" || norm.startsWith(".claude/worktrees/")) return true;
 
   if (name === ".env") return true;
   if (name.startsWith(".env.") && name !== ".env.example" && !name.endsWith(".env.example")) {

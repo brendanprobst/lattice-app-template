@@ -12,6 +12,8 @@ apps/**/package-lock.json
 # Claude Code per-user settings (shared config in .claude/ stays tracked)
 .claude/settings.local.json
 CLAUDE.local.md
+# Claude Code agent worktrees (each is a full checkout of this repo)
+.claude/worktrees/
 
 # TypeScript build output
 **/dist/

@@ -121,3 +121,37 @@ test("committed Claude settings deny every remote SQL bypass", () => {
   assert.ok(deny.some((rule) => rule.includes("supabase db push")));
   assert.ok(deny.some((rule) => rule.includes("api.supabase.com")));
 });
+
+test("committed Claude settings deny agent access to every secret-bearing env file", () => {
+  const settings = JSON.parse(readFileSync(join(root, ".claude/settings.json"), "utf8"));
+  const deny = settings.permissions?.deny ?? [];
+
+  for (const base of ["supabase", "apps/api"]) {
+    assert.ok(deny.includes(`Read(./${base}/.env)`), `missing Read deny for ${base}/.env`);
+    for (const suffix of ["local", "dev", "prod"]) {
+      assert.ok(deny.includes(`Read(./${base}/.env.${suffix})`), `missing Read deny for ${base}/.env.${suffix}`);
+      assert.ok(
+        deny.includes(`Bash(*${base}/.env.${suffix}*)`),
+        `missing Bash deny for ${base}/.env.${suffix}`,
+      );
+    }
+  }
+
+  // .env.example must stay readable: no deny rule may match it.
+  const exampleTarget = "apps/api/.env.example";
+  for (const rule of deny) {
+    const glob = rule.replace(/^(Read|Bash)\((.*)\)$/, "$2");
+    const pattern = new RegExp(`^${glob.split("*").map((s) => s.replace(/[.+^${}()|[\]\\]/g, "\\$&")).join(".*")}$`);
+    assert.equal(pattern.test(exampleTarget), false, `${rule} would also block ${exampleTarget}`);
+  }
+
+  const denyRead = settings.sandbox?.filesystem?.denyRead ?? [];
+  for (const base of ["apps/api"]) {
+    for (const suffix of ["", ".local", ".dev", ".prod"]) {
+      assert.ok(
+        denyRead.includes(`./${base}/.env${suffix}`),
+        `missing sandbox.filesystem.denyRead for ${base}/.env${suffix}`,
+      );
+    }
+  }
+});
