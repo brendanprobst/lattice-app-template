@@ -4,7 +4,14 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { detectAgentMode } from "../../scripts/agent-mode.mjs";
-import { agentModeMismatch, planSkills, restoreSkills } from "../../scripts/refresh-spawn.mjs";
+import {
+  agentModeMismatch,
+  mergeClaudeSettings,
+  modeGateAction,
+  planSkills,
+  restoreSkills,
+  splitKernelSkills,
+} from "../../scripts/refresh-spawn.mjs";
 
 function repo(files) {
   const root = mkdtempSync(join(tmpdir(), "refresh-spawn-test-"));
@@ -81,4 +88,82 @@ test("restoreSkills puts back the spawn copy exactly and drops template copies o
   assert.equal(existsSync(join(spawn, ".cursor/skills/shared/reference.md")), false);
   assert.equal(existsSync(join(spawn, ".claude/skills/shared")), false);
   assert.equal(readFileSync(join(spawn, ".cursor/skills/brand-new/SKILL.md"), "utf8"), "new");
+});
+
+test("splitKernelSkills refreshes a kernel-owned skill from the template by default", () => {
+  assert.deepEqual(splitKernelSkills(["other", "sql-schema"], []), {
+    trulyKept: ["other"],
+    kernelRefresh: ["sql-schema"],
+  });
+});
+
+test("splitKernelSkills leaves a kernel-owned skill kept when its root is preserved", () => {
+  assert.deepEqual(splitKernelSkills(["sql-schema"], [".cursor/skills/sql-schema"]), {
+    trulyKept: ["sql-schema"],
+    kernelRefresh: [],
+  });
+  assert.deepEqual(splitKernelSkills(["sql-schema"], [".claude/skills/sql-schema"]), {
+    trulyKept: ["sql-schema"],
+    kernelRefresh: [],
+  });
+});
+
+test("splitKernelSkills leaves non-kernel skills untouched", () => {
+  assert.deepEqual(splitKernelSkills(["same", "spawn-only"], []), {
+    trulyKept: ["same", "spawn-only"],
+    kernelRefresh: [],
+  });
+});
+
+test("mergeClaudeSettings keeps every template deny/ask entry and adds spawn-only entries", () => {
+  const template = {
+    permissions: {
+      deny: ["Bash(psql)", "Bash(supabase db push*)"],
+      ask: ["Bash(npm run supabase:seed*)"],
+    },
+  };
+  const spawn = {
+    permissions: {
+      deny: ["Bash(psql)", "Bash(rm -rf /)"],
+      ask: [],
+    },
+  };
+  assert.deepEqual(mergeClaudeSettings(template, spawn), {
+    permissions: {
+      deny: ["Bash(psql)", "Bash(supabase db push*)", "Bash(rm -rf /)"],
+      ask: ["Bash(npm run supabase:seed*)"],
+    },
+  });
+});
+
+test("mergeClaudeSettings keeps spawn-only top-level keys and returns the template untouched when the spawn has none", () => {
+  const template = { permissions: { deny: ["Bash(psql)"], ask: [] } };
+  const spawn = { permissions: { deny: [], ask: [] }, hooks: { Stop: [{ hooks: [] }] } };
+  assert.deepEqual(mergeClaudeSettings(template, spawn), {
+    permissions: { deny: ["Bash(psql)"], ask: [] },
+    hooks: { Stop: [{ hooks: [] }] },
+  });
+  assert.deepEqual(mergeClaudeSettings(template, null), template);
+});
+
+test("modeGateAction refuses a real refresh on a mode mismatch but lets --dry-run preview", () => {
+  assert.equal(modeGateAction(null, false), "ok");
+  assert.equal(modeGateAction(null, true), "ok");
+  assert.equal(modeGateAction("Agent mode mismatch", false), "refuse");
+  assert.equal(modeGateAction("Agent mode mismatch", true), "warn");
+});
+
+test("mergeClaudeSettings keeps the spawn's other permissions keys, not just deny/ask", () => {
+  const template = { permissions: { deny: ["Bash(psql)"], ask: [] } };
+  const spawn = {
+    permissions: { allow: ["Bash(npm run test*)"], defaultMode: "acceptEdits", deny: [], ask: [] },
+  };
+  assert.deepEqual(mergeClaudeSettings(template, spawn).permissions, {
+    deny: ["Bash(psql)"],
+    ask: [],
+    allow: ["Bash(npm run test*)"],
+    defaultMode: "acceptEdits",
+  });
+  const withTemplateMode = { permissions: { deny: [], ask: [], defaultMode: "default" } };
+  assert.equal(mergeClaudeSettings(withTemplateMode, spawn).permissions.defaultMode, "default");
 });
