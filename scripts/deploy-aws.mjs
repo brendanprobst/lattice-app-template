@@ -2,9 +2,9 @@
 /**
  * Deploy API (Lambda bundle) + Terraform (AWS infra) + static web build + S3 sync.
  *
- * Order: build Lambda → terraform apply → ACM wait (path C) → second apply for
- * CloudFront alias/cert + CORS when ISSUED → standup SQL migrations → read
- * api_url → build web → s3 sync.
+ * Order: plan + confirm standup SQL → build Lambda → terraform apply → ACM wait
+ * (path C) → second apply for CloudFront alias/cert + CORS when ISSUED → apply
+ * approved standup SQL → read api_url → build web → s3 sync.
  *
  *   npm run deploy:aws
  *   npm run deploy:aws -- --env prod
@@ -12,6 +12,13 @@
  *   npm run deploy:aws -- --skip-web          # infra + API only (no static site build/sync)
  *   npm run deploy:aws -- --skip-api-build
  *   npm run deploy:aws -- --auto-approve     # terraform apply -auto-approve (required in non-TTY)
+ *   npm run deploy:aws -- --approve-sql      # approve new/changed Supabase SQL without the prompt
+ *
+ * New or changed SQL from `.lattice/standup.json` is listed before terraform
+ * runs, and you type `yes` (`prod` for prod) to apply it. `--approve-sql` is
+ * for a person running non-interactively. It is separate from
+ * `--auto-approve` on purpose: standup always passes `--auto-approve`, and that
+ * must not approve SQL. Agents never pass `--approve-sql`.
  *
  * `--env` selects `infra/terraform/envs/<env>` (default `dev`). Dev web env is the
  * first of `.env.dev`, `.env.local`, `.env`. Any other env reads only
@@ -24,12 +31,18 @@
  */
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { isMainModule } from "./is-main-module.mjs";
 import { loadWebEnv, takeEnvArg, terraformDir } from "./deploy-env.mjs";
 import { terraformInitArgs } from "./terraform-backend.mjs";
 import { appSharedPath, infisicalConfigPath, readAppSlug } from "./infisical-app.mjs";
-import { applyStandupMigrations } from "./standup-migrations.mjs";
+import {
+  applyStandupMigrations,
+  confirmSqlApply,
+  isInteractive,
+  planStandupMigrations,
+} from "./standup-migrations.mjs";
 import {
   PHASE4_ACM_WAIT,
   pollAcmUntilIssued,
@@ -50,12 +63,14 @@ function parseArgs(argv) {
     skipWeb: false,
     skipApiBuild: false,
     autoApprove: false,
+    approveSql: false,
   };
   for (const a of taken.argv) {
     if (a === "--plan-only") opts.planOnly = true;
     else if (a === "--skip-web") opts.skipWeb = true;
     else if (a === "--skip-api-build") opts.skipApiBuild = true;
     else if (a === "--auto-approve") opts.autoApprove = true;
+    else if (a === "--approve-sql") opts.approveSql = true;
     else if (a.startsWith("-")) {
       console.error(`Unknown flag: ${a}`);
       process.exit(1);
@@ -98,7 +113,7 @@ function tfRaw(chdir, name) {
 }
 
 function applyTerraform(chdir, autoApprove) {
-  if (!autoApprove && !process.stdout.isTTY) {
+  if (!autoApprove && !isInteractive()) {
     console.error(
       "Refusing terraform apply in a non-interactive terminal without --auto-approve (e.g. CI).",
     );
@@ -203,11 +218,44 @@ export function waitForIssuedAcmThenAttach(chdir, autoApprove) {
   exitPendingAcm({ ...rec, status });
 }
 
-function main() {
+/**
+ * Plan standup SQL and ask for approval before anything is built or applied.
+ * Returns the plan to apply after terraform, or null.
+ */
+async function confirmStandupSql(opts) {
+  let sqlPlan;
+  try {
+    sqlPlan = planStandupMigrations(root, opts.env);
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err));
+    process.exit(1);
+  }
+  if (!sqlPlan?.pending.length) return null;
+  let approved;
+  try {
+    approved = await confirmSqlApply(sqlPlan, { approve: opts.approveSql });
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err));
+    process.exit(1); // nothing built or applied yet
+  }
+  if (approved) return sqlPlan;
+  // Default (unconfirmed with the user): "no" skips SQL on dev but aborts prod
+  // before terraform, so prod code never ships ahead of its schema.
+  if (opts.env === "prod") {
+    console.error("Supabase SQL not approved; aborting prod deploy before terraform.");
+    process.exit(1);
+  }
+  console.log(`→ skip Supabase SQL for ${opts.env} (not approved)\n`);
+  return null;
+}
+
+async function main() {
   const opts = parseArgs(process.argv);
   const tfDir = terraformDir(root, opts.env);
   const chdir = `-chdir=${tfDir}`;
   console.log(`→ env ${opts.env} (${tfDir})\n`);
+
+  const sqlPlan = opts.planOnly ? null : await confirmStandupSql(opts);
 
   if (!opts.skipApiBuild) {
     console.log("→ npm run api:build:lambda\n");
@@ -234,7 +282,7 @@ function main() {
   }
 
   waitForIssuedAcmThenAttach(chdir, opts.autoApprove);
-  applyStandupMigrations(root, opts.env);
+  if (sqlPlan) applyStandupMigrations(root, sqlPlan);
   syncInfisicalOutputs(opts.env);
 
   if (opts.skipWeb) {
@@ -342,6 +390,9 @@ function printOutputs(chdir) {
   if (custom) console.log(`  Custom:     https://${custom}/`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main();
+if (isMainModule(import.meta.url)) {
+  main().catch((err) => {
+    console.error(err instanceof Error ? err.message : err);
+    process.exit(1);
+  });
 }

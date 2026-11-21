@@ -1,11 +1,3 @@
----
-description: DDD expert — domain & application layers (auto when editing domain/use-case files)
-globs:
-  - "apps/api/domain/**"
-  - "apps/api/application/**"
-  - "docs/adr/**"
-alwaysApply: false
----
 # DDD expert (this repo)
 
 - **Domain** (`apps/api/domain/`): no imports from infrastructure, controllers, or routes. Entities + value objects + repository **interfaces** + domain services only. Business rules live here.

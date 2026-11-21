@@ -15,6 +15,6 @@
 
 Optional seed data loading lives here (e.g. `seed.ts`). Production apps often replace in-memory repos with DB-backed adapters registered the same way on `Container`.
 
-## Cursor
+## Agent expert
 
-The **infra expert** rule (`.cursor/rules/infra-expert.mdc`) applies when editing under `apps/api/infrastructure/`, `apps/api/config/`, or root `seed.json`.
+The **infra expert** (`agents/prompts/infra-expert.md`) applies when editing under `apps/api/infrastructure/`, `apps/api/config/`, `apps/web/client/lib/`, or root `seed.json`.

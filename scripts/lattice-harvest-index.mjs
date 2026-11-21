@@ -13,6 +13,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { isMainModule } from "./is-main-module.mjs";
 import {
   DIFF_EXCLUDE_NAMES,
   classifyPath,
@@ -452,7 +453,7 @@ function main() {
   }
 }
 
-const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
+const invokedDirectly = isMainModule(import.meta.url);
 if (invokedDirectly) {
   main();
 }

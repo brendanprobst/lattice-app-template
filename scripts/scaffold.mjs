@@ -19,6 +19,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync } fr
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { isMainModule } from "./is-main-module.mjs";
 import {
   DEFAULT_SCAFFOLD_PROMPTS,
   parsePipelineFlags,
@@ -88,7 +89,7 @@ function parseArgs(argv) {
   return opts;
 }
 
-function shouldExcludeSourcePath(absPath) {
+export function shouldExcludeSourcePath(absPath) {
   const rel = relative(templateRoot, absPath);
   if (rel === "") return false;
   const norm = rel.replace(/\\/g, "/");
@@ -119,12 +120,30 @@ function shouldExcludeSourcePath(absPath) {
   if (name.endsWith(".tfvars") && !name.endsWith(".tfvars.example")) return true;
   if (name === ".terraform.tfstate.lock.info") return true;
 
+  // Per-user Claude Code files — never ship the template author's into a spawn (or clobber the spawn's own on refresh)
+  if (norm === ".claude/settings.local.json" || name === "CLAUDE.local.md") return true;
+  // Claude Code agent worktrees are full checkouts of this repo; never copy them into a spawn
+  if (norm === ".claude/worktrees" || norm.startsWith(".claude/worktrees/")) return true;
+
   if (name === ".env") return true;
   if (name.startsWith(".env.") && name !== ".env.example" && !name.endsWith(".env.example")) {
     return true;
   }
 
   return false;
+}
+
+/**
+ * Copy the template tree. `verbatimSymlinks` keeps relative links relative
+ * (e.g. supabase/migrations/*.sql -> feature-migrations/*.sql); without it
+ * Node rewrites them to absolute paths into the template checkout.
+ */
+export function copyTemplate(src, dst) {
+  cpSync(src, dst, {
+    recursive: true,
+    verbatimSymlinks: true,
+    filter: (path) => !shouldExcludeSourcePath(path),
+  });
 }
 
 function listTopLevelForDisplay(dir) {
@@ -295,10 +314,7 @@ async function runScaffold(opts) {
     process.exit(1);
   }
 
-  cpSync(templateRoot, targetRoot, {
-    recursive: true,
-    filter: (src) => !shouldExcludeSourcePath(src),
-  });
+  copyTemplate(templateRoot, targetRoot);
 
   if (!opts.noGitInit && !existsSync(join(targetRoot, ".git"))) {
     const git = spawnSync("git", ["init", "-b", "main"], { cwd: targetRoot, encoding: "utf8" });
@@ -374,8 +390,12 @@ First commit (if you cloned from GitHub, origin may already exist):
 `);
 }
 
-const opts = parseArgs(process.argv);
-runScaffold(opts).catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+const invokedDirectly = isMainModule(import.meta.url);
+
+if (invokedDirectly) {
+  const opts = parseArgs(process.argv);
+  runScaffold(opts).catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

@@ -18,8 +18,9 @@
  */
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { isMainModule } from "./is-main-module.mjs";
 import { loadWebEnv, takeEnvArg, terraformDir } from "./deploy-env.mjs";
 import { terraformInitArgs } from "./terraform-backend.mjs";
 
@@ -124,6 +125,6 @@ function main() {
   console.log(`  API (from state): ${apiUrl}`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMainModule(import.meta.url)) {
   main();
 }

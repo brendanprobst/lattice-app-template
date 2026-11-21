@@ -1,8 +1,8 @@
 # `test/` — Automated tests
 
-## Tests-first workflow (with Cursor)
+## Tests-first workflow
 
-The **Test expert** Cursor rule applies when you edit **`test/**`** *or* feature code under **`apps/api/`**, **`apps/web/client/`**, **`apps/web/app/`** — see **`.cursor/rules/test-expert.mdc`**. New behavior in those trees should include matching **Jest** / **Vitest** / **Playwright** updates in the same change. See **`agents/README.md`** (Tests-first feature work) and **`.github/pull_request_template.md`**.
+The **Test expert** applies when you edit **`test/**`** *or* feature code under **`apps/api/`**, **`apps/web/client/`**, **`apps/web/app/`** — source in **`agents/prompts/test-expert.md`** (generated into `CLAUDE.md` files or `.cursor/rules/test-expert.mdc`). New behavior in those trees should include matching **Jest** / **Vitest** / **Playwright** updates in the same change. See **`agents/README.md`** (Tests-first feature work) and **`.github/pull_request_template.md`**.
 
 ## Layout
 

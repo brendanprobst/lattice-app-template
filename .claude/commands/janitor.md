@@ -1,7 +1,3 @@
----
-description: Code janitor — attach with @Rules for audits, cleanup PRs, consistency, and hygiene
-alwaysApply: false
----
 # Code janitor (global)
 
 Use for **review-style** passes: consistency, dead code, security footguns, dependency hygiene — **not** product features.

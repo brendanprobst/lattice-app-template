@@ -7,8 +7,9 @@
  *   npm run --silent ssm:env -- --env prod --names
  */
 import { dirname, join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { isMainModule } from "./is-main-module.mjs";
 import { terraformDir } from "./deploy-env.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -160,6 +161,6 @@ function main() {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMainModule(import.meta.url)) {
   main();
 }

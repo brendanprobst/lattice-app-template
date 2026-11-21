@@ -177,15 +177,18 @@ Behavior (spec):
 
 1. Resolve `--into` to an existing directory (required).
 2. Read **`<target>/.lattice/refresh.json`**; fail with a clear message if missing.
-3. Snapshot spawn-owned paths (defaults + `preservePaths`).
-4. Run **`scaffold.mjs`** with `--into`, `--name`, `--repo` from the manifest, plus **`--force --yes`**.
-5. Delete each path in `prunePaths` (never a preserved path).
-6. Restore the snapshot so spawn config wins over anything the copy wrote.
-7. Run `postRefreshPrompts` in the spawn via `agent` / `cursor agent` (docs only, as written).
-8. Run **`npm ci`** then **`npm run ci`** in the spawn (build, lint, type-check, Jest, Vitest).
-9. Print leftover human steps (Supabase, Terraform, Infisical). Do **not** deploy.
+3. **Fail unless template and spawn are on the same agent mode** (`claude`, `cursor`, or `synced` — `npm run agent:status` in each). `--dry-run` warns about the mismatch and still prints the preview. Align with `npm run use:claude` / `use:cursor` / `agents:sync` in the repo that differs, commit, then re-run. See [Moving a spawn to Claude mode](#moving-a-spawn-to-claude-mode).
+4. Snapshot spawn-owned paths (defaults + `preservePaths`) and every skill the spawn already has (see below).
+5. Run **`scaffold.mjs`** with `--into`, `--name`, `--repo` from the manifest, plus **`--force --yes`**.
+6. Put the spawn's skills back exactly as they were (template copies of those names are discarded) — except kernel skills (see below), which keep the template's fresh copy.
+7. Merge `.claude/settings.json`: union every list under `permissions` (`deny`, `ask`, `allow`, …; template entries always kept, spawn-only entries kept too), and keep the spawn's other `permissions` keys (e.g. `defaultMode`) unless the template sets them; other top-level keys come from the template plus any spawn-only ones.
+8. Delete each path in `prunePaths` (never a preserved path).
+9. Restore the snapshot so spawn config wins over anything the copy wrote.
+10. Run `postRefreshPrompts` in the spawn via `agent` / `cursor agent` (docs only, as written).
+11. Run **`npm ci`** then **`npm run ci`** in the spawn (build, lint, type-check, Jest, Vitest).
+12. Print leftover human steps (Supabase, Terraform, Infisical). Do **not** deploy.
 
-Optional flags: `--dry-run` (scaffold dry-run + list prunes + print prompts/tests), `--skip-prune`, `--skip-prompts`, `--skip-tests`.
+Optional flags: `--dry-run` (scaffold dry-run + list prunes + skill plan + print prompts/tests), `--skip-prune`, `--skip-prompts`, `--skip-tests`.
 
 ### What refresh preserves vs overwrites
 
@@ -195,7 +198,15 @@ Refresh **must** keep spawn-owned config. It snapshots these paths before copy a
 
 **Also preserved** if listed in `preservePaths`: any other spawn-owned file (hostnames, filled playbooks, product notes). Fosterfolio would list `docs/playbooks/infisical-github-deploys.md` here if it keeps names in that file — it will then stop receiving template edits to that path.
 
-**Not copied from the template** (already excluded by `scaffold.mjs`): `.git/`, real `*.tfvars`, `terraform.tfstate`, `.terraform/`, `.env` / `.env.*` except `*.env.example`.
+**`.claude/settings.json`**: merged, not restored or overwritten. Refresh unions every list under `permissions` (`deny`, `ask`, `allow`) and keeps the spawn's other `permissions` keys unless the template sets them — every template entry is always kept (so new template deny rules reach every spawn), plus any spawn-only entries the spawn added on top. Other top-level keys come from the template, with spawn-only top-level keys (e.g. `hooks`) added in. A spawn's permission rule removed from the template stays removed only if the spawn never added it itself.
+
+**Skills** (`.cursor/skills/<name>/`, `.claude/skills/<name>/`): a skill name the spawn already has in either folder is **never overwritten** — the spawn's copy is restored byte-for-byte, and the template's copy of that name is not added to the other folder. Template skills the spawn doesn't have are **added**. Refresh lists kept skills whose content differs from the template so you can pull template changes in by hand. Once added, a skill is spawn-owned: later template edits to it are reported, not applied.
+
+**Exception — kernel skills** (`KERNEL_SKILLS` in `scripts/refresh-spawn.mjs`, currently `sql-schema`): these carry security/kernel guardrails, so the template's copy **always wins** on refresh, even in a spawn that already has the skill — "kept" never applies to them. Opt a spawn's copy back out by listing that skill's folder (e.g. `.cursor/skills/sql-schema`) in `preservePaths`.
+
+To drop a (non-kernel) skill, list its folders in `prunePaths`.
+
+**Not copied from the template** (already excluded by `scaffold.mjs`): `.git/`, real `*.tfvars`, `terraform.tfstate`, `.terraform/`, `.env` / `.env.*` except `*.env.example`, and per-user Claude Code files (`.claude/settings.local.json`, `CLAUDE.local.md`) — a spawn's own copies are left untouched.
 
 | Overwritten when the path exists in the template | Examples |
 |--------------------------------------------------|----------|
@@ -216,12 +227,20 @@ Refresh already ran `postRefreshPrompts` and `npm ci` / `npm run ci` unless you 
 | Step | When needed |
 |------|-------------|
 | **Supabase → Auth → URL configuration** | Auth routes changed (e.g. `/login` → `/auth/sign-in`, forgot/reset password). Add redirect URLs for new paths. |
-| **Supabase SQL** | New files under `apps/api/supabase/migrations/` — apply per [Supabase migrations playbook](playbooks/supabase-migrations.md) |
+| **Supabase SQL** | New files under `supabase/migrations/feature-migrations/`, plus a rebuilt `supabase/migrations/master-migration/LATEST_*.sql` — apply per [Supabase migrations playbook](playbooks/supabase-migrations.md) |
 | **Terraform** | Merge new keys from each env’s `terraform.tfvars.example` into that env’s `terraform.tfvars`. Default is dual-env: fill **dev and prod** on day 1; apply **dev** first. |
 | **Infisical / Deploy app** | `.lattice/infisical.json` is restored automatically. List any filled-in playbook in `preservePaths`. Generic steps: [Infisical and GitHub deploys](playbooks/infisical-github-deploys.md). |
 | **Browser smoke** | Sign-in, profile, Things against the **dev** URL ([smoke test deployment guide](plans/smoke_test_deployment_guide.plan.md)). Prod is the same check after the first `--env prod` apply. |
 
 Commit in the spawn: `chore: refresh from lattice-app-template @ <short-sha>`.
+
+### Moving a spawn to Claude mode
+
+The template is in Claude agent mode. A spawn still on Cursor rules (`.cursor/rules/*.mdc`, `npm run agent:status` says `cursor`) is refused by refresh until it matches. Once per spawn:
+
+1. Preview first: `npm run scaffold:refresh -- --into ../<spawn> --dry-run` warns about the mismatch and still shows the plan.
+2. In the spawn, run `npm run use:claude`. A hand-written root `CLAUDE.md` blocks this. Move its content into `AGENTS.md` or `agents/prompts/` first.
+3. Commit in the spawn (`chore: activate Claude agent mode`), then run the refresh for real.
 
 ### When **not** to refresh
 

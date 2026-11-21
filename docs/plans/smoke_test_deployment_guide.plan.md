@@ -161,7 +161,7 @@ Parse **`id`** from JSON for `GET/PUT/DELETE` by id. **Do not log** full tokens 
 
 ## Security review (code janitor + smoke context)
 
-Aligned with `.cursor/rules/code-janitor.mdc`: no credentials in repo, minimal leak surface, call out footguns.
+Aligned with the code janitor (`agents/prompts/code-janitor.md`): no credentials in repo, minimal leak surface, call out footguns.
 
 ### What the smoke test should do (safe pattern)
 

@@ -4,7 +4,7 @@ const NOT_APPROVED_FRIENDLY_MESSAGE =
 /**
  * The `auth.enforce_allowed_email` Postgres trigger raises an exception with the
  * stable prefix `EMAIL_NOT_APPROVED:` (see
- * `apps/api/supabase/migrations/allowed_emails_signup_gate.sql`). Supabase
+ * `supabase/migrations/feature-migrations/20260520120000_platform_allowed_emails_signup_gate.sql`). Supabase
  * surfaces that text inside the auth error message for both email/password and
  * OAuth flows, so checking for the prefix here is sufficient.
  */
