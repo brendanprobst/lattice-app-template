@@ -10,7 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@aws-sdk/client-ssm": "^3.1014.0",
+    "@aws-sdk/client-ssm": "^3.1024.0",
     "@vendia/serverless-express": "^4.12.6",
     "cookie-parser": "~1.4.4",
     "cors": "^2.8.6",
