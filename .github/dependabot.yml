@@ -10,6 +10,22 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
+    # Majors held back on purpose (see closed PRs #5, #7, #8, #9, #12, #14).
+    ignore:
+      - dependency-name: "chalk"
+        update-types: ["version-update:semver-major"]   # ESM-only in v5; apps/api is CommonJS
+      - dependency-name: "express"
+        update-types: ["version-update:semver-major"]   # Express 5 migration not planned yet
+      - dependency-name: "@types/express"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitejs/plugin-react"
+        update-types: ["version-update:semver-major"]   # needs vite/vitest upgrade first
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]   # move with eslint-config-next
+      - dependency-name: "eslint-config-next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        versions: [">=23"]                              # runtime is Node 22
 
   - package-ecosystem: "github-actions"
     directory: "/"
