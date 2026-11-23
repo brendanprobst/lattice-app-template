@@ -108,7 +108,7 @@ jobs:
           fi
 
       - name: Read Infisical /<app>/shared
-        uses: Infisical/secrets-action@a663da43e1541832614bfd9dcf9ab67381ea2b98 # v1.0.12
+        uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
         with:
           method: universal
           client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
@@ -121,7 +121,7 @@ jobs:
 
       - name: Read Infisical /<app>/flags
         continue-on-error: true
-        uses: Infisical/secrets-action@a663da43e1541832614bfd9dcf9ab67381ea2b98 # v1.0.12
+        uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
         with:
           method: universal
           client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
